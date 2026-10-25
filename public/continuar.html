@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Minhas solicitações | CMK COGIT</title>
+</head>
+<body>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <main>
+    <h1>Minhas solicitações</h1>
+    <p>Aqui ficam as soluções que você montou no site. As de preço fechado (ex.: modelo pronto) você paga direto. As sob medida passam pela validação da equipe, que confirma o valor e libera o pagamento aqui.</p>
+
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+    <p id="tentar-de-novo" hidden><button type="button" id="btn-tentar">Tentar salvar de novo</button></p>
+
+    <section id="lista-solicitacoes" aria-live="polite">
+      <p>Carregando...</p>
+    </section>
+
+    <section>
+      <h2>Precisa de ajuda?</h2>
+      <a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Falar conosco pelo WhatsApp</a>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/continuar.js"></script>
+</body>
+</html>

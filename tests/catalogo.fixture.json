@@ -1,0 +1,241 @@
+[
+ {
+  "id": "diagnostico",
+  "tipo": "servico",
+  "nome": "Diagnóstico Inicial",
+  "preco": 0.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "fixed",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "consultoria",
+  "tipo": "servico",
+  "nome": "Consultoria e Planejamento Digital",
+  "preco": 350.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "fixed",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "identidade-essencial",
+  "tipo": "servico",
+  "nome": "Identidade Visual Essencial",
+  "preco": 500.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "fixed",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "identidade-completa",
+  "tipo": "servico",
+  "nome": "Identidade Visual Completa",
+  "preco": 990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "fixed",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "landing-page",
+  "tipo": "servico",
+  "nome": "Landing Page",
+  "preco": 500.0,
+  "preco_sob_medida": 700.0,
+  "tipo_preco": "fixed",
+  "mensal": false,
+  "presenca_digital": true,
+  "complementos_permitidos": [
+   "automacao-extra",
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "portfolio",
+  "tipo": "servico",
+  "nome": "Portfólio Digital",
+  "preco": 600.0,
+  "preco_sob_medida": 800.0,
+  "tipo_preco": "fixed",
+  "mensal": false,
+  "presenca_digital": true,
+  "complementos_permitidos": [
+   "automacao-extra",
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "site-institucional",
+  "tipo": "servico",
+  "nome": "Site Institucional",
+  "preco": 700.0,
+  "preco_sob_medida": 900.0,
+  "tipo_preco": "fixed",
+  "mensal": false,
+  "presenca_digital": true,
+  "complementos_permitidos": [
+   "automacao-extra",
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "loja-virtual",
+  "tipo": "servico",
+  "nome": "E-commerce / Loja Virtual",
+  "preco": 2990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [
+   "automacao-extra",
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "plataforma",
+  "tipo": "servico",
+  "nome": "Plataforma Web Personalizada",
+  "preco": 4990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [
+   "automacao-extra",
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "sistema",
+  "tipo": "servico",
+  "nome": "Sistemas de Gestão e CRM",
+  "preco": 2990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [
+   "automacao-extra",
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "mvp",
+  "tipo": "servico",
+  "nome": "MVP e Produto Digital",
+  "preco": 3990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [
+   "automacao-extra",
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "automacao",
+  "tipo": "servico",
+  "nome": "Automação de Processos Administrativos",
+  "preco": 990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [
+   "integracao-externa"
+  ],
+  "ativo": true
+ },
+ {
+  "id": "integracao",
+  "tipo": "servico",
+  "nome": "Integrações de Sistemas e Pagamentos",
+  "preco": 990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "manutencao",
+  "tipo": "servico",
+  "nome": "Manutenção Essencial",
+  "preco": 149.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "fixed",
+  "mensal": true,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "suporte",
+  "tipo": "servico",
+  "nome": "Suporte Técnico Contínuo",
+  "preco": 299.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "fixed",
+  "mensal": true,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "evolucao",
+  "tipo": "servico",
+  "nome": "Evolução Contínua",
+  "preco": 690.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": true,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "automacao-extra",
+  "tipo": "complemento",
+  "nome": "Automação de Processos Administrativos",
+  "preco": 990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ },
+ {
+  "id": "integracao-externa",
+  "tipo": "complemento",
+  "nome": "Integrações de Sistemas e Pagamentos",
+  "preco": 990.0,
+  "preco_sob_medida": null,
+  "tipo_preco": "from",
+  "mensal": false,
+  "presenca_digital": false,
+  "complementos_permitidos": [],
+  "ativo": true
+ }
+]

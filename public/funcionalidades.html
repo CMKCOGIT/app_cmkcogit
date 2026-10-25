@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Adquirir nova funcionalidade | CMK COGIT</title>
+</head>
+<body>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <main>
+    <h1>Adquirir nova funcionalidade</h1>
+    <p>Acrescente recursos a um site ou sistema que você já tem com a COGIT. O valor é do catálogo; o pagamento é pelo Mercado Pago (Pix, cartão ou boleto).</p>
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <p>
+      <label for="projeto">Para qual projeto?</label><br>
+      <select id="projeto"><option value="">Carregando...</option></select>
+    </p>
+
+    <section id="lista-funcionalidades" aria-live="polite">
+      <p>Carregando...</p>
+    </section>
+
+    <section>
+      <h2>Não achou o que precisa?</h2>
+      <a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Fale conosco: fazemos sob medida</a>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/funcionalidades.js"></script>
+</body>
+</html>

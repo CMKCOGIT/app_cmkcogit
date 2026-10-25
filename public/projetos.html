@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Meus projetos | CMK COGIT</title>
+</head>
+<body>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <main>
+    <h1>Meus projetos</h1>
+    <p>Os sites e soluções que você adquiriu. Clique em um projeto para ver etapas, prazo, arquivos e funcionalidades.</p>
+    <p id="erro" role="alert"></p>
+    <section id="lista-projetos" aria-live="polite">
+      <p>Carregando...</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/projetos.js"></script>
+</body>
+</html>

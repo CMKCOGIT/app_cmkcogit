@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Entrar | CMK COGIT</title>
+</head>
+<body>
+  <main>
+    <h1>Plataforma CMK COGIT</h1>
+
+    <section id="pendente" hidden>
+      <h2>Sua solução está salva</h2>
+      <p>Entre ou crie sua conta para continuar. Você revisa tudo e, se o preço já estiver fechado, paga com Pix, cartão ou boleto pelo Mercado Pago.</p>
+      <div id="pendente-resumo"></div>
+    </section>
+
+    <p id="mensagem" role="status"></p>
+
+    <form id="form-login" novalidate>
+      <h2>Entrar</h2>
+      <p>
+        <label for="login-email">E-mail</label><br>
+        <input type="email" id="login-email" autocomplete="email" required maxlength="254">
+      </p>
+      <p>
+        <label for="login-senha">Senha</label><br>
+        <input type="password" id="login-senha" autocomplete="current-password" required>
+      </p>
+      <button type="submit">Entrar</button>
+      <button type="button" id="esqueci-senha">Esqueci minha senha</button>
+      <p>Ainda não tem conta? <button type="button" id="ir-cadastro">Criar conta</button></p>
+    </form>
+
+    <form id="form-cadastro" hidden novalidate>
+      <h2>Criar conta</h2>
+      <p>
+        <label for="cad-nome">Nome</label><br>
+        <input type="text" id="cad-nome" autocomplete="name" required maxlength="120">
+      </p>
+      <p>
+        <label for="cad-email">E-mail</label><br>
+        <input type="email" id="cad-email" autocomplete="email" required maxlength="254">
+      </p>
+      <p>
+        <label for="cad-telefone">WhatsApp (com DDD)</label><br>
+        <input type="tel" id="cad-telefone" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000">
+      </p>
+      <p>
+        <label for="cad-senha">Senha (mínimo 8 caracteres)</label><br>
+        <input type="password" id="cad-senha" autocomplete="new-password" required minlength="8">
+      </p>
+      <p>
+        <label for="cad-senha2">Repita a senha</label><br>
+        <input type="password" id="cad-senha2" autocomplete="new-password" required minlength="8">
+      </p>
+      <p>
+        <input type="checkbox" id="cad-aceite" required>
+        <label for="cad-aceite">Li e aceito os <a id="link-termos" href="#" target="_blank" rel="noopener">Termos de Uso</a> e a <a id="link-privacidade" href="#" target="_blank" rel="noopener">Política de Privacidade</a>.</label>
+      </p>
+      <button type="submit">Criar conta</button>
+      <p>Já tem conta? <button type="button" id="ir-login">Entrar</button></p>
+    </form>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

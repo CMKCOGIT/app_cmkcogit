@@ -1,0 +1,14 @@
+{
+  "name": "cmkcogit-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Plataforma do cliente CMK COGIT (app.cmkcogit.com.br): login, solicitações vindas do site e pagamento com Mercado Pago.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "test": "node --test tests/*.test.js"
+  }
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Projeto | CMK COGIT</title>
+</head>
+<body>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <main>
+    <p><a href="projetos.html">← Meus projetos</a></p>
+    <h1 id="titulo">Projeto</h1>
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <section id="resumo-projeto" aria-live="polite"><p>Carregando...</p></section>
+
+    <section>
+      <h2>Etapas</h2>
+      <ol id="lista-etapas"></ol>
+    </section>
+
+    <section>
+      <h2>Aguardando sua decisão</h2>
+      <ul id="lista-pendencias"></ul>
+    </section>
+
+    <section>
+      <h2>Arquivos</h2>
+      <ul id="lista-arquivos"></ul>
+    </section>
+
+    <section>
+      <h2>Funcionalidades extras</h2>
+      <ul id="lista-funcionalidades"></ul>
+      <p><a id="link-nova-funcionalidade" href="funcionalidades.html">Adquirir nova funcionalidade para este projeto</a></p>
+    </section>
+
+    <section>
+      <h2>Pagamentos deste projeto</h2>
+      <ul id="lista-pagamentos"></ul>
+    </section>
+
+    <section id="painel-admin" hidden>
+      <h2>Admin · Gerenciar projeto</h2>
+      <form id="form-projeto">
+        <p><label for="adm-etapa">Etapa atual</label><br>
+          <select id="adm-etapa">
+            <option value="1">1 · Projeto Confirmado</option><option value="2">2 · Preparação</option>
+            <option value="3">3 · Estratégia</option><option value="4">4 · Design</option>
+            <option value="5">5 · Sua Aprovação</option><option value="6">6 · Construção</option>
+            <option value="7">7 · Revisão Final</option><option value="8">8 · Publicado</option>
+          </select></p>
+        <p><label for="adm-status">Status do projeto</label><br>
+          <select id="adm-status">
+            <option value="em_andamento">Em andamento</option><option value="aguardando_cliente">Aguardando cliente</option>
+            <option value="pausado">Pausado</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option>
+          </select></p>
+        <p><label for="adm-previsao">Previsão de entrega</label><br><input type="date" id="adm-previsao"></p>
+        <p><label for="adm-dominio">Domínio (URL do site)</label><br><input type="text" id="adm-dominio" maxlength="200" placeholder="www.cliente.com.br"></p>
+        <button type="submit">Salvar projeto</button>
+      </form>
+
+      <form id="form-pendencia">
+        <h3>Nova pendência para o cliente</h3>
+        <p><label for="pend-titulo">Título</label><br><input type="text" id="pend-titulo" maxlength="160" required></p>
+        <p><label for="pend-descricao">Descrição</label><br><textarea id="pend-descricao" rows="2" cols="60" maxlength="1000"></textarea></p>
+        <p><label for="pend-prazo">Prazo</label><br><input type="date" id="pend-prazo"></p>
+        <button type="submit">Adicionar pendência</button>
+      </form>
+
+      <form id="form-arquivo">
+        <h3>Novo arquivo (link)</h3>
+        <p><label for="arq-nome">Nome</label><br><input type="text" id="arq-nome" maxlength="160" required></p>
+        <p><label for="arq-url">Link (https://...)</label><br><input type="url" id="arq-url" maxlength="500" required></p>
+        <button type="submit">Adicionar arquivo</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/projeto.js"></script>
+</body>
+</html>

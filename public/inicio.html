@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Início | CMK COGIT</title>
+</head>
+<body>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <main>
+    <h1 id="saudacao">Olá!</h1>
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <section>
+      <h2>Resumo</h2>
+      <ul id="resumo">
+        <li>Carregando...</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Próximo passo</h2>
+      <div id="proximo-passo"></div>
+    </section>
+
+    <section>
+      <h2>Precisa de ajuda?</h2>
+      <a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Falar conosco pelo WhatsApp</a>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/inicio.js"></script>
+</body>
+</html>
