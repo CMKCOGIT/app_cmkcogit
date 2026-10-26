@@ -28,7 +28,9 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 
 | Pasta / arquivo | O que é |
 |---|---|
-| `public/` | Páginas (HTML + JS, sem CSS) — veja a lista abaixo |
+| `public/` | Páginas (HTML + JS) — veja a lista abaixo |
+| `public/css/plataforma.css` | Visual da plataforma (tokens da marca + componentes), baseado no site. Estiliza o HTML existente sem depender de classes no JS |
+| `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
 | `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10` |
