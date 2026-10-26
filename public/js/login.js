@@ -5,18 +5,55 @@
   const formLogin = document.getElementById('form-login');
   const formCadastro = document.getElementById('form-cadastro');
   const msg = document.getElementById('mensagem');
+  const card = document.getElementById('auth-card');
+  const blocosPainel = card.querySelectorAll('.auth-painel-conteudo');
+  const movimentoReduzido = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const celular = window.matchMedia('(max-width: 759.98px)');
+  // ms — fim da animação mais longa em plataforma.css (card de dois painéis / versão compacta)
+  const DURACAO_TROCA = 800;
+  const DURACAO_TROCA_CELULAR = 480;
+  let modo = card.dataset.modo || 'login';
+  let trocando = false;
 
   function mensagem(texto, erro) {
     msg.textContent = texto || '';
     msg.setAttribute('role', erro ? 'alert' : 'status');
   }
-  function mostrar(qual) {
-    formLogin.hidden = qual !== 'login';
-    formCadastro.hidden = qual !== 'cadastro';
-    mensagem('');
-    const primeiro = (qual === 'login' ? formLogin : formCadastro).querySelector('input');
-    if (primeiro) primeiro.focus();
+
+  // Só o formulário (e o bloco do painel) do modo atual aceita clique e teclado.
+  function aplicarModo(qual) {
+    modo = qual;
+    card.dataset.modo = qual;
+    formLogin.inert = qual !== 'login';
+    formCadastro.inert = qual !== 'cadastro';
+    blocosPainel.forEach((b) => { b.inert = b.dataset.para !== qual; });
   }
+
+  // Troca sem animação (abertura da página já em "cadastro")
+  function definirModoSemAnimacao(qual) {
+    card.classList.add('sem-transicao');
+    aplicarModo(qual);
+    void card.offsetWidth; // aplica o estado antes de religar as transições
+    card.classList.remove('sem-transicao');
+  }
+
+  // Alterna com a animação dos painéis. Cliques durante a troca são ignorados,
+  // então o card nunca fica entre dois estados. Os dados digitados ficam nos campos.
+  function mostrar(qual) {
+    if (qual === modo || trocando) return;
+    mensagem('');
+    const espera = movimentoReduzido.matches ? 0 : celular.matches ? DURACAO_TROCA_CELULAR : DURACAO_TROCA;
+    trocando = true;
+    card.classList.add('trocando');
+    aplicarModo(qual);
+    setTimeout(() => {
+      trocando = false;
+      card.classList.remove('trocando');
+      const primeiro = (qual === 'login' ? formLogin : formCadastro).querySelector('input');
+      if (primeiro) primeiro.focus();
+    }, espera);
+  }
+  aplicarModo(modo);
 
   document.getElementById('link-termos').href = urlSite('termos-de-uso.html');
   document.getElementById('link-privacidade').href = urlSite('privacidade.html');
@@ -29,8 +66,7 @@
   if (pendente) {
     document.getElementById('pendente').hidden = false;
     document.getElementById('pendente-resumo').innerHTML = resumoPendenteHtml(pendente);
-    formLogin.hidden = true;
-    formCadastro.hidden = false;
+    definirModoSemAnimacao('cadastro');
   }
 
   // Já está logado? Segue direto.

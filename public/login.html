@@ -11,20 +11,18 @@
   <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
   <link rel="stylesheet" href="/css/plataforma.css">
 </head>
-<body class="acesso">
+<body class="acesso login">
   <main>
-    <h1>Plataforma CMK COGIT</h1>
+    <h1 class="so-leitor">Plataforma CMK COGIT</h1>
 
-    <section id="pendente" hidden>
-      <h2>Sua solução está salva</h2>
-      <p>Entre ou crie sua conta para continuar. Você revisa tudo e, se o preço já estiver fechado, paga com Pix, cartão ou boleto pelo Mercado Pago.</p>
-      <div id="pendente-resumo"></div>
-    </section>
-
+    <!-- Card único: os dois formulários ficam lado a lado e o painel da marca
+         desliza por cima do que está inativo. O modo atual fica em data-modo. -->
+    <div id="auth-card" class="auth-card" data-modo="login">
     <p id="mensagem" role="status"></p>
 
-    <form id="form-login" novalidate>
+    <form id="form-login" class="auth-form" novalidate>
       <h2>Entrar</h2>
+      <p class="auth-subtitulo">Acesse com o e-mail e a senha da sua conta.</p>
       <p>
         <label for="login-email">E-mail</label><br>
         <input type="email" id="login-email" autocomplete="email" required maxlength="254">
@@ -35,11 +33,11 @@
       </p>
       <button type="submit">Entrar</button>
       <button type="button" id="esqueci-senha">Esqueci minha senha</button>
-      <p>Ainda não tem conta? <button type="button" id="ir-cadastro">Criar conta</button></p>
     </form>
 
-    <form id="form-cadastro" hidden novalidate>
+    <form id="form-cadastro" class="auth-form" novalidate>
       <h2>Criar conta</h2>
+      <p class="auth-subtitulo">Leva menos de um minuto.</p>
       <p>
         <label for="cad-nome">Nome</label><br>
         <input type="text" id="cad-nome" autocomplete="name" required maxlength="120">
@@ -64,9 +62,30 @@
         <input type="checkbox" id="cad-aceite" required>
         <label for="cad-aceite">Li e aceito os <a id="link-termos" href="#" target="_blank" rel="noopener">Termos de Uso</a> e a <a id="link-privacidade" href="#" target="_blank" rel="noopener">Política de Privacidade</a>.</label>
       </p>
-      <button type="submit">Criar conta</button>
-      <p>Já tem conta? <button type="button" id="ir-login">Entrar</button></p>
+      <button type="submit">Cadastrar</button>
     </form>
+
+    <aside class="auth-painel" aria-label="Alternar entre entrar e criar conta">
+      <div class="auth-painel-conteudo" data-para="login">
+        <span class="auth-rotulo">Plataforma do cliente</span>
+        <h2>Ainda não tem conta?</h2>
+        <p>Crie seu acesso para acompanhar solicitações, pagamentos e cada etapa dos seus projetos.</p>
+        <button type="button" id="ir-cadastro" class="auth-alternar">Criar conta</button>
+      </div>
+      <div class="auth-painel-conteudo" data-para="cadastro">
+        <span class="auth-rotulo">Plataforma do cliente</span>
+        <h2>Já é cliente COGIT?</h2>
+        <p>Entre com seu e-mail e senha para continuar de onde parou.</p>
+        <button type="button" id="ir-login" class="auth-alternar">Já tenho conta</button>
+      </div>
+
+      <section id="pendente" hidden>
+        <h2>Sua solução está salva</h2>
+        <p>Entre ou crie sua conta para continuar. Você revisa tudo e, se o preço já estiver fechado, paga com Pix, cartão ou boleto pelo Mercado Pago.</p>
+        <div id="pendente-resumo"></div>
+      </section>
+    </aside>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
