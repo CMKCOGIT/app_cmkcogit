@@ -3,7 +3,7 @@
 // Valida, recalcula o preço pelo catálogo do banco e grava a solicitação na conta.
 // Repetir a mesma configuração (recarregar a página) devolve a mesma solicitação.
 import { criarDb } from '../lib/supabase.js';
-import { json, erro, lerCorpo, exigirUsuario, registrarErro } from '../lib/http.js';
+import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro } from '../lib/http.js';
 import { sanitizarCfg, calcular } from '../lib/selecao.js';
 
 const LIMITE_POR_HORA = 15;
@@ -16,6 +16,7 @@ export default async function handler(req, res) {
 
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
+  if (!(await exigirCadastroCompleto(usuario, res, db))) return;
 
   let corpo;
   try { corpo = await lerCorpo(req); } catch { return erro(res, 400, 'Requisição inválida.'); }

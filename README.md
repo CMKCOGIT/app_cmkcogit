@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10` |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10` e o `11` |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -41,7 +41,8 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 
 | Página | Quem | O que faz |
 |---|---|---|
-| `login.html` | todos | Entrar, criar conta, recuperar senha (mostra a solução trazida do site) |
+| `login.html` | todos | Entrar, criar conta (e-mail/senha ou **Continuar com Google**), recuperar senha (mostra a solução trazida do site) |
+| `completar-cadastro.html` | logado com cadastro pendente | Dados obrigatórios antes de liberar a plataforma (nome + aceite dos termos; WhatsApp opcional). Salva rascunho enquanto digita |
 | `inicio.html` | cliente | Resumo, "aguardando sua decisão", progresso dos projetos |
 | `continuar.html` | cliente | Minhas solicitações: recebe a solução do site, pagar ou aguardar validação |
 | `pagamentos.html` | cliente | Cobranças, pagar, "Já paguei — verificar" |
@@ -77,7 +78,9 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
 4. **Authentication → Providers → Email**: deixe "Confirm email" ligado (recomendado). O cliente
    precisa abrir o link de confirmação **no mesmo navegador** para a solução montada continuar com ele.
 5. Cadastre-se no app (passo 3), depois troque o e-mail em `10_tornar_admin.sql` e rode para virar admin.
-6. (Opcional) Arquivos enviados pelo Supabase Storage: crie o bucket privado `arquivos` e uma policy de leitura;
+6. Rode `11_cadastro_google.sql` (login com Google e "cadastro concluído") — **antes** de publicar a versão
+   do app que tem o botão do Google. Veja a seção 5.
+7. (Opcional) Arquivos enviados pelo Supabase Storage: crie o bucket privado `arquivos` e uma policy de leitura;
    ou simplesmente cadastre links (Drive, Figma...) pela tela do projeto — funciona sem Storage.
 
 Se mudar um preço no site (`js/data.js`), mude também em `sql/02_catalogo.sql` e rode de novo:
@@ -142,12 +145,64 @@ no `.env.local` e reinicie. Sem isso, a confirmação funciona pela volta/botão
 
 Cada `git push` na branch principal publica sozinho; cada branch/PR ganha uma URL de preview.
 
+## 5. Login com Google
+
+O botão **Continuar com Google** (em "Entrar" e em "Criar conta") usa o OAuth do próprio Supabase
+(`signInWithOAuth`): a sessão é a mesma do login por e-mail, e nenhum segredo fica no navegador.
+
+**Regra:** ter sessão do Google não é ter cadastro. Toda página interna (`protegerPagina()` em `js/app.js`)
+e as rotas `/api/solicitacoes` e `/api/checkout` exigem `profiles.cadastro_concluido_em` preenchido.
+Quem não concluiu vai para `completar-cadastro.html`. Só o banco grava esse campo, pela função
+`concluir_cadastro()`, depois de validar nome e aceite dos termos (os mesmos obrigatórios do cadastro por e-mail).
+
+### 5.1 Banco
+Rode `sql/11_cadastro_google.sql` no SQL Editor. Ele marca como concluídas **uma única vez** as contas que já
+existiam (cadastro por e-mail e admins), então ninguém antigo é bloqueado. Pode rodar de novo sem efeito.
+
+### 5.2 Google Cloud (credenciais OAuth)
+1. console.cloud.google.com → crie ou escolha um projeto.
+2. **Google Auth Platform → Branding** (tela de consentimento): nome do app "CMK COGIT", e-mail de suporte,
+   links da Política de Privacidade e dos Termos do site. Em **Authorized domains** adicione `cmkcogit.com.br`
+   e `SEU-PROJETO.supabase.co`.
+3. **Audience**: tipo **External** → **Publish app** (em "Testing" só os e-mails de teste conseguem entrar).
+4. **Data access**: só os escopos básicos `openid`, `.../auth/userinfo.email` e `.../auth/userinfo.profile`
+   (não exigem verificação do Google).
+5. **Clients → Create client → Web application**:
+   - Authorized JavaScript origins: `https://app.cmkcogit.com.br` e `http://localhost:3000`
+   - Authorized redirect URIs: `https://SEU-PROJETO.supabase.co/auth/v1/callback`
+     (é a "Callback URL" que aparece no Supabase, passo 5.3)
+6. Copie o **Client ID** e o **Client secret**. O secret vai **só** no painel do Supabase — nunca no
+   código, no `.env.local` nem na Vercel.
+
+### 5.3 Supabase
+1. **Authentication → Sign In / Providers → Google**: ligue, cole Client ID e Client secret, salve.
+2. **Authentication → URL Configuration**: Site URL `https://app.cmkcogit.com.br`; Redirect URLs
+   `https://app.cmkcogit.com.br/**` e `http://localhost:3000/**` (os mesmos do passo 1.3; o app volta
+   para `/login.html`). Para testar em previews da Vercel, acrescente a URL do preview com `/**`.
+3. Deixe a vinculação automática de identidades como está (padrão) e "Allow manual linking" desligado:
+   o Supabase só junta o Google a uma conta de e-mail existente quando o e-mail está **confirmado**; o app
+   não junta contas por conta própria.
+
+Não é preciso mudar variáveis de ambiente nem o `vercel.json`.
+
+### 5.4 Como testar
+1. **Criar conta → Continuar com Google** com uma conta nova → cai em "Concluir cadastro" com nome e e-mail
+   do Google → tente concluir sem aceitar os termos (bloqueia) → digite o WhatsApp, espere "Rascunho salvo",
+   feche a aba → abra `/projetos.html` direto: volta para "Concluir cadastro" com o WhatsApp salvo →
+   aceite e conclua → abre a plataforma.
+2. **Entrar → Continuar com Google** com essa mesma conta → vai direto para o início (sem perfil duplicado:
+   `select email, count(*) from profiles group by 1 having count(*) > 1;` deve voltar vazio).
+3. Clique em Continuar com Google e **cancele** na tela do Google → volta ao login com aviso.
+4. Entre com **e-mail e senha** numa conta antiga → entra normalmente.
+5. Entre como **admin** → menus de admin continuam aparecendo.
+
 ## Segurança — o que já está garantido
 
 - O valor cobrado vem sempre do banco (`catalogo_precos` / valor definido pelo admin); preço enviado pelo navegador é ignorado.
 - Confirmação só depois de consultar o pagamento na API do Mercado Pago, conferindo cobrança (`external_reference`), valor e moeda. Valor diferente não libera nada e fica registrado.
 - Webhook com assinatura `x-signature` validada quando enviada; avisos repetidos não duplicam nada.
-- RLS: cada cliente só vê o que é dele; cliente não cria/altera cobranças nem projetos; ninguém vira admin pelo cadastro.
+- RLS: cada cliente só vê o que é dele; cliente não cria/altera cobranças nem projetos; ninguém vira admin pelo cadastro (nem pelo Google).
+- Cadastro concluído só pelo banco (`concluir_cadastro`); o cliente só consegue alterar nome e telefone do próprio perfil.
 - A `service_role` e o token do Mercado Pago ficam só no servidor; `/config.js` entrega apenas a chave pública (anon).
 - Uma cobrança pendente por solicitação; dois cliques em "Pagar" reaproveitam o mesmo link.
 

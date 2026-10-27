@@ -19,7 +19,8 @@ const USUARIOS = { 'tok-ana': { id: 'aaaaaaaa-0000-4000-8000-000000000001', emai
 let banco, mp, seq;
 
 beforeEach(() => {
-  banco = { solicitacoes: [], pagamentos: [], projetos: [], profiles: [], catalogo_precos: catalogo, pagamento_eventos: [] };
+  const perfis = Object.values(USUARIOS).map((u) => ({ id: u.id, cadastro_concluido_em: '2026-01-01T00:00:00Z' }));
+  banco = { solicitacoes: [], pagamentos: [], projetos: [], profiles: perfis, catalogo_precos: catalogo, pagamento_eventos: [] };
   mp = { prefs: [], pagamentos: [] };
   seq = 0;
 });
@@ -141,6 +142,26 @@ function mpPagou(pagamentoId, valor, status = 'approved', id = 1000 + mp.pagamen
 test('sem login: 401', async () => {
   const r = await chamar('solicitacoes', { corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }]) } });
   assert.equal(r.status, 401);
+});
+
+test('cadastro incompleto (ex.: entrou pelo Google e não concluiu): 403 e nada é gravado', async () => {
+  banco.profiles.find((p) => p.id === USUARIOS['tok-ana'].id).cadastro_concluido_em = null;
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }]) } });
+  assert.equal(r.status, 403);
+  assert.equal(r.json.codigo, 'cadastro_incompleto');
+  assert.equal(banco.solicitacoes.length, 0);
+
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: crypto.randomUUID() } });
+  assert.equal(c.status, 403);
+  assert.equal(c.json.codigo, 'cadastro_incompleto');
+  assert.equal(mp.prefs.length, 0);
+});
+
+test('logado sem perfil: 403 (não libera por falta de dado)', async () => {
+  banco.profiles = banco.profiles.filter((p) => p.id !== USUARIOS['tok-bia'].id);
+  const r = await chamar('solicitacoes', { token: 'tok-bia', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }]) } });
+  assert.equal(r.status, 403);
+  assert.equal(banco.solicitacoes.length, 0);
 });
 
 test('modelo pronto: salva com preço do servidor, recarregar não duplica, paga e confirma pela volta do checkout', async () => {

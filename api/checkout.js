@@ -3,7 +3,7 @@
 // Cria (ou reaproveita) a cobrança e a preferência do Mercado Pago e devolve o
 // link de pagamento. O VALOR SEMPRE vem do banco, nunca do navegador.
 import { criarDb } from '../lib/supabase.js';
-import { json, erro, lerCorpo, exigirUsuario, registrarErro, UUID, urlApp, urlPublica } from '../lib/http.js';
+import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID, urlApp, urlPublica } from '../lib/http.js';
 import { criarPreferencia, linkDaPreferencia } from '../lib/mercadopago.js';
 import { texto } from '../lib/selecao.js';
 
@@ -16,6 +16,7 @@ export default async function handler(req, res) {
 
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
+  if (!(await exigirCadastroCompleto(usuario, res, db))) return;
 
   let corpo;
   try { corpo = await lerCorpo(req, 2000); } catch { return erro(res, 400, 'Requisição inválida.'); }
