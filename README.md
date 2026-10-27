@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10` |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10` e o `11` |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -42,11 +42,13 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | Página | Quem | O que faz |
 |---|---|---|
 | `login.html` | todos | Entrar, criar conta, recuperar senha (mostra a solução trazida do site) |
-| `inicio.html` | cliente | Resumo, "aguardando sua decisão", progresso dos projetos |
+| `inicio.html` | cliente | Botão "Montar nova solução", resumo, atualizações dos projetos (notificações), próximo passo, dicas de funcionalidades com preço (e faixa de oferta no topo) e suporte |
 | `continuar.html` | cliente | Minhas solicitações: recebe a solução do site, pagar ou aguardar validação |
 | `pagamentos.html` | cliente | Cobranças, pagar, "Já paguei — verificar" |
-| `projetos.html` | cliente | Sites/soluções adquiridos com % de progresso e previsão de entrega |
-| `projeto.html?id=...` | cliente/admin | Tudo sobre o produto: etapas, prazo, domínio, pendências, arquivos, funcionalidades, pagamentos. Admin avança etapa, muda status/previsão/domínio, cria pendências e arquivos |
+| `projetos.html` | cliente | Sites/soluções adquiridos com % de progresso, previsão de entrega e atalho para o repositório |
+| `projeto.html?id=...` | cliente/admin | Tudo sobre o produto: etapas, prazo, domínio, pendências, repositório, funcionalidades, pagamentos. Admin avança etapa, muda status/previsão/domínio e cria pendências |
+| `projeto.html?id=...#repositorio` | cliente/admin | Repositório do projeto: a equipe envia código e entregas, o cliente envia documentação (até 50 MB por arquivo); cada lado é avisado |
+| `perfil.html` | cliente | Nome, WhatsApp, troca de e-mail (com confirmação), troca de senha e "sair de todos os dispositivos" |
 | `funcionalidades.html` | cliente | Adquirir nova funcionalidade para um projeto e pagar no Mercado Pago |
 | `admin.html` | admin | Validar solicitações sob medida (definir valor) e avisos do Mercado Pago |
 | `admin-clientes.html` | admin | Cada cliente: o que comprou, quanto pagou/deve, progresso de cada projeto |
@@ -77,8 +79,11 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
 4. **Authentication → Providers → Email**: deixe "Confirm email" ligado (recomendado). O cliente
    precisa abrir o link de confirmação **no mesmo navegador** para a solução montada continuar com ele.
 5. Cadastre-se no app (passo 3), depois troque o e-mail em `10_tornar_admin.sql` e rode para virar admin.
-6. (Opcional) Arquivos enviados pelo Supabase Storage: crie o bucket privado `arquivos` e uma policy de leitura;
-   ou simplesmente cadastre links (Drive, Figma...) pela tela do projeto — funciona sem Storage.
+6. Rode `11_repositorio_notificacoes_perfil.sql`. Ele cria o bucket privado `arquivos` no Storage (repositório
+   de cada projeto, pastas `<projeto>/equipe` e `<projeto>/cliente`), a tabela `notificacoes` com os avisos
+   automáticos (etapa avançou, nova previsão, arquivo novo, pendência, funcionalidade paga/entregue) e mantém
+   o e-mail do perfil igual ao do login quando o cliente troca de e-mail.
+   Sem o `11`, o app continua funcionando, só sem notificações e sem envio de arquivos.
 
 Se mudar um preço no site (`js/data.js`), mude também em `sql/02_catalogo.sql` e rode de novo:
 **quem decide o valor cobrado é o banco**, não o navegador.

@@ -34,6 +34,8 @@
   select.innerHTML = meus.map((p) => `<option value="${esc(p.id)}">${esc(p.nome)}${p.codigo ? ' (' + esc(p.codigo) + ')' : ''}</option>`).join('');
   const pedido = new URLSearchParams(window.location.search).get('projeto');
   if (pedido && meus.some((p) => p.id === pedido)) select.value = pedido;
+  // vinda de uma dica do Início: destaca a funcionalidade sugerida
+  const destaque = new URLSearchParams(window.location.search).get('f');
   select.addEventListener('change', render);
   await render();
 
@@ -54,13 +56,16 @@
         ? '<p><strong>Já contratada neste projeto.</strong></p>'
         : `<p><button type="button" data-adquirir="${esc(f.id)}" data-nome="${esc(f.nome)}" data-preco="${esc(f.preco)}">
              ${st === 'aguardando' ? 'Continuar pagamento' : 'Adquirir e pagar'}</button></p>`;
-      return `<article>
+      return `<article${f.id === destaque ? ' aria-current="true"' : ''}>
           <h2>${esc(f.nome)}</h2>
           ${f.descricao ? `<p>${esc(f.descricao)}</p>` : ''}
           <p>Investimento: <strong>${brl(f.preco)}</strong></p>
           ${acao}
         </article><hr>`;
     }).join('') : '<p>Nenhuma funcionalidade disponível no momento.</p>';
+
+    const sugerida = lista.querySelector('article[aria-current=true]');
+    if (sugerida) sugerida.scrollIntoView({ block: 'center' });
 
     lista.querySelectorAll('[data-adquirir]').forEach((b) => b.addEventListener('click', async () => {
       if (!window.confirm(`Adquirir "${b.dataset.nome}" por ${brl(b.dataset.preco)} para este projeto? Você será levado ao Mercado Pago.`)) return;
