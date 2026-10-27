@@ -32,9 +32,19 @@
       <ul id="lista-pendencias"></ul>
     </section>
 
-    <section>
-      <h2>Arquivos</h2>
-      <ul id="lista-arquivos"></ul>
+    <section id="repositorio">
+      <h2>Repositório do projeto</h2>
+      <p>O código e as entregas da CMK COGIT ficam aqui, junto com os documentos que você manda para a equipe (logo, textos, fotos, acessos, contratos...).</p>
+      <h3>Enviados pela CMK COGIT</h3>
+      <ul id="lista-arquivos-equipe"></ul>
+      <h3 id="titulo-arquivos-cliente">Enviados por você</h3>
+      <ul id="lista-arquivos-cliente"></ul>
+      <form id="form-upload">
+        <h3 id="titulo-upload">Enviar arquivos para a equipe</h3>
+        <p><label for="up-arquivo">Arquivos (até 50 MB cada)</label><br><input type="file" id="up-arquivo" multiple required></p>
+        <p><label for="up-descricao">Descrição (opcional)</label><br><input type="text" id="up-descricao" maxlength="300" placeholder="Ex.: logo em alta resolução, textos da página Sobre"></p>
+        <button type="submit">Enviar</button>
+      </form>
     </section>
 
     <section>

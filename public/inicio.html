@@ -15,7 +15,15 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1 id="saudacao">Olá!</h1>
+    <aside id="oferta" aria-labelledby="oferta-titulo" hidden></aside>
+
+    <header id="cabecalho-inicio">
+      <div>
+        <h1 id="saudacao">Olá!</h1>
+        <p>Acompanhe seus projetos, pagamentos e novidades em um só lugar.</p>
+      </div>
+      <a id="btn-nova-solucao" href="#">Montar nova solução</a>
+    </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
@@ -26,14 +34,34 @@
       </ul>
     </section>
 
+    <section id="secao-notificacoes" hidden>
+      <h2>Atualizações dos seus projetos</h2>
+      <p><button type="button" id="marcar-lidas" hidden>Marcar todas como lidas</button></p>
+      <ul id="lista-notificacoes"></ul>
+    </section>
+
     <section>
       <h2>Próximo passo</h2>
       <div id="proximo-passo"></div>
     </section>
 
-    <section>
-      <h2>Precisa de ajuda?</h2>
-      <a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Falar conosco pelo WhatsApp</a>
+    <section id="secao-dicas" hidden>
+      <h2>Dicas para o seu site vender mais</h2>
+      <p id="dicas-intro"></p>
+      <div id="lista-dicas"></div>
+    </section>
+
+    <section id="secao-suporte">
+      <h2>Suporte</h2>
+      <p>Estamos junto com você do projeto à publicação — e depois dela.</p>
+      <ul id="lista-suporte">
+        <li><a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Falar conosco pelo WhatsApp</a>
+          <small>Dúvidas, ajustes e suporte do seu site.</small></li>
+        <li><a id="link-repositorio" href="projetos.html">Enviar documentos e acessar arquivos</a>
+          <small>Repositório de cada projeto: código, entregas e o que você mandar para a equipe.</small></li>
+        <li><a href="perfil.html">Meu perfil</a>
+          <small>Altere nome, WhatsApp, e-mail e senha.</small></li>
+      </ul>
     </section>
   </main>
 

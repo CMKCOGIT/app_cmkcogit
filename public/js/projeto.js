@@ -1,8 +1,9 @@
 // =====================================================================
 // projeto.js — tudo sobre um projeto: projeto.html?id=<uuid>
-// Cliente: progresso, etapas, prazo, pendências, arquivos, funcionalidades
-// e pagamentos. Admin: além disso, avança etapa, muda status/previsão/domínio
-// e adiciona pendências e arquivos.
+// Cliente: progresso, etapas, prazo, pendências, repositório (baixa o que a
+// equipe enviou e envia documentos), funcionalidades e pagamentos.
+// Admin: além disso, avança etapa, muda status/previsão/domínio, adiciona
+// pendências e envia arquivos/links ao repositório.
 // =====================================================================
 (async function () {
   const perfil = await protegerPagina();
@@ -19,7 +20,9 @@
 
   let projeto = null;
   await carregar();
+  if (projeto) prepararRepositorio();
   if (projeto && admin) prepararAdmin();
+  if (projeto && window.location.hash === '#repositorio') document.getElementById('repositorio').scrollIntoView();
 
   async function carregar() {
     const [proj, etapas, pend, arqs, funcs, pags] = await Promise.all([
@@ -95,19 +98,42 @@
   }
 
   async function renderArquivos(arqs) {
-    const ul = document.getElementById('lista-arquivos');
-    if (!arqs.length) { ul.innerHTML = '<li>Nenhum arquivo ainda.</li>'; return; }
     const itens = await Promise.all(arqs.map(async (a) => {
       let href = null;
       if (a.url && /^https?:\/\//i.test(a.url)) href = a.url;
       else if (a.storage_path) {
         // arquivo no Supabase Storage (bucket "arquivos"): link temporário de 1 hora
-        const { data } = await db.storage.from('arquivos').createSignedUrl(a.storage_path, 3600);
+        const { data } = await db.storage.from('arquivos').createSignedUrl(a.storage_path, 3600, { download: a.nome });
         href = data && data.signedUrl;
       }
-      return `<li>${href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(a.nome)}</a>` : esc(a.nome)} <small>${fmtData(a.created_at)}</small></li>`;
+      const podeApagar = admin || (a.origem === 'cliente' && a.enviado_por === perfil.id);
+      return { origem: a.origem || 'equipe', html: `<li>
+        ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(a.nome)}</a>` : esc(a.nome)}
+        <small>${fmtData(a.created_at)}${a.tamanho ? ' · ' + fmtTamanho(a.tamanho) : ''}</small>
+        ${a.descricao ? '<br>' + esc(a.descricao) : ''}
+        ${podeApagar ? `<button type="button" data-apagar-arquivo="${esc(a.id)}">Excluir</button>` : ''}
+      </li>` };
     }));
-    ul.innerHTML = itens.join('');
+    const lista = (origem, vazio) => itens.filter((i) => i.origem === origem).map((i) => i.html).join('') || `<li>${vazio}</li>`;
+    document.getElementById('lista-arquivos-equipe').innerHTML =
+      lista('equipe', 'Nada por aqui ainda. Código, layouts e entregas aparecem assim que a equipe enviar.');
+    document.getElementById('lista-arquivos-cliente').innerHTML =
+      lista('cliente', admin ? 'O cliente ainda não enviou arquivos.' : 'Você ainda não enviou arquivos.');
+
+    document.querySelectorAll('[data-apagar-arquivo]').forEach((b) => b.addEventListener('click', async () => {
+      const a = arqs.find((x) => x.id === b.dataset.apagarArquivo);
+      if (!a || !window.confirm(`Excluir "${a.nome}" do repositório?`)) return;
+      b.disabled = true;
+      mostrarErro('');
+      if (a.storage_path) {
+        const { error } = await db.storage.from('arquivos').remove([a.storage_path]);
+        if (error) { mostrarErro('Não foi possível excluir: ' + error.message); b.disabled = false; return; }
+      }
+      const { error } = await db.from('arquivos').delete().eq('id', a.id);
+      if (error) { mostrarErro('Não foi possível excluir: ' + error.message); b.disabled = false; return; }
+      avisar('Arquivo excluído.');
+      await carregar();
+    }));
   }
 
   function renderFuncionalidades(funcs) {
@@ -125,6 +151,46 @@
       <li>${esc(p.descricao)} — ${brl(p.valor)} — ${esc(rotulo('pagamento', p.status))}
         ${p.status === 'pago' ? ' em ' + fmtData(p.pago_em) : ''}${p.metodo ? ' (' + esc(rotulo('metodo', p.metodo)) + ')' : ''}</li>`).join('')
       : '<li>Nenhum pagamento ligado a este projeto.</li>';
+  }
+
+  // ---------------- repositório: envio de arquivos ----------------
+  // Caminho no bucket: <projeto>/<equipe|cliente>/<data>-<nome>; o Storage confere a pasta (sql/11)
+  function prepararRepositorio() {
+    const origem = admin ? 'equipe' : 'cliente';
+    if (admin) {
+      document.getElementById('titulo-arquivos-cliente').textContent = 'Enviados pelo cliente';
+      document.getElementById('titulo-upload').textContent = 'Enviar arquivos para o cliente (código, layouts, entregas)';
+    }
+    document.getElementById('form-upload').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      mostrarErro('');
+      const arquivos = [...document.getElementById('up-arquivo').files];
+      if (!arquivos.length) return;
+      const grande = arquivos.find((f) => f.size > LIMITE_ARQUIVO);
+      if (grande) return mostrarErro(`"${grande.name}" passa de 50 MB. Para arquivos maiores, envie um link (Drive, WeTransfer) pelo WhatsApp.`);
+      const descricao = document.getElementById('up-descricao').value.trim() || null;
+      const botao = e.target.querySelector('button');
+      botao.disabled = true;
+      let enviados = 0;
+      for (const f of arquivos) {
+        avisar(`Enviando ${enviados + 1} de ${arquivos.length}: ${f.name}...`);
+        const caminho = `${id}/${origem}/${Date.now()}-${nomeSeguro(f.name)}`;
+        const up = await db.storage.from('arquivos').upload(caminho, f, { contentType: f.type || 'application/octet-stream' });
+        if (up.error) { mostrarErro(`Não foi possível enviar "${f.name}": ${up.error.message}`); break; }
+        const { error } = await db.from('arquivos').insert({
+          projeto_id: id, nome: f.name, storage_path: caminho, origem, enviado_por: perfil.id, descricao, tamanho: f.size
+        });
+        if (error) {
+          await db.storage.from('arquivos').remove([caminho]);
+          mostrarErro(`Não foi possível registrar "${f.name}": ${error.message}`);
+          break;
+        }
+        enviados++;
+      }
+      botao.disabled = false;
+      avisar(enviados ? `${enviados} ${enviados === 1 ? 'arquivo enviado' : 'arquivos enviados'}. ${admin ? 'O cliente foi avisado.' : 'A equipe foi avisada.'}` : '');
+      if (enviados) { e.target.reset(); await carregar(); }
+    });
   }
 
   // ---------------- admin ----------------
@@ -170,7 +236,9 @@
       e.preventDefault();
       const url = document.getElementById('arq-url').value.trim();
       if (!/^https:\/\//i.test(url)) return mostrarErro('Use um link começando com https://');
-      const { error } = await db.from('arquivos').insert({ projeto_id: id, nome: document.getElementById('arq-nome').value.trim(), url });
+      const { error } = await db.from('arquivos').insert({
+        projeto_id: id, nome: document.getElementById('arq-nome').value.trim(), url, origem: 'equipe', enviado_por: perfil.id
+      });
       if (error) return mostrarErro('Não foi possível adicionar: ' + error.message);
       e.target.reset();
       avisar('Arquivo adicionado.');
@@ -178,3 +246,17 @@
     });
   }
 })();
+
+const LIMITE_ARQUIVO = 50 * 1024 * 1024;
+
+function fmtTamanho(bytes) {
+  const n = Number(bytes);
+  if (n < 1024 * 1024) return Math.max(1, Math.round(n / 1024)) + ' KB';
+  return (n / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
+}
+
+// Nome aceito pelo Storage: sem acentos, espaços ou símbolos
+function nomeSeguro(nome) {
+  return String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w.-]+/g, '-').replace(/-+/g, '-').slice(-100) || 'arquivo';
+}

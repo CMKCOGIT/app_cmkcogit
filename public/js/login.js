@@ -87,13 +87,7 @@
   }
 
   const telefone = document.getElementById('cad-telefone');
-  telefone.addEventListener('input', () => {
-    const d = telefone.value.replace(/\D/g, '').slice(0, 11);
-    if (d.length > 10) telefone.value = '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
-    else if (d.length > 6) telefone.value = '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
-    else if (d.length > 2) telefone.value = '(' + d.slice(0, 2) + ') ' + d.slice(2);
-    else telefone.value = d;
-  });
+  telefone.addEventListener('input', () => { telefone.value = formatarTelefone(telefone.value); });
 
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();

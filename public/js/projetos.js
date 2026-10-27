@@ -29,6 +29,7 @@
       <p>Status: ${esc(rotulo('projeto', p.status_projeto))} · Pagamento: ${esc(rotulo('status_pagamento', p.status_pagamento))}
          ${p.previsao_entrega && p.status_projeto !== 'concluido' ? ' · Previsão de entrega: <strong>' + fmtData(p.previsao_entrega) + '</strong>' : ''}</p>
       <p><a href="projeto.html?id=${encodeURIComponent(p.id)}">Ver tudo sobre este projeto</a> ·
+         <a href="projeto.html?id=${encodeURIComponent(p.id)}#repositorio">Acessar repositório</a> ·
          <a href="funcionalidades.html?projeto=${encodeURIComponent(p.id)}">Adquirir nova funcionalidade</a></p>
     </article>
     <hr>`;
