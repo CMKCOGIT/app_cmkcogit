@@ -61,6 +61,14 @@ function fmtData(data) {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(data) ? new Date(data + 'T00:00:00') : new Date(data);
   return d.toLocaleDateString('pt-BR');
 }
+// (17) 98156-8889 enquanto digita
+function formatarTelefone(valor) {
+  const d = String(valor || '').replace(/\D/g, '').slice(0, 11);
+  if (d.length > 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+  if (d.length > 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+  if (d.length > 2) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+  return d;
+}
 function fmtDataHora(data) {
   return data ? new Date(data).toLocaleString('pt-BR') : '-';
 }
@@ -228,7 +236,7 @@ async function getPerfil() {
   const sessao = await getSessao();
   if (!sessao) return null;
   const consultar = () => db.from('profiles')
-    .select('id, nome, email, telefone, role, aceite_termos_em, cadastro_concluido_em')
+    .select('id, nome, email, telefone, role, created_at, aceite_termos_em, cadastro_concluido_em')
     .eq('id', sessao.user.id).maybeSingle();
   let { data, error } = await consultar();
   if (!error && !data) {
@@ -331,7 +339,8 @@ function montarMenu(perfil) {
     { href: 'continuar.html', texto: 'Minhas solicitações' },
     { href: 'pagamentos.html', texto: 'Pagamentos' },
     { href: 'projetos.html', texto: 'Meus projetos' },
-    { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade' }
+    { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade' },
+    { href: 'perfil.html', texto: 'Meu perfil' }
   ];
   if (perfil && perfil.role === 'admin') {
     itens.push({ href: 'admin.html', texto: 'Admin · Solicitações' });
@@ -346,19 +355,24 @@ function montarMenu(perfil) {
       ${itens.map((i) => `<li><a href="${i.href}"${i.href === atual ? ' aria-current="page"' : ''}>${i.texto}</a></li>`).join('')}
       <li><a href="${esc(urlSite('monte-sua-solucao.html'))}">Montar nova solução (site)</a></li>
     </ul>
-    <p>${esc(perfil?.nome || '')} <small>${esc(perfil?.email || '')}</small>
+    <p><a href="perfil.html" title="Meu perfil">${esc(perfil?.nome || 'Meu perfil')}</a> <small>${esc(perfil?.email || '')}</small>
       <button type="button" id="btn-sair">Sair</button></p>
     <hr>`;
   document.getElementById('btn-sair').addEventListener('click', sair);
+  if (perfil) mostrarNaoLidas(perfil.id);
 }
 
-// WhatsApp no formato (00) 00000-0000 enquanto digita
-function mascararTelefone(input) {
-  const d = input.value.replace(/\D/g, '').slice(0, 11);
-  if (d.length > 10) input.value = '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
-  else if (d.length > 6) input.value = '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
-  else if (d.length > 2) input.value = '(' + d.slice(0, 2) + ') ' + d.slice(2);
-  else input.value = d;
+// Contador de notificações não lidas ao lado de "Início"
+async function mostrarNaoLidas(usuarioId) {
+  const { count, error } = await db.from('notificacoes')
+    .select('id', { count: 'exact', head: true }).eq('usuario_id', usuarioId).eq('lida', false);
+  const link = document.querySelector('#menu a[href="inicio.html"]');
+  if (!link) return;
+  const antigo = link.querySelector('[data-contador]');
+  if (antigo) antigo.remove();
+  if (error || !count) return;
+  link.insertAdjacentHTML('beforeend',
+    `<span data-contador aria-label="${count} ${count === 1 ? 'notificação nova' : 'notificações novas'}">${count > 9 ? '9+' : count}</span>`);
 }
 
 // Mensagens de status/erro padrão das páginas (<p id="aviso"> e <p id="erro">)

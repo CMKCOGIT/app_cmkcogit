@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Meu perfil | CMK COGIT</title>
+  <meta name="theme-color" content="#0F1B33">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/images/favicon-64.png">
+  <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/css/plataforma.css">
+</head>
+<body class="app">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <main id="conteudo">
+    <h1>Meu perfil</h1>
+    <p>Seus dados de contato e de acesso à plataforma.</p>
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <section>
+      <h2>Dados pessoais</h2>
+      <form id="form-dados">
+        <p><label for="perfil-nome">Nome</label><br>
+          <input type="text" id="perfil-nome" autocomplete="name" maxlength="120" required></p>
+        <p><label for="perfil-telefone">WhatsApp (com DDD)</label><br>
+          <input type="tel" id="perfil-telefone" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000"></p>
+        <button type="submit">Salvar dados</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>E-mail de acesso</h2>
+      <p>E-mail atual: <strong id="email-atual">-</strong></p>
+      <form id="form-email">
+        <p><label for="novo-email">Novo e-mail</label><br>
+          <input type="email" id="novo-email" autocomplete="email" maxlength="200" required></p>
+        <button type="submit">Trocar e-mail</button>
+      </form>
+      <p><small>Enviamos um link de confirmação para o novo endereço. A troca só vale depois que você clicar nele.</small></p>
+    </section>
+
+    <section>
+      <h2>Senha</h2>
+      <form id="form-senha">
+        <p><label for="senha-atual">Senha atual</label><br>
+          <input type="password" id="senha-atual" autocomplete="current-password" required></p>
+        <p><label for="senha-nova">Nova senha (mínimo 8 caracteres)</label><br>
+          <input type="password" id="senha-nova" autocomplete="new-password" minlength="8" required></p>
+        <p><label for="senha-nova2">Repita a nova senha</label><br>
+          <input type="password" id="senha-nova2" autocomplete="new-password" minlength="8" required></p>
+        <button type="submit">Alterar senha</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Segurança da conta</h2>
+      <p>Cliente desde <strong id="cliente-desde">-</strong>.</p>
+      <p>Esqueceu algum aparelho conectado? Saia de todos os lugares onde sua conta está aberta.</p>
+      <p><button type="button" id="sair-todos">Sair de todos os dispositivos</button></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/perfil.js"></script>
+</body>
+</html>

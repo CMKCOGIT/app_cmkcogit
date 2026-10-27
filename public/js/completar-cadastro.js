@@ -49,7 +49,7 @@
   document.getElementById('comp-email').value = perfil.email || sessao.user.email || '';
   campoNome.value = perfil.nome || '';
   campoFone.value = perfil.telefone || '';
-  mascararTelefone(campoFone);
+  campoFone.value = formatarTelefone(campoFone.value);
   const jaAceitou = Boolean(perfil.aceite_termos_em);
   if (jaAceitou) {
     campoAceite.checked = true;
@@ -98,7 +98,7 @@
   }
 
   campoNome.addEventListener('input', aoDigitar);
-  campoFone.addEventListener('input', () => { mascararTelefone(campoFone); aoDigitar(); });
+  campoFone.addEventListener('input', () => { campoFone.value = formatarTelefone(campoFone.value); aoDigitar(); });
   campoNome.addEventListener('change', salvarRascunho);
   campoFone.addEventListener('change', salvarRascunho);
   campoAceite.addEventListener('change', mostrarPendencias);

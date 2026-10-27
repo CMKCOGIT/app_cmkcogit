@@ -162,7 +162,7 @@
   window.addEventListener('pageshow', (e) => { if (e.persisted) restaurarBotoesGoogle(); });
 
   const telefone = document.getElementById('cad-telefone');
-  telefone.addEventListener('input', () => mascararTelefone(telefone));
+  telefone.addEventListener('input', () => { telefone.value = formatarTelefone(telefone.value); });
 
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();

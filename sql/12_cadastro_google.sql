@@ -1,7 +1,7 @@
 -- =====================================================================
--- 11_cadastro_google.sql — login com Google e "cadastro concluído"
+-- 12_cadastro_google.sql — login com Google e "cadastro concluído"
 --
--- Rode DEPOIS do 01..10 e ANTES de publicar a versão do app com o botão
+-- Rode DEPOIS do 01..11 e ANTES de publicar a versão do app com o botão
 -- "Continuar com Google". Pode rodar mais de uma vez.
 --
 -- O que faz:
