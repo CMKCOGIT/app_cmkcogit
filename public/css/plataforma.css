@@ -1300,6 +1300,23 @@ body.acesso > main > p:last-child:has(> a) { margin-top: var(--space-6); text-al
 #pendente p { color: var(--text-secondary); font-size: var(--text-sm); }
 #pendente-resumo ul { margin: var(--space-3) 0; padding-left: var(--space-5); color: var(--ink); font-weight: var(--fw-semibold); }
 #pendente-resumo li::marker { color: var(--purple); }
+/* Concluir cadastro */
+#form-completar .auth-subtitulo { margin-bottom: var(--space-5); color: var(--text-secondary); font-size: var(--text-sm); }
+#pendencias {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border-brand);
+  border-left: 4px solid var(--purple);
+  border-radius: var(--radius-lg);
+  background: var(--lilac-bg);
+  font-size: var(--text-sm);
+}
+#pendencias p { margin: 0; }
+#pendencias ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); }
+#comp-email[readonly] { background: var(--neutral); color: var(--text-secondary); cursor: default; }
+#rascunho { color: var(--text-tertiary); font-size: var(--text-xs); }
+#rascunho:empty { display: none; }
+.completar-sair { margin-top: var(--space-4); text-align: center; }
 /* Entrada (index) e 404: conteúdo curto e centralizado */
 body.acesso.curta > main { text-align: center; }
 body.acesso.curta > main > h1 { margin-bottom: var(--space-3); }
@@ -1387,6 +1404,35 @@ body.acesso .auth-form h2 { margin-bottom: var(--space-1); font-size: var(--text
 .auth-form input:not([type=checkbox]):hover { border-color: var(--border); }
 .auth-form input:not([type=checkbox]):focus { background-color: var(--white); border-color: var(--purple); }
 .auth-form > button[type=submit] { margin-top: var(--space-2); }
+
+/* "Continuar com Google" (padrão de marca do Google: fundo branco, borda, "G" colorido) */
+.btn-google {
+  width: 100%;
+  min-height: 48px;
+  gap: var(--space-3);
+  border-color: var(--border-strong);
+  background: var(--white);
+  color: var(--ink);
+  font-size: var(--text-base);
+}
+.btn-google:hover:not(:disabled) { border-color: var(--ink); background: var(--neutral); color: var(--ink); }
+.btn-google .google-icone { flex: none; }
+.btn-google[aria-busy=true] { cursor: progress; }
+.btn-google[aria-busy=true] .google-icone { animation: google-girar 900ms linear infinite; }
+@keyframes google-girar { to { transform: rotate(360deg); } }
+
+.auth-form > p.auth-separador {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.auth-separador::before,
+.auth-separador::after { content: ''; flex: 1; height: 1px; background: var(--neutral-dark); }
 
 /* Painel da marca */
 .auth-painel {

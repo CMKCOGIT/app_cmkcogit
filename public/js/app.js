@@ -27,6 +27,20 @@ const CFG = window.COGIT_CONFIG || {};
   throw new Error('Configuração incompleta');
 })();
 
+// Erro devolvido pelo login social (ex.: cancelou no Google). Lido ANTES de criar o
+// cliente do Supabase, que também lê a URL ao iniciar.
+const ERRO_RETORNO_AUTH = (function () {
+  const params = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const codigo = params.get('error') || hash.get('error');
+  if (!codigo) return null;
+  return {
+    codigo,
+    detalhe: params.get('error_code') || hash.get('error_code') || '',
+    descricao: params.get('error_description') || hash.get('error_description') || ''
+  };
+})();
+
 const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
@@ -215,27 +229,65 @@ async function getSessao() {
   return data.session;
 }
 
+// Perfil lido do BANCO (RLS: só o próprio). Sem perfil (ex.: o cadastro automático
+// falhou) -> cria pelo garantir_perfil(). Falha de consulta -> lança erro: sem o
+// perfil não dá para saber se o cadastro foi concluído, então nada é liberado.
 async function getPerfil() {
   const sessao = await getSessao();
   if (!sessao) return null;
-  const { data, error } = await db.from('profiles').select('id, nome, email, telefone, role, created_at').eq('id', sessao.user.id).single();
-  if (error) {
-    console.error('Erro ao carregar perfil:', error.message);
-    return { id: sessao.user.id, email: sessao.user.email, nome: '', role: 'cliente' };
+  const consultar = () => db.from('profiles')
+    .select('id, nome, email, telefone, role, created_at, aceite_termos_em, cadastro_concluido_em')
+    .eq('id', sessao.user.id).maybeSingle();
+  let { data, error } = await consultar();
+  if (!error && !data) {
+    const criado = await db.rpc('garantir_perfil');
+    if (criado.error) error = criado.error;
+    else ({ data, error } = await consultar());
+  }
+  if (error || !data) {
+    console.error('Erro ao carregar perfil:', error ? error.message : 'perfil não encontrado');
+    throw new Error('Não foi possível carregar seu cadastro agora. Verifique sua conexão e tente novamente.');
   }
   return data;
 }
 
-// Chame no começo de toda página protegida. Sem login -> vai para o login.
+// Cadastro concluído = gravado no banco por concluir_cadastro() (ou contas antigas).
+const PAGINA_CADASTRO = 'completar-cadastro.html';
+function cadastroConcluido(perfil) {
+  return Boolean(perfil && perfil.cadastro_concluido_em);
+}
+
+// Chame no começo de toda página protegida. Sem login -> vai para o login;
+// cadastro incompleto -> vai para "Concluir cadastro" (replace: o "voltar" não retorna aqui).
 async function protegerPagina() {
   const sessao = await getSessao();
   if (!sessao) {
     window.location.replace('login.html');
     return null;
   }
-  const perfil = await getPerfil();
+  let perfil;
+  try {
+    perfil = await getPerfil();
+  } catch (e) {
+    mostrarFalhaDeAcesso(e.message);
+    return null;
+  }
+  if (!cadastroConcluido(perfil)) {
+    window.location.replace(PAGINA_CADASTRO);
+    return null;
+  }
   montarMenu(perfil);
   return perfil;
+}
+
+// Sem perfil não há página: troca o conteúdo por um aviso com "tentar de novo" e "sair".
+function mostrarFalhaDeAcesso(texto) {
+  const main = document.querySelector('main');
+  if (!main) return;
+  main.innerHTML = `<p id="erro" role="alert">${esc(texto)}</p>
+    <p><button type="button" id="btn-recarregar">Tentar de novo</button> <button type="button" id="btn-sair-falha">Sair</button></p>`;
+  document.getElementById('btn-recarregar').addEventListener('click', () => window.location.reload());
+  document.getElementById('btn-sair-falha').addEventListener('click', sair);
 }
 
 async function sair() {
@@ -260,6 +312,9 @@ async function api(caminho, corpo) {
     throw Object.assign(new Error('Sem conexão. Verifique sua internet e tente novamente.'), { status: 0 });
   }
   const dados = await resp.json().catch(() => ({}));
+  if (resp.status === 403 && dados.codigo === 'cadastro_incompleto') {
+    window.location.replace(PAGINA_CADASTRO);
+  }
   if (!resp.ok || dados.ok === false) {
     throw Object.assign(new Error(dados.erro || 'Não foi possível concluir agora.'), { status: resp.status });
   }
