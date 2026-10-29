@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, o `11` e o `12` |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12` e `13` (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -43,6 +43,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 |---|---|---|
 | `login.html` | todos | Entrar, criar conta (e-mail/senha ou **Continuar com Google**), recuperar senha (mostra a solução trazida do site) |
 | `completar-cadastro.html` | logado com cadastro pendente | Dados obrigatórios antes de liberar a plataforma (nome + aceite dos termos; WhatsApp opcional). Salva rascunho enquanto digita |
+| `admin-inicio.html` | admin | **Início do admin = painel de gestão**: faturamento (vs. período anterior), vendas, ticket médio, conversão, pendentes, mais vendido, o que vendemos, gráficos, top 5 clientes, atividades, prazos e exportar CSV. Filtro: hoje, 7 dias, 30 dias, mês atual ou personalizado |
 | `inicio.html` | cliente | Botão "Montar nova solução", resumo, atualizações dos projetos (notificações), próximo passo, dicas de funcionalidades com preço (e faixa de oferta no topo) e suporte |
 | `continuar.html` | cliente | Minhas solicitações: recebe a solução do site, pagar ou aguardar validação |
 | `pagamentos.html` | cliente | Cobranças, pagar, "Já paguei — verificar" |
@@ -51,8 +52,22 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `projeto.html?id=...#repositorio` | cliente/admin | Repositório do projeto: a equipe envia código e entregas, o cliente envia documentação (até 50 MB por arquivo); cada lado é avisado |
 | `perfil.html` | cliente | Nome, WhatsApp, troca de e-mail (com confirmação), troca de senha e "sair de todos os dispositivos" |
 | `funcionalidades.html` | cliente | Adquirir nova funcionalidade para um projeto e pagar no Mercado Pago |
-| `admin.html` | admin | Validar solicitações sob medida (definir valor) e avisos do Mercado Pago |
-| `admin-clientes.html` | admin | Cada cliente: o que comprou, quanto pagou/deve, progresso de cada projeto |
+| `admin.html` | admin | Solicitações: validar o sob medida (definir valor) e avisos do Mercado Pago |
+| `admin-clientes.html` | admin | Clientes: cards ou tabela, busca em tempo real por projeto/código/cliente, filtros rápidos (pago/pendente, em andamento/concluído, atrasado, entrega em 7 dias) e o detalhe de cada projeto, onde o admin atualiza % e status até concluir |
+
+**Cliente × admin.** O admin não compra: o menu dele é só Início (painel), Solicitações, Clientes, Meu perfil e Sair.
+As telas de compra/acompanhamento do cliente (`inicio`, `continuar`, `pagamentos`, `projetos`, `funcionalidades`)
+mandam o admin para `admin-inicio.html` mesmo digitando a URL, e as telas de admin mandam o cliente para o `inicio.html`
+(`protegerPagina()` em `js/app.js`). No servidor, `/api/solicitacoes` e `/api/checkout` recusam admin
+(403 `somente_cliente`), e os dados continuam protegidos pelo RLS.
+
+**Notificações (sino no topo, cliente e admin).** Contador de não lidas, lista e "marcar como lida", pela rota
+`/api/notificacoes` (GET lista; POST `marcar_lida`/`marcar_todas`). Atualiza em tempo real (Supabase Realtime) e a
+cada 45 s como garantia. A notificação é genérica (`notificacoes`: tipo, título, mensagem, destinatário, lida/lida_em,
+data, `metadados`); o servidor cria com `createNotification()` (`lib/notificacoes.js`). O tipo **`compra_oferta`**
+(funcionalidade extra paga) já dispara pelo ponto certo (pagamento confirmado → `notificarCompraOferta`), mas **as
+regras de quando avisar ainda não estão definidas**: ficam em `lib/notificacoes.config.js`,
+`shouldNotifyOnOfferPurchase(event)`, hoje um placeholder desligado (`habilitado: false`, ver os `TODO(regras)`).
 
 **Prazo:** quando um projeto é criado pelo pagamento, a previsão de entrega é calculada pelo tamanho
 (tipo da solução, sob medida, quantidade de soluções e complementos) — função `prazo_estimado_dias` no
@@ -87,6 +102,14 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    Sem o `11`, o app continua funcionando, só sem notificações e sem envio de arquivos.
 7. Rode `12_cadastro_google.sql` (login com Google e "cadastro concluído") — **antes** de publicar a versão
    do app que tem o botão do Google. Veja a seção 5.
+8. Rode `13_painel_admin.sql` **antes** de publicar a versão com o painel de gestão. Ele acrescenta em `projetos`
+   o `progresso` (% definida pelo admin; vazio = calculado pelas etapas, como antes) e o `concluido_em`
+   (preenchido para os já concluídos com a data da última etapa fechada), a função `admin_atualizar_andamento`
+   (100% = concluído, com data registrada), as consultas agregadas do painel (`admin_dashboard` e
+   `admin_vendas_periodo`, que contam só pagamentos **pagos**, no fuso de Brasília) e, nas notificações, `metadados`,
+   `lida_em` e o tempo real.
+9. Opcional, só para ver o sino com dados: `14_seed_notificacoes_teste.sql` (troque o e-mail do cliente de teste
+   dentro dele). Apague depois com a consulta do fim do arquivo.
 
 Se mudar um preço no site (`js/data.js`), mude também em `sql/02_catalogo.sql` e rode de novo:
 **quem decide o valor cobrado é o banco**, não o navegador.
@@ -128,8 +151,11 @@ Roteiro de teste:
 5. Abra **Meus projetos** → o projeto: progresso, 8 etapas e previsão de entrega. Como admin, avance a etapa.
 6. **Adquirir nova funcionalidade** → escolha o projeto → pague → o pedido aparece como "Paga" no projeto.
 7. Repita com **Site Institucional → Sob medida**: fica "Em validação". Entre como admin em
-   **Admin · Solicitações**, defina o valor, e o cliente consegue pagar.
-8. Em **Admin · Clientes e projetos** veja quem comprou o quê. Em **Admin · Solicitações**, a tabela "Últimos avisos do Mercado Pago" mostra tudo que o Mercado Pago informou.
+   **Solicitações**, defina o valor, e o cliente consegue pagar.
+8. Em **Clientes** veja quem comprou o quê; abra um projeto e mude a % e o status (100% conclui). Em **Solicitações**,
+   a tabela "Últimos avisos do Mercado Pago" mostra tudo que o Mercado Pago informou.
+9. No **Início** do admin confira o painel (troque o período, passe o mouse no gráfico, exporte o CSV). Digite
+   `/pagamentos.html` logado como admin: volta para o painel. Logado como cliente, `/admin-clientes.html` volta ao início.
 
 **Webhook no computador (opcional):** o Mercado Pago só chama endereços públicos. Rode um túnel
 (ex.: `cloudflared tunnel --url http://localhost:3000`), coloque o endereço https em `PUBLIC_URL`
@@ -199,7 +225,7 @@ Não é preciso mudar variáveis de ambiente nem o `vercel.json`.
    `select email, count(*) from profiles group by 1 having count(*) > 1;` deve voltar vazio).
 3. Clique em Continuar com Google e **cancele** na tela do Google → volta ao login com aviso.
 4. Entre com **e-mail e senha** numa conta antiga → entra normalmente.
-5. Entre como **admin** → menus de admin continuam aparecendo.
+5. Entre como **admin** → abre o painel de gestão (menu de admin, sem as telas de compra).
 
 ## Segurança — o que já está garantido
 

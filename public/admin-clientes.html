@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="robots" content="noindex">
-  <title>Admin · Clientes e projetos | CMK COGIT</title>
+  <title>Clientes | CMK COGIT</title>
   <meta name="theme-color" content="#0F1B33">
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/images/favicon-64.png">
   <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
@@ -15,22 +15,46 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Admin · Clientes e projetos</h1>
-    <p>Quem é cliente, o que comprou, quanto pagou e em que etapa está cada projeto.</p>
+    <h1>Clientes</h1>
+    <p>Cada cliente, os projetos dele, quanto pagou e em que pé está cada entrega.</p>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <p>
-      <label for="busca">Buscar cliente (nome ou e-mail)</label>
-      <input type="search" id="busca" maxlength="100">
-    </p>
+    <section id="resumo-admin" aria-label="Resumo"></section>
 
-    <section id="resumo-admin"></section>
+    <form id="barra-clientes" role="search" aria-label="Buscar e filtrar clientes">
+      <p id="campo-busca">
+        <label for="busca">Buscar por projeto, código ou cliente</label>
+        <input type="search" id="busca" maxlength="100" placeholder="Ex.: Site Institucional, COG-2026-100, Kaike" autocomplete="off">
+      </p>
+      <div id="filtros-rapidos" role="group" aria-label="Filtros rápidos">
+        <button type="button" data-filtro="pago" data-grupo="pagamento" aria-pressed="false">Pago</button>
+        <button type="button" data-filtro="pendente" data-grupo="pagamento" aria-pressed="false">Pendente</button>
+        <button type="button" data-filtro="andamento" data-grupo="andamento" aria-pressed="false">Em andamento</button>
+        <button type="button" data-filtro="concluido" data-grupo="andamento" aria-pressed="false">Concluído</button>
+        <button type="button" data-filtro="atrasado" data-grupo="prazo" aria-pressed="false">Atrasado</button>
+        <button type="button" data-filtro="prazo7" data-grupo="prazo" aria-pressed="false">Entrega em 7 dias</button>
+      </div>
+      <div id="modo-visao" role="group" aria-label="Visualização">
+        <button type="button" data-visao="cards" aria-pressed="true">Cards</button>
+        <button type="button" data-visao="tabela" aria-pressed="false">Tabela</button>
+      </div>
+    </form>
 
-    <section id="lista-clientes" aria-live="polite">
-      <p>Carregando...</p>
+    <p id="contagem" aria-live="polite"></p>
+
+    <section id="lista-clientes" data-visao="cards" aria-busy="true">
+      <article data-esqueleto></article><article data-esqueleto></article><article data-esqueleto></article>
     </section>
   </main>
+
+  <dialog id="detalhe-cliente" aria-labelledby="detalhe-titulo">
+    <header>
+      <h2 id="detalhe-titulo">Cliente</h2>
+      <button type="button" id="fechar-detalhe" aria-label="Fechar">×</button>
+    </header>
+    <div id="detalhe-conteudo"></div>
+  </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/config.js"></script>

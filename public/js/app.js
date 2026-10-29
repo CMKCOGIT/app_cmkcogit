@@ -107,9 +107,11 @@ function rotulo(grupo, valor) {
   return (ROTULOS[grupo] && ROTULOS[grupo][valor]) || valor || '-';
 }
 
-// Progresso do projeto em %: etapas concluídas de 8 (ou pela etapa atual, se as etapas não vierem)
+// Progresso do projeto em %: o definido pelo admin (sql/13) ou etapas concluídas de 8
+// (ou pela etapa atual, se as etapas não vierem)
 function progressoProjeto(p) {
   if (p.status_projeto === 'concluido') return 100;
+  if (p.progresso != null) return Math.min(100, Math.max(0, Math.round(Number(p.progresso))));
   const etapas = p.projeto_etapas || [];
   if (etapas.length) return Math.round(etapas.filter((e) => e.status === 'concluida').length / etapas.length * 100);
   return Math.round(((p.etapa_atual || 1) - 1) / 8 * 100);
@@ -135,6 +137,40 @@ function valorSolicitacao(s) {
   if (s.tipo_preco === 'free') return 'Gratuito';
   if (Number(s.valor_calculado) > 0) return 'A partir de ' + brl(s.valor_calculado) + ' (confirmado na validação)';
   return 'Definido na validação';
+}
+
+// Só links da própria plataforma (as notificações são geradas pelo banco)
+function linkInterno(link) {
+  return /^[a-z-]+\.html([?#][\w=&%#.-]*)?$/i.test(link || '');
+}
+
+function tempoRelativo(data) {
+  const min = Math.round((Date.now() - new Date(data).getTime()) / 60000);
+  if (min < 1) return 'agora';
+  if (min < 60) return 'há ' + min + ' min';
+  const h = Math.round(min / 60);
+  if (h < 24) return 'há ' + h + ' h';
+  const d = Math.round(h / 24);
+  return d < 7 ? 'há ' + d + (d === 1 ? ' dia' : ' dias') : fmtData(data);
+}
+
+// ---------------------------------------------------------------------
+// Áreas por papel: o admin não compra nada, então as telas de cliente
+// (compra, checkout, "meus" projetos) não existem para ele, e vice-versa.
+// O banco (RLS) e as rotas /api também bloqueiam; isto é a navegação.
+// ---------------------------------------------------------------------
+const INICIO_ADMIN = 'admin-inicio.html';
+const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html'];
+const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html'];
+
+function ehAdmin(perfil) {
+  return Boolean(perfil && perfil.role === 'admin');
+}
+function paginaAtual() {
+  return window.location.pathname.split('/').pop() || 'index.html';
+}
+function paginaInicial(perfil) {
+  return ehAdmin(perfil) ? INICIO_ADMIN : 'inicio.html';
 }
 
 // ---------------------------------------------------------------------
@@ -276,6 +312,16 @@ async function protegerPagina() {
     window.location.replace(PAGINA_CADASTRO);
     return null;
   }
+  const pagina = paginaAtual();
+  if (ehAdmin(perfil) && PAGINAS_SO_CLIENTE.includes(pagina)) {
+    limparPendente(); // solução trazida do site não vale para o admin
+    window.location.replace(INICIO_ADMIN);
+    return null;
+  }
+  if (!ehAdmin(perfil) && PAGINAS_SO_ADMIN.includes(pagina)) {
+    window.location.replace('inicio.html');
+    return null;
+  }
   montarMenu(perfil);
   return perfil;
 }
@@ -298,16 +344,19 @@ async function sair() {
 // ---------------------------------------------------------------------
 // Chamada às funções do servidor (/api/...) com o token do cliente
 // ---------------------------------------------------------------------
-async function api(caminho, corpo) {
+// metodo 'GET': sem corpo (parâmetros vão na URL do caminho)
+async function api(caminho, corpo, metodo = 'POST') {
   const sessao = await getSessao();
   if (!sessao) throw Object.assign(new Error('Sua sessão expirou. Entre novamente.'), { status: 401 });
   let resp;
   try {
-    resp = await fetch('/api/' + caminho, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sessao.access_token },
-      body: JSON.stringify(corpo || {})
-    });
+    resp = await fetch('/api/' + caminho, metodo === 'GET'
+      ? { method: 'GET', headers: { Authorization: 'Bearer ' + sessao.access_token } }
+      : {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sessao.access_token },
+        body: JSON.stringify(corpo || {})
+      });
   } catch (_) {
     throw Object.assign(new Error('Sem conexão. Verifique sua internet e tente novamente.'), { status: 0 });
   }
@@ -330,11 +379,18 @@ async function irParaCheckout(corpo) {
 
 // ---------------------------------------------------------------------
 // Menu (cada página protegida tem <nav id="menu"></nav>)
+// Cliente: telas de compra e acompanhamento. Admin: painel de gestão.
 // ---------------------------------------------------------------------
 function montarMenu(perfil) {
   const nav = document.getElementById('menu');
   if (!nav) return;
-  const itens = [
+  const admin = ehAdmin(perfil);
+  const itens = admin ? [
+    { href: INICIO_ADMIN, texto: 'Início' },
+    { href: 'admin.html', texto: 'Solicitações' },
+    { href: 'admin-clientes.html', texto: 'Clientes' },
+    { href: 'perfil.html', texto: 'Meu perfil' }
+  ] : [
     { href: 'inicio.html', texto: 'Início' },
     { href: 'continuar.html', texto: 'Minhas solicitações' },
     { href: 'pagamentos.html', texto: 'Pagamentos' },
@@ -342,37 +398,162 @@ function montarMenu(perfil) {
     { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade' },
     { href: 'perfil.html', texto: 'Meu perfil' }
   ];
-  if (perfil && perfil.role === 'admin') {
-    itens.push({ href: 'admin.html', texto: 'Admin · Solicitações' });
-    itens.push({ href: 'admin-clientes.html', texto: 'Admin · Clientes e projetos' });
-  }
-  let atual = window.location.pathname.split('/').pop() || 'inicio.html';
-  if (atual === 'projeto.html') atual = 'projetos.html';
+  let atual = paginaAtual();
+  if (atual === 'projeto.html') atual = admin ? 'admin-clientes.html' : 'projetos.html';
 
   nav.innerHTML = `
-    <strong>CMK COGIT</strong> · <span>Plataforma do cliente</span>
+    <strong>CMK COGIT</strong> · <span>${admin ? 'Painel de gestão' : 'Plataforma do cliente'}</span>
+    ${sinoHtml()}
     <ul>
       ${itens.map((i) => `<li><a href="${i.href}"${i.href === atual ? ' aria-current="page"' : ''}>${i.texto}</a></li>`).join('')}
-      <li><a href="${esc(urlSite('monte-sua-solucao.html'))}">Montar nova solução (site)</a></li>
+      ${admin ? '' : `<li><a href="${esc(urlSite('monte-sua-solucao.html'))}" data-externo>Montar nova solução (site)</a></li>`}
     </ul>
     <p><a href="perfil.html" title="Meu perfil">${esc(perfil?.nome || 'Meu perfil')}</a> <small>${esc(perfil?.email || '')}</small>
       <button type="button" id="btn-sair">Sair</button></p>
     <hr>`;
   document.getElementById('btn-sair').addEventListener('click', sair);
-  if (perfil) mostrarNaoLidas(perfil.id);
+  if (perfil) iniciarSino(perfil);
 }
 
-// Contador de notificações não lidas ao lado de "Início"
-async function mostrarNaoLidas(usuarioId) {
-  const { count, error } = await db.from('notificacoes')
-    .select('id', { count: 'exact', head: true }).eq('usuario_id', usuarioId).eq('lida', false);
-  const link = document.querySelector('#menu a[href="inicio.html"]');
-  if (!link) return;
-  const antigo = link.querySelector('[data-contador]');
-  if (antigo) antigo.remove();
-  if (error || !count) return;
-  link.insertAdjacentHTML('beforeend',
-    `<span data-contador aria-label="${count} ${count === 1 ? 'notificação nova' : 'notificações novas'}">${count > 9 ? '9+' : count}</span>`);
+// Contador do sino. Mantido com este nome: o Início do cliente chama depois de
+// "Marcar todas como lidas".
+function mostrarNaoLidas() {
+  return Sino.atualizar();
+}
+
+// ---------------------------------------------------------------------
+// Sino de notificações (cliente e admin): contador de não lidas, lista e
+// "marcar como lida". Dados pela rota /api/notificacoes; atualiza em tempo
+// real (Supabase Realtime, sql/13) e, por garantia, a cada 45 s com a aba visível.
+// ---------------------------------------------------------------------
+const ICONE_SINO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+const INTERVALO_SINO = 45000;
+
+function sinoHtml() {
+  return `<div id="sino">
+      <button type="button" id="btn-sino" aria-expanded="false" aria-controls="painel-sino" aria-label="Notificações">
+        ${ICONE_SINO}<span id="sino-contador" hidden></span>
+      </button>
+      <section id="painel-sino" aria-labelledby="painel-sino-titulo" hidden>
+        <header>
+          <h2 id="painel-sino-titulo">Notificações</h2>
+          <button type="button" id="sino-marcar-todas" hidden>Marcar todas como lidas</button>
+        </header>
+        <ul id="sino-lista" aria-live="polite"><li data-carregando>Carregando...</li></ul>
+      </section>
+    </div>`;
+}
+
+const Sino = {
+  lista: [],
+  naoLidas: 0,
+  disponivel: true,
+  timer: null,
+
+  async atualizar() {
+    if (!this.disponivel || !document.getElementById('btn-sino')) return;
+    try {
+      const r = await api('notificacoes?limite=20', null, 'GET');
+      this.lista = r.notificacoes || [];
+      this.naoLidas = Number(r.nao_lidas) || 0;
+    } catch (e) {
+      if (e.status === 404) this.disponivel = false; // rota ausente: desliga
+      console.warn('Notificações indisponíveis:', e.message);
+      this.renderizar(e.message);
+      return;
+    }
+    this.renderizar();
+  },
+
+  renderizar(falha) {
+    const contador = document.getElementById('sino-contador');
+    const botao = document.getElementById('btn-sino');
+    const ul = document.getElementById('sino-lista');
+    if (!contador || !ul) return;
+    contador.hidden = !this.naoLidas;
+    contador.textContent = this.naoLidas > 99 ? '99+' : String(this.naoLidas);
+    botao.setAttribute('aria-label', this.naoLidas
+      ? `Notificações: ${this.naoLidas} ${this.naoLidas === 1 ? 'não lida' : 'não lidas'}` : 'Notificações');
+    document.getElementById('sino-marcar-todas').hidden = !this.naoLidas;
+
+    if (falha && !this.lista.length) {
+      ul.innerHTML = `<li data-vazio>Não foi possível carregar agora. Tente de novo em instantes.</li>`;
+      return;
+    }
+    if (!this.lista.length) {
+      ul.innerHTML = '<li data-vazio>Nenhuma notificação por enquanto.</li>';
+      return;
+    }
+    ul.innerHTML = this.lista.map((n) => `
+      <li data-notificacao="${esc(n.id)}"${n.lida ? '' : ' data-nova'} data-tipo="${esc(n.tipo)}">
+        ${n.link && linkInterno(n.link) ? `<a href="${esc(n.link)}">${esc(n.titulo)}</a>` : `<strong>${esc(n.titulo)}</strong>`}
+        ${n.mensagem ? `<p>${esc(n.mensagem)}</p>` : ''}
+        <small>${esc(tempoRelativo(n.created_at))}${n.lida ? '' : ' · <span>nova</span>'}</small>
+        ${n.lida ? '' : `<button type="button" data-marcar-lida="${esc(n.id)}" aria-label="Marcar “${esc(n.titulo)}” como lida">Marcar como lida</button>`}
+      </li>`).join('');
+  },
+
+  async marcar(ids) {
+    try {
+      const r = await api('notificacoes', ids ? { acao: 'marcar_lida', ids } : { acao: 'marcar_todas' });
+      this.naoLidas = Number(r.nao_lidas) || 0;
+      this.lista.forEach((n) => { if (!ids || ids.includes(n.id)) n.lida = true; });
+      this.renderizar();
+    } catch (e) {
+      console.warn('Não foi possível marcar como lida:', e.message);
+    }
+  },
+
+  abrir(abrir) {
+    const painel = document.getElementById('painel-sino');
+    const botao = document.getElementById('btn-sino');
+    painel.hidden = !abrir;
+    botao.setAttribute('aria-expanded', String(abrir));
+    if (abrir) {
+      this.atualizar();
+      painel.querySelector('h2').setAttribute('tabindex', '-1');
+      painel.querySelector('h2').focus({ preventScroll: true });
+    }
+  }
+};
+
+function iniciarSino(perfil) {
+  const caixa = document.getElementById('sino');
+  const botao = document.getElementById('btn-sino');
+  const painel = document.getElementById('painel-sino');
+
+  botao.addEventListener('click', () => Sino.abrir(painel.hidden));
+  document.getElementById('sino-marcar-todas').addEventListener('click', () => Sino.marcar(null));
+  painel.addEventListener('click', async (e) => {
+    const marcar = e.target.closest('[data-marcar-lida]');
+    if (marcar) { marcar.disabled = true; await Sino.marcar([marcar.dataset.marcarLida]); return; }
+    const link = e.target.closest('a');
+    const item = link && link.closest('li[data-nova]');
+    if (item) { // abrir uma nova também marca como lida
+      e.preventDefault();
+      await Sino.marcar([item.dataset.notificacao]);
+      window.location.href = link.getAttribute('href');
+    }
+  });
+  document.addEventListener('click', (e) => { if (!painel.hidden && !caixa.contains(e.target)) Sino.abrir(false); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !painel.hidden) { Sino.abrir(false); botao.focus(); }
+  });
+
+  Sino.atualizar();
+  clearInterval(Sino.timer);
+  Sino.timer = setInterval(() => { if (!document.hidden) Sino.atualizar(); }, INTERVALO_SINO);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) Sino.atualizar(); });
+
+  // Tempo real: a notificação nova chega sem esperar o próximo ciclo
+  try {
+    db.channel('notificacoes-' + perfil.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notificacoes', filter: 'usuario_id=eq.' + perfil.id },
+        () => Sino.atualizar())
+      .subscribe();
+  } catch (e) {
+    console.warn('Tempo real indisponível; usando atualização periódica.', e.message);
+  }
 }
 
 // Mensagens de status/erro padrão das páginas (<p id="aviso"> e <p id="erro">)

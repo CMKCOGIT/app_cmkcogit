@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Painel de gestão | CMK COGIT</title>
+  <meta name="theme-color" content="#0F1B33">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/images/favicon-64.png">
+  <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/css/plataforma.css">
+</head>
+<body class="app">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <main id="conteudo">
+    <header id="cabecalho-painel">
+      <div>
+        <h1 id="saudacao">Painel de gestão</h1>
+        <p>Vendas, pagamentos e andamento dos projetos, calculados a partir dos dados reais.</p>
+      </div>
+      <button type="button" id="btn-exportar">Exportar CSV</button>
+    </header>
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <form id="filtro-periodo" aria-labelledby="filtro-periodo-titulo">
+      <h2 id="filtro-periodo-titulo">Período</h2>
+      <div role="group" aria-labelledby="filtro-periodo-titulo" id="periodos">
+        <button type="button" data-periodo="hoje" aria-pressed="false">Hoje</button>
+        <button type="button" data-periodo="7d" aria-pressed="false">7 dias</button>
+        <button type="button" data-periodo="30d" aria-pressed="true">30 dias</button>
+        <button type="button" data-periodo="mes" aria-pressed="false">Mês atual</button>
+        <button type="button" data-periodo="personalizado" aria-pressed="false">Personalizado</button>
+      </div>
+      <p id="periodo-personalizado" hidden>
+        <label for="data-inicio">De</label><input type="date" id="data-inicio">
+        <label for="data-fim">Até</label><input type="date" id="data-fim">
+        <button type="submit">Aplicar</button>
+      </p>
+      <small id="periodo-rotulo"></small>
+    </form>
+
+    <aside id="mais-vendido" aria-labelledby="mais-vendido-titulo" hidden></aside>
+
+    <section aria-labelledby="titulo-vendas">
+      <h2 id="titulo-vendas">Vendas no período</h2>
+      <ul id="kpis" data-livre aria-live="polite"></ul>
+    </section>
+
+    <section aria-labelledby="titulo-projetos">
+      <h2 id="titulo-projetos">Projetos</h2>
+      <ul id="kpis-projetos" data-livre></ul>
+    </section>
+
+    <section id="secao-faturamento" aria-labelledby="titulo-faturamento">
+      <h2 id="titulo-faturamento">Faturamento ao longo do tempo</h2>
+      <p id="faturamento-legenda"><small>Só pagamentos confirmados.</small></p>
+      <div id="grafico-faturamento" data-carregando></div>
+      <details>
+        <summary>Ver como tabela</summary>
+        <table id="tabela-faturamento">
+          <thead><tr><th scope="col">Período</th><th scope="col">Vendas</th><th scope="col">Faturamento</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
+    </section>
+
+    <div id="grade-painel">
+      <section id="secao-solucoes" aria-labelledby="titulo-solucoes">
+        <h2 id="titulo-solucoes">O que vendemos</h2>
+        <ol id="barras-solucoes" data-carregando></ol>
+        <details>
+          <summary>Ver como tabela</summary>
+          <table id="tabela-solucoes">
+            <thead><tr><th scope="col">Solução</th><th scope="col">Tipo</th><th scope="col">Vendas</th><th scope="col">Valor</th><th scope="col">% do total</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </details>
+      </section>
+
+      <section id="secao-top-clientes" aria-labelledby="titulo-top-clientes">
+        <h2 id="titulo-top-clientes">Top 5 clientes</h2>
+        <ol id="top-clientes" data-carregando></ol>
+      </section>
+    </div>
+
+    <section id="secao-atividades" aria-labelledby="titulo-atividades">
+      <h2 id="titulo-atividades">Atividades recentes</h2>
+      <ul id="lista-atividades" data-carregando></ul>
+    </section>
+  </main>
+
+  <div id="dica-grafico" role="tooltip" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin-inicio.js"></script>
+</body>
+</html>

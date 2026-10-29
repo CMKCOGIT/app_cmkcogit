@@ -157,6 +157,19 @@ test('cadastro incompleto (ex.: entrou pelo Google e não concluiu): 403 e nada 
   assert.equal(mp.prefs.length, 0);
 });
 
+test('admin não compra: solicitação e checkout recusados (403 somente_cliente)', async () => {
+  banco.profiles.find((p) => p.id === USUARIOS['tok-ana'].id).role = 'admin';
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }]) } });
+  assert.equal(r.status, 403);
+  assert.equal(r.json.codigo, 'somente_cliente');
+  assert.equal(banco.solicitacoes.length, 0);
+
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: crypto.randomUUID() } });
+  assert.equal(c.status, 403);
+  assert.equal(c.json.codigo, 'somente_cliente');
+  assert.equal(mp.prefs.length, 0);
+});
+
 test('logado sem perfil: 403 (não libera por falta de dado)', async () => {
   banco.profiles = banco.profiles.filter((p) => p.id !== USUARIOS['tok-bia'].id);
   const r = await chamar('solicitacoes', { token: 'tok-bia', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }]) } });

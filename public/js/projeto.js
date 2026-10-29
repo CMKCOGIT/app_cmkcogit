@@ -9,11 +9,21 @@
   const perfil = await protegerPagina();
   if (!perfil) return;
   const admin = perfil.role === 'admin';
+  // admin não compra: sem "adquirir funcionalidade"/"pagar"; volta para Clientes
+  const voltarHtml = admin ? '<p><a href="admin-clientes.html">Voltar para Clientes</a></p>'
+    : '<p><a href="projetos.html">Voltar para Meus projetos</a></p>';
+  if (admin) {
+    const voltar = document.getElementById('voltar');
+    voltar.href = 'admin-clientes.html';
+    voltar.textContent = '← Clientes';
+    document.getElementById('acao-nova-funcionalidade').hidden = true;
+    document.getElementById('titulo-pendencias').textContent = 'Pendências com o cliente';
+  }
 
   const id = new URLSearchParams(window.location.search).get('id') || '';
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
     mostrarErro('Projeto não encontrado.');
-    document.getElementById('resumo-projeto').innerHTML = '<p><a href="projetos.html">Voltar para Meus projetos</a></p>';
+    document.getElementById('resumo-projeto').innerHTML = voltarHtml;
     return;
   }
   document.getElementById('link-nova-funcionalidade').href = 'funcionalidades.html?projeto=' + encodeURIComponent(id);
@@ -37,7 +47,7 @@
     if (erro) { mostrarErro('Não foi possível carregar o projeto: ' + erro.error.message); return; }
     if (!proj.data) {
       mostrarErro('Projeto não encontrado.');
-      document.getElementById('resumo-projeto').innerHTML = '<p><a href="projetos.html">Voltar para Meus projetos</a></p>';
+      document.getElementById('resumo-projeto').innerHTML = voltarHtml;
       return;
     }
     projeto = { ...proj.data, projeto_etapas: etapas.data };
@@ -141,7 +151,7 @@
     ul.innerHTML = funcs.length ? funcs.map((f) => `
       <li><strong>${esc(f.funcionalidades ? f.funcionalidades.nome : 'Funcionalidade')}</strong> — ${brl(f.valor)} —
         ${esc(rotulo('funcionalidade', f.status))}
-        ${f.status === 'aguardando_pagamento' ? ' <a href="pagamentos.html">Pagar</a>' : ''}</li>`).join('')
+        ${f.status === 'aguardando_pagamento' && !admin ? ' <a href="pagamentos.html">Pagar</a>' : ''}</li>`).join('')
       : '<li>Nenhuma funcionalidade extra contratada.</li>';
   }
 

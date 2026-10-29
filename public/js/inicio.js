@@ -16,7 +16,7 @@
   const [sol, pag, proj, pend] = await Promise.all([
     db.from('solicitacoes').select('id, status').eq('cliente_id', perfil.id),
     db.from('pagamentos').select('id, status, valor').eq('cliente_id', perfil.id),
-    db.from('projetos').select('id, nome, codigo, status_projeto, etapa_atual, previsao_entrega, created_at, projeto_etapas(ordem, nome, status)')
+    db.from('projetos').select('*, projeto_etapas(ordem, nome, status)')
       .eq('cliente_id', perfil.id).order('created_at', { ascending: false }),
     db.from('pendencias').select('id, titulo, prazo, projeto_id, projetos!inner(cliente_id)').eq('resolvida', false).eq('projetos.cliente_id', perfil.id)
   ]);
@@ -157,17 +157,4 @@ const DICAS = {
   'blog-seo': 'Conteúdo com SEO faz seu site aparecer no Google sem pagar por anúncio.'
 };
 
-// Só links da própria plataforma (as notificações são geradas pelo banco)
-function linkInterno(link) {
-  return /^[a-z-]+\.html([?#][\w=&%#.-]*)?$/i.test(link || '');
-}
-
-function tempoRelativo(data) {
-  const min = Math.round((Date.now() - new Date(data).getTime()) / 60000);
-  if (min < 1) return 'agora';
-  if (min < 60) return 'há ' + min + ' min';
-  const h = Math.round(min / 60);
-  if (h < 24) return 'há ' + h + ' h';
-  const d = Math.round(h / 24);
-  return d < 7 ? 'há ' + d + (d === 1 ? ' dia' : ' dias') : fmtData(data);
-}
+// linkInterno() e tempoRelativo() ficam em app.js (usados também pelo sino)

@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
-  if (!(await exigirCadastroCompleto(usuario, res, db))) return;
+  if (!(await exigirCadastroCompleto(usuario, res, db, { somenteCliente: true }))) return;
 
   let corpo;
   try { corpo = await lerCorpo(req); } catch { return erro(res, 400, 'Requisição inválida.'); }
