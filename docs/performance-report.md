@@ -96,3 +96,36 @@ O Início do cliente e o do admin caíram 2 pontos: a tela agora carrega mais co
 - Fluxo do modal de validação (remover itens, adicionar do catálogo e personalizado, valor, resumo, aprovar, WhatsApp, comprovante) executado de ponta a ponta: sem regressão.
 - Teclado: busca global (Ctrl+K e "/", setas, Enter, Esc devolve o foco), abas do perfil (setas, Home/End), gavetas e folha "Mais" com foco preso e Esc.
 - `npm test`: 39/39.
+
+---
+
+# Parte 3 — Troca de tela (branch `otimizacao/navegacao`)
+
+Queixa: "está demorando para trocar de tela". Medido clicando nos itens do menu, em sequência, com um
+servidor que imita a Vercel (120 ms por requisição, ETag/304, os mesmos cabeçalhos do `vercel.json`)
+e um Supabase simulado com 250 ms por consulta. Tempo do clique até a tela **pronta** (sem esqueleto).
+
+| | Antes | Depois |
+|---|---|---|
+| Cliente (média de 6 trocas) | 1.020 ms | **453 ms** |
+| Admin (média de 5 trocas) | 1.085 ms | **454 ms** |
+| Início do admin | 1.177 ms | **431 ms** |
+| Primeira pintura da nova tela | 316–480 ms | **120–320 ms** |
+
+## Onde estava o tempo e o que mudou
+
+| Causa | Correção |
+|---|---|
+| A cada troca o navegador revalidava todo CSS/JS (um 304 por arquivo) antes de pintar | CSS/JS com versão no endereço (`?v=<hash>`, `tools/versionar.mjs`) e cache de 1 ano; fontes 30 dias; imagens/ícones com `stale-while-revalidate` |
+| A tela só buscava os dados depois de consultar o perfil no Supabase (2 idas em série) | Perfil guardado na aba (`sessionStorage`): a tela já busca os dados e o perfil é conferido em segundo plano. Papel diferente ou cadastro incompleto → recarrega; testado com perfil adulterado para "admin": volta ao Início do cliente. O RLS continua sendo quem libera dado |
+| Sino, tempo real e contador do admin disputavam a rede com os dados da tela | Iniciados depois, no tempo ocioso |
+| `/config.js` é uma função serverless (bloqueia a página e pode ter "partida a frio") | CDN da Vercel guarda por 1 h (`s-maxage`); trocar variável exige deploy, que limpa esse cache |
+| Início do admin fazia duas consultas em sequência | Em paralelo |
+| Nada era adiantado | Speculation Rules (`Speculation-Rules` no cabeçalho, `speculation-rules.json`): ao apontar o mouse ou tocar num item do menu, a próxima tela é pré-carregada. Fora: `continuar.html` (salva a solução vinda do site ao abrir) e páginas públicas |
+
+O prerender (monta a tela inteira enquanto o mouse está sobre o link) não pôde ser medido aqui: o
+Chromium de automação rebaixa para prefetch. Os números acima já incluem só o prefetch. No Chrome e no Edge
+de verdade a troca tende a ficar perto de instantânea; Firefox e Safari ignoram as regras e ficam com os
+demais ganhos.
+
+Sem regressão: varredura de 12 telas × 9 larguras, fluxo completo do modal de validação e `npm test` (39/39).

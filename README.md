@@ -138,8 +138,14 @@ As chaves que foram coladas em conversas anteriores devem ser **trocadas** antes
 ```bash
 cp .env.example .env.local     # preencha Supabase + MP_ACCESS_TOKEN (teste)
 npm run dev                    # http://localhost:3000
-npm test                       # testes automáticos
+npm test                       # testes automáticos (e confere as versões de CSS/JS)
+npm run versionar              # depois de mudar qualquer CSS/JS em public/
 ```
+
+**Mudou CSS ou JS? Rode `npm run versionar` antes do commit.** Os HTMLs apontam para
+`app.js?v=<hash>`: o navegador guarda CSS/JS por 1 ano (troca de tela sem baixar nada) e,
+como o endereço muda junto com o conteúdo, ninguém fica com versão velha depois do deploy.
+O `npm test` falha se alguma versão estiver desatualizada.
 
 Para testar o caminho completo site → app no computador, rode o site também
 (`npm run dev` na pasta do site, porta 4173). Quando o site roda em `localhost`, o botão

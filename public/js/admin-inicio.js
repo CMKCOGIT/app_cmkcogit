@@ -40,7 +40,8 @@
   if (periodo.tipo === 'personalizado') { inpInicio.value = periodo.inicio || ''; inpFim.value = periodo.fim || ''; }
   marcarBotoes();
   let emValidacao = [];
-  emValidacao = await carregarValidacao();
+  // em paralelo com o painel (não em sequência): o KPI "Em validação" espera os dois
+  const validacao = carregarValidacao().then((lista) => { emValidacao = lista; });
   await carregar();
   revelar();
 
@@ -89,7 +90,8 @@
 
     const meu = ++pedido;
     esqueleto();
-    const { data, error } = await db.rpc('admin_dashboard', { p_inicio: isoData(iv.inicio), p_fim: isoData(iv.fim) });
+    const [{ data, error }] = await Promise.all([
+      db.rpc('admin_dashboard', { p_inicio: isoData(iv.inicio), p_fim: isoData(iv.fim) }), validacao]);
     if (meu !== pedido) return; // o admin trocou o período enquanto carregava
     if (error) {
       mostrarErro(/admin_dashboard|function/i.test(error.message)

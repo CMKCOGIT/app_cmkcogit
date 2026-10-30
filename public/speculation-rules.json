@@ -1,0 +1,16 @@
+{
+  "prerender": [
+    {
+      "where": {
+        "and": [
+          { "href_matches": "/*.html" },
+          { "not": { "href_matches": ["/continuar.html", "/login.html", "/index.html", "/comprovante.html", "/completar-cadastro.html", "/redefinir-senha.html", "/styleguide.html", "/404.html"] } }
+        ]
+      },
+      "eagerness": "moderate"
+    }
+  ],
+  "prefetch": [
+    { "where": { "href_matches": "/continuar.html" }, "eagerness": "moderate" }
+  ]
+}

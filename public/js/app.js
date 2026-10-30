@@ -403,8 +403,22 @@ function cadastroConcluido(perfil) {
 async function protegerPagina() {
   const sessao = await getSessao();
   if (!sessao) {
+    limparPerfilCache();
     window.location.replace('login.html');
     return null;
+  }
+  // Troca de tela rápida: com o perfil desta aba em memória, a página já monta e
+  // busca os dados dela enquanto o perfil é conferido no banco em segundo plano.
+  // O cache só decide a NAVEGAÇÃO; quem libera dado é o RLS/servidor, sempre.
+  const guardado = lerPerfilCache(sessao.user.id);
+  if (guardado) {
+    if (!aplicarPerfil(guardado)) return null;
+    getPerfil().then((atual) => {
+      salvarPerfilCache(atual);
+      if (!cadastroConcluido(atual) || ehAdmin(atual) !== ehAdmin(guardado)) { window.location.reload(); return; }
+      if (atual.nome !== guardado.nome || atual.email !== guardado.email) montarMenu(atual);
+    }).catch((e) => console.warn('Não foi possível conferir o perfil:', e.message));
+    return guardado;
   }
   let perfil;
   try {
@@ -413,22 +427,44 @@ async function protegerPagina() {
     mostrarFalhaDeAcesso(e.message);
     return null;
   }
+  salvarPerfilCache(perfil);
+  return aplicarPerfil(perfil) ? perfil : null;
+}
+
+// Regras de acesso por papel + menu. false = a página vai redirecionar.
+function aplicarPerfil(perfil) {
   if (!cadastroConcluido(perfil)) {
     window.location.replace(PAGINA_CADASTRO);
-    return null;
+    return false;
   }
   const pagina = paginaAtual();
   if (ehAdmin(perfil) && PAGINAS_SO_CLIENTE.includes(pagina)) {
     limparPendente(); // solução trazida do site não vale para o admin
     window.location.replace(INICIO_ADMIN);
-    return null;
+    return false;
   }
   if (!ehAdmin(perfil) && PAGINAS_SO_ADMIN.includes(pagina)) {
     window.location.replace('inicio.html');
-    return null;
+    return false;
   }
   montarMenu(perfil);
-  return perfil;
+  return true;
+}
+
+// Perfil desta aba (sessionStorage: some ao fechar a aba e ao sair)
+const CHAVE_PERFIL = 'cmk_perfil_v1';
+function lerPerfilCache(usuarioId) {
+  try {
+    const p = JSON.parse(sessionStorage.getItem(CHAVE_PERFIL));
+    return p && p.id === usuarioId ? p : null;
+  } catch (_) { return null; }
+}
+function salvarPerfilCache(perfil) {
+  // só perfil liberado vai para o cache (cadastro incompleto sempre confere no banco)
+  try { if (cadastroConcluido(perfil)) sessionStorage.setItem(CHAVE_PERFIL, JSON.stringify(perfil)); else limparPerfilCache(); } catch (_) {}
+}
+function limparPerfilCache() {
+  try { sessionStorage.removeItem(CHAVE_PERFIL); } catch (_) {}
 }
 
 // Sem perfil não há página: troca o conteúdo por um aviso com "tentar de novo" e "sair".
@@ -442,6 +478,7 @@ function mostrarFalhaDeAcesso(texto) {
 }
 
 async function sair() {
+  limparPerfilCache();
   await db.auth.signOut();
   window.location.href = 'login.html';
 }
@@ -616,8 +653,16 @@ function montarMenu(perfil) {
   document.body.appendChild(folha);
 
   ligarShell(perfil, todos, m);
-  if (perfil) iniciarSino(perfil);
-  if (admin) contarEmValidacao();
+  // secundários (sino, tempo real, contador do admin) depois dos dados da página
+  depoisDoPrincipal(() => {
+    if (perfil) iniciarSino(perfil);
+    if (admin) contarEmValidacao();
+  });
+}
+
+function depoisDoPrincipal(fn) {
+  if ('requestIdleCallback' in window) requestIdleCallback(fn, { timeout: 1500 });
+  else setTimeout(fn, 600);
 }
 
 // Admin: quantas solicitações esperam validação (menu e cartão de destaque)
@@ -940,7 +985,6 @@ const Sino = {
 };
 
 function iniciarSino(perfil) {
-  const caixa = document.getElementById('sino');
   const botao = document.getElementById('btn-sino');
   const painel = document.getElementById('painel-sino');
 
@@ -957,12 +1001,18 @@ function iniciarSino(perfil) {
       window.location.href = link.getAttribute('href');
     }
   });
-  document.addEventListener('click', (e) => { if (!painel.hidden && !caixa.contains(e.target)) Sino.abrir(false); });
+  Sino.atualizar();
+  if (Sino.ligado) return; // menu remontado (ex.: nome alterado): o resto já está ligado
+  Sino.ligado = true;
+  document.addEventListener('click', (e) => {
+    const p = document.getElementById('painel-sino');
+    if (p && !p.hidden && !document.getElementById('sino').contains(e.target)) Sino.abrir(false);
+  });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !painel.hidden) { Sino.abrir(false); botao.focus(); }
+    const p = document.getElementById('painel-sino');
+    if (e.key === 'Escape' && p && !p.hidden) { Sino.abrir(false); document.getElementById('btn-sino').focus(); }
   });
 
-  Sino.atualizar();
   clearInterval(Sino.timer);
   Sino.timer = setInterval(() => { if (!document.hidden) Sino.atualizar(); }, INTERVALO_SINO);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) Sino.atualizar(); });

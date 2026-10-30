@@ -94,6 +94,7 @@
     botao.disabled = false;
     if (error) return mostrarErro('Não foi possível salvar: ' + error.message);
     perfil = { ...perfil, nome: novoNome, telefone: fone || null };
+    salvarPerfilCache(perfil);
     montarMenu(perfil);
     preencherCartao();
     toast('Dados salvos.');
@@ -141,6 +142,7 @@
 
   document.getElementById('sair-todos').addEventListener('click', async () => {
     if (!window.confirm('Sair da sua conta em todos os aparelhos, inclusive neste?')) return;
+    limparPerfilCache();
     await db.auth.signOut({ scope: 'global' });
     window.location.href = 'login.html';
   });
