@@ -14,7 +14,13 @@
   if (!perfil) return;
 
   const lista = document.getElementById('lista-admin');
-  const filtro = document.getElementById('filtro');
+  const pilulas = [...document.querySelectorAll('#filtro > [data-status]')];
+  const busca = document.getElementById('busca');
+  const periodo = document.getElementById('periodo');
+  const params = new URLSearchParams(window.location.search);
+  const filtro = { value: pilulas.some((b) => b.dataset.status === params.get('filtro')) ? params.get('filtro') : 'em_validacao' };
+  busca.value = params.get('busca') || '';
+  if (busca.value) filtro.value = params.get('filtro') || 'todas';
   const modal = document.getElementById('modal-solicitacao');
   const corpo = document.getElementById('modal-sol-corpo');
   const rodape = document.getElementById('modal-sol-rodape');
@@ -26,18 +32,23 @@
   let M = null; // estado do modal aberto
   let ultimoGatilho = null;
 
-  filtro.addEventListener('change', carregar);
-  document.getElementById('btn-recarregar').addEventListener('click', () => { carregar(); carregarEventos(); });
+  const marcarPilulas = () => pilulas.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.status === filtro.value)));
+  marcarPilulas();
+  pilulas.forEach((b) => b.addEventListener('click', () => { filtro.value = b.dataset.status; marcarPilulas(); carregar(); }));
+  busca.addEventListener('input', render);
+  periodo.addEventListener('change', render);
+  document.getElementById('barra-admin').addEventListener('submit', (e) => e.preventDefault());
+  document.getElementById('btn-recarregar').addEventListener('click', () => { carregar(); carregarEventos(); contarPorStatus(); });
   lista.addEventListener('click', aoClicarNaLista);
   ligarModal();
-  await Promise.all([carregar(), carregarEventos()]);
+  await Promise.all([carregar(), carregarEventos(), contarPorStatus()]);
 
   // =================================================================
   // Lista
   // =================================================================
   async function carregar() {
     mostrarErro('');
-    if (!solicitacoes.length) lista.innerHTML = '<p>Carregando...</p>';
+    if (!solicitacoes.length) lista.innerHTML = '<article data-esqueleto></article><article data-esqueleto></article>';
     lista.setAttribute('aria-busy', 'true');
     let q = db
       .from('solicitacoes')
@@ -57,11 +68,33 @@
   }
 
   function render() {
-    if (!solicitacoes.length) {
-      lista.innerHTML = '<p data-vazio>Nenhuma solicitação neste filtro.</p>';
+    const normal = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const q = normal(busca.value.trim());
+    const dias = Number(periodo.value);
+    const limite = dias ? Date.now() - dias * 86400000 : 0;
+    const visiveis = solicitacoes.filter((s) => (!limite || new Date(s.created_at).getTime() >= limite)
+      && (!q || [s.codigo, s.cliente && s.cliente.nome, s.cliente && s.cliente.email].some((t) => normal(t).includes(q))));
+    document.getElementById('contagem').textContent = solicitacoes.length
+      ? `${visiveis.length} de ${solicitacoes.length} ${solicitacoes.length === 1 ? 'solicitação' : 'solicitações'} neste status` : '';
+    if (!visiveis.length) {
+      lista.innerHTML = `<p data-vazio>${solicitacoes.length ? 'Nada encontrado com essa busca ou período.' : 'Nenhuma solicitação neste filtro.'}</p>`;
       return;
     }
-    lista.innerHTML = solicitacoes.map(cardHtml).join('');
+    lista.innerHTML = visiveis.map(cardHtml).join('');
+  }
+
+  // Painel lateral: quantas solicitações há em cada status (contagem no banco)
+  async function contarPorStatus() {
+    const ul = document.getElementById('contagem-status');
+    const status = ['em_validacao', 'aguardando_pagamento', 'paga', 'cancelada'];
+    const NOMES = { em_validacao: 'Em validação', aguardando_pagamento: 'Pagamento liberado', paga: 'Pagas', cancelada: 'Canceladas' };
+    const icones = { em_validacao: 'em-validacao', aguardando_pagamento: 'pagamentos', paga: 'aprovar', cancelada: 'cancelado' };
+    const res = await Promise.all(status.map((st) => db.from('solicitacoes').select('id', { count: 'exact', head: true }).eq('status', st)));
+    ul.innerHTML = status.map((st, i) => `<li><button type="button" class="widget-item" data-ir-status="${st}">${icone(icones[st])}
+      <span><strong>${esc(NOMES[st])}</strong></span><span class="widget-valor">${res[i].error ? '—' : Number(res[i].count) || 0}</span></button></li>`).join('');
+    ul.querySelectorAll('[data-ir-status]').forEach((b) => b.addEventListener('click', () => {
+      filtro.value = b.dataset.irStatus; marcarPilulas(); carregar();
+    }));
   }
 
   function cardHtml(s) {

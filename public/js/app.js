@@ -127,9 +127,9 @@ function anelHtml(pct, rotulo, grande = false) {
 }
 
 // Card de indicador. k = { rotulo, valor (número), formato: 'numero'|'brl', icone, href,
-// nota, destaque, alerta: 'perigo'|'atencao', variacao: { pct, sentido: 'subiu'|'desceu', texto } }
+// formato também 'pct'; nota, destaque, alerta: 'perigo'|'atencao', variacao: { pct, sentido: 'subiu'|'desceu', texto } }
 function kpiHtml(k) {
-  const valor = k.formato === 'brl' ? brl(k.valor) : String(Number(k.valor) || 0);
+  const valor = k.formato === 'brl' ? brl(k.valor) : (Number(k.valor) || 0) + (k.formato === 'pct' ? '%' : '');
   const variacao = k.variacao ? `<span class="kpi-variacao" data-sentido="${esc(k.variacao.sentido)}">${icone(k.variacao.sentido === 'desceu' ? 'desceu' : 'subiu')}${esc(k.variacao.texto)}</span>` : '';
   const corpo = `
     <span class="kpi-rotulo">${esc(k.rotulo)}</span>
@@ -153,7 +153,7 @@ function animarNumeros(raiz = document) {
     if (el.hasAttribute('data-anel')) { el.classList.add('visivel'); return; }
     el.setAttribute('data-contado', '');
     const fim = Number(el.dataset.contar) || 0;
-    const fmt = (v) => (el.dataset.formato === 'brl' ? brl(v) : String(Math.round(v)));
+    const fmt = (v) => (el.dataset.formato === 'brl' ? brl(v) : Math.round(v) + (el.dataset.formato === 'pct' ? '%' : ''));
     if (MOVIMENTO_REDUZIDO || !fim) { el.textContent = fmt(fim); return; }
     const inicio = performance.now();
     const dur = 900;

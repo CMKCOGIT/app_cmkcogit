@@ -81,12 +81,15 @@
     const atrasados = todos.filter((p) => prazoDe(p).estado === 'atrasado').length;
     const recebido = clientes.reduce((t, c) => t + c.pago, 0);
     const aReceber = clientes.reduce((t, c) => t + c.aberto, 0);
-    document.getElementById('resumo-admin').innerHTML = `
-      <p>Clientes: <strong>${clientes.length}</strong> ·
-         Projetos em andamento: <strong>${ativos}</strong> ·
-         Atrasados: <strong>${atrasados}</strong> ·
-         Recebido: <strong>${brl(recebido)}</strong> ·
-         A receber: <strong>${brl(aReceber)}</strong></p>`;
+    const ul = document.getElementById('resumo-admin');
+    ul.innerHTML = [
+      { rotulo: 'Clientes', valor: clientes.length, icone: 'clientes', destaque: true, nota: 'com cadastro concluído' },
+      { rotulo: 'Projetos em andamento', valor: ativos, icone: 'projetos', nota: todos.length + ' no total' },
+      { rotulo: 'Atrasados', valor: atrasados, icone: 'alerta', nota: 'prazo de entrega vencido', alerta: atrasados ? 'perigo' : '' },
+      { rotulo: 'Recebido', valor: recebido, formato: 'brl', icone: 'aprovar', nota: 'pagamentos confirmados' },
+      { rotulo: 'A receber', valor: aReceber, formato: 'brl', icone: 'recibo', nota: 'cobranças em aberto' }
+    ].map(kpiHtml).join('');
+    animarNumeros(ul);
   }
 
   // ---------------- filtros e busca ----------------

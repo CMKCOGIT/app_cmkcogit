@@ -20,38 +20,75 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Solicitações</h1>
-    <p>Abra uma solicitação para revisar os itens, ajustar o valor e aprovar: o pagamento é liberado e o cliente recebe o comprovante pelo WhatsApp.</p>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Painel de gestão</p>
+        <h1>Solicitações</h1>
+        <p>Abra uma solicitação para revisar os itens, ajustar o valor e aprovar: o pagamento é liberado e o cliente recebe o comprovante pelo WhatsApp.</p>
+      </div>
+      <div class="pagina-acoes"><button type="button" id="btn-recarregar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#recarregar"></use></svg> Recarregar</button></div>
+    </header>
 
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <p>
-      <label for="filtro">Mostrar:</label>
-      <select id="filtro">
-        <option value="em_validacao">Em validação</option>
-        <option value="aguardando_pagamento">Aprovadas · pagamento liberado</option>
-        <option value="paga">Pagas</option>
-        <option value="cancelada">Canceladas</option>
-        <option value="todas">Todas</option>
-      </select>
-      <button type="button" id="btn-recarregar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#recarregar"></use></svg> Recarregar</button>
-    </p>
+    <div class="pagina-grade" data-larga>
+      <div class="coluna-principal">
+        <form class="barra-ferramentas" id="barra-admin" role="search" aria-label="Buscar e filtrar solicitações">
+          <p class="campo-busca"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+            <label class="so-leitor-tela" for="busca">Buscar por código ou cliente</label>
+            <input type="search" id="busca" maxlength="80" placeholder="Código (SOL-00013), nome ou e-mail do cliente" autocomplete="off"></p>
+          <p class="campo-periodo"><label class="so-leitor-tela" for="periodo">Período</label>
+            <select id="periodo">
+              <option value="0">Qualquer data</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+            </select></p>
+          <div class="filtro-pilulas" id="filtro" role="group" aria-label="Status">
+            <button type="button" data-status="em_validacao" aria-pressed="true">Em validação</button>
+            <button type="button" data-status="aguardando_pagamento" aria-pressed="false">Pagamento liberado</button>
+            <button type="button" data-status="paga" aria-pressed="false">Pagas</button>
+            <button type="button" data-status="cancelada" aria-pressed="false">Canceladas</button>
+            <button type="button" data-status="todas" aria-pressed="false">Todas</button>
+          </div>
+        </form>
+        <p id="contagem" class="contagem" aria-live="polite"></p>
 
-    <section id="lista-admin" aria-live="polite">
-      <p>Carregando...</p>
-    </section>
+        <section id="lista-admin" aria-label="Solicitações" aria-live="polite">
+          <article data-esqueleto></article><article data-esqueleto></article>
+        </section>
 
-    <section>
-      <h2>Últimos avisos do Mercado Pago</h2>
-      <p><small>Tudo que o Mercado Pago informou (webhook, volta do checkout ou verificação). "valor_divergente" ou "pago_em_duplicidade" pedem atenção.</small></p>
-      <table>
-        <thead>
-          <tr><th scope="col">Quando</th><th scope="col">Origem</th><th scope="col">Pagamento MP</th><th scope="col">Status MP</th><th scope="col">Valor</th><th scope="col">Resultado</th></tr>
-        </thead>
-        <tbody id="tabela-eventos"><tr><td colspan="6">Carregando...</td></tr></tbody>
-      </table>
-    </section>
+        <section aria-labelledby="titulo-eventos">
+          <h2 id="titulo-eventos">Últimos avisos do Mercado Pago</h2>
+          <p class="nota">Tudo que o Mercado Pago informou (webhook, volta do checkout ou verificação). "valor_divergente" ou "pago_em_duplicidade" pedem atenção.</p>
+          <div class="tabela-rolagem">
+            <table class="tabela-limpa">
+              <thead>
+                <tr><th scope="col">Quando</th><th scope="col">Origem</th><th scope="col">Pagamento MP</th><th scope="col">Status MP</th><th scope="col">Valor</th><th scope="col">Resultado</th></tr>
+              </thead>
+              <tbody id="tabela-eventos"><tr><td colspan="6">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <aside class="coluna-lateral" aria-label="Resumo e como validar">
+        <section aria-labelledby="titulo-por-status">
+          <h2 id="titulo-por-status">Por status</h2>
+          <ul id="contagem-status" class="lista-widget" data-livre><li><p data-esqueleto-linha></p></li></ul>
+        </section>
+        <section aria-labelledby="titulo-como-validar">
+          <h2 id="titulo-como-validar">Como validar</h2>
+          <ol class="passos-lista">
+            <li><strong>Revise os itens</strong><span>Tire o que não faz sentido ou adicione do catálogo.</span></li>
+            <li><strong>Confirme o valor final</strong><span>O servidor recalcula; você define o final.</span></li>
+            <li><strong>Escreva ao cliente</strong><span>A mensagem aparece no comprovante.</span></li>
+            <li><strong>Aprove e envie</strong><span>O comprovante segue pelo WhatsApp.</span></li>
+          </ol>
+        </section>
+      </aside>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

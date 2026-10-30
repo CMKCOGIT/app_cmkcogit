@@ -20,19 +20,28 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Clientes</h1>
-    <p>Cada cliente, os projetos dele, quanto pagou e em que pé está cada entrega.</p>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Painel de gestão</p>
+        <h1>Clientes</h1>
+        <p>Cada cliente, os projetos dele, quanto pagou e em que pé está cada entrega.</p>
+      </div>
+    </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <section id="resumo-admin" aria-label="Resumo"></section>
+    <section class="faixa-kpis" aria-label="Resumo">
+      <ul id="resumo-admin" class="kpis" data-livre>
+        <li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li>
+      </ul>
+    </section>
 
-    <form id="barra-clientes" role="search" aria-label="Buscar e filtrar clientes">
-      <p id="campo-busca">
-        <label for="busca">Buscar por projeto, código ou cliente</label>
-        <input type="search" id="busca" maxlength="100" placeholder="Ex.: Site Institucional, COG-2026-100, Kaike" autocomplete="off">
+    <form id="barra-clientes" class="barra-ferramentas" role="search" aria-label="Buscar e filtrar clientes">
+      <p id="campo-busca" class="campo-busca"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+        <label class="so-leitor-tela" for="busca">Buscar por projeto, código ou cliente</label>
+        <input type="search" id="busca" maxlength="100" placeholder="Projeto, código (COG-2026-100) ou cliente" autocomplete="off">
       </p>
-      <div id="filtros-rapidos" role="group" aria-label="Filtros rápidos">
+      <div id="filtros-rapidos" class="filtro-pilulas" role="group" aria-label="Filtros rápidos">
         <button type="button" data-filtro="pago" data-grupo="pagamento" aria-pressed="false">Pago</button>
         <button type="button" data-filtro="pendente" data-grupo="pagamento" aria-pressed="false">Pendente</button>
         <button type="button" data-filtro="andamento" data-grupo="andamento" aria-pressed="false">Em andamento</button>
@@ -40,20 +49,20 @@
         <button type="button" data-filtro="atrasado" data-grupo="prazo" aria-pressed="false">Atrasado</button>
         <button type="button" data-filtro="prazo7" data-grupo="prazo" aria-pressed="false">Entrega em 7 dias</button>
       </div>
-      <div id="modo-visao" role="group" aria-label="Visualização">
-        <button type="button" data-visao="cards" aria-pressed="true">Cards</button>
-        <button type="button" data-visao="tabela" aria-pressed="false">Tabela</button>
+      <div id="modo-visao" class="filtro-pilulas" role="group" aria-label="Visualização">
+        <button type="button" data-visao="cards" aria-pressed="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#visao-cards"></use></svg> Cards</button>
+        <button type="button" data-visao="tabela" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#visao-tabela"></use></svg> Tabela</button>
       </div>
     </form>
 
-    <p id="contagem" aria-live="polite"></p>
+    <p id="contagem" class="contagem" aria-live="polite"></p>
 
     <section id="lista-clientes" data-visao="cards" aria-busy="true">
       <article data-esqueleto></article><article data-esqueleto></article><article data-esqueleto></article>
     </section>
   </main>
 
-  <dialog id="detalhe-cliente" aria-labelledby="detalhe-titulo">
+  <dialog id="detalhe-cliente" class="gaveta" aria-labelledby="detalhe-titulo">
     <header>
       <h2 id="detalhe-titulo">Cliente</h2>
       <button type="button" id="fechar-detalhe" aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>

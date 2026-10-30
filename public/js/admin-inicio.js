@@ -39,7 +39,10 @@
 
   if (periodo.tipo === 'personalizado') { inpInicio.value = periodo.inicio || ''; inpFim.value = periodo.fim || ''; }
   marcarBotoes();
+  let emValidacao = [];
+  emValidacao = await carregarValidacao();
   await carregar();
+  revelar();
 
   let largura = 0;
   new ResizeObserver(() => {
@@ -100,8 +103,8 @@
   }
 
   function esqueleto() {
-    document.getElementById('kpis').innerHTML = '<li data-esqueleto></li>'.repeat(5);
-    document.getElementById('kpis-projetos').innerHTML = '<li data-esqueleto></li>'.repeat(4);
+    document.getElementById('kpis').innerHTML = '<li class="kpi" data-esqueleto></li>'.repeat(6);
+    document.getElementById('kpis-projetos').innerHTML = '<li class="kpi" data-esqueleto></li>'.repeat(4);
     ['grafico-faturamento', 'barras-solucoes', 'top-clientes', 'lista-atividades'].forEach((id) => {
       const el = document.getElementById(id);
       el.setAttribute('data-carregando', '');
@@ -140,30 +143,42 @@
     return `<small data-delta="${dir}">${seta} ${pct > 0 ? '+' : ''}${pct}% ${esc(rotuloAnterior)}</small>`;
   }
 
+  // variação para o card de KPI (seta + percentual), sem inventar quando não há base
+  function variacaoKpi(atual, anterior) {
+    atual = Number(atual); anterior = Number(anterior);
+    if (!anterior) return null;
+    const pct = Math.round((atual - anterior) / anterior * 100);
+    return { sentido: pct < 0 ? 'desceu' : 'subiu', texto: `${pct > 0 ? '+' : ''}${pct}%` };
+  }
+
   function kpis(d) {
     const vendas = Number(d.vendas);
     const ticket = vendas ? Number(d.faturamento) / vendas : 0;
     const sol = d.solicitacoes || { criadas: 0, pagas: 0 };
     const conversao = sol.criadas ? Math.round(sol.pagas / sol.criadas * 100) : null;
     const pend = d.pendentes || { quantidade: 0, valor: 0 };
-    document.getElementById('kpis').innerHTML = `
-      <li data-destaque><span>Faturamento</span><strong>${brl(d.faturamento)}</strong>${variacao(d.faturamento, d.faturamento_anterior, 'vs. período anterior')}</li>
-      <li><span>Vendas</span><strong>${vendas}</strong>${variacao(vendas, d.vendas_anterior, 'vs. período anterior')}</li>
-      <li><span>Ticket médio</span><strong>${vendas ? brl(ticket) : '—'}</strong><small>faturamento ÷ vendas</small></li>
-      <li><span>Taxa de conversão</span><strong>${conversao == null ? '—' : conversao + '%'}</strong>
-        <small>${Number(sol.pagas)} de ${Number(sol.criadas)} solicitações do período já pagas</small></li>
-      <li><a href="admin.html"><span>Pagamentos pendentes</span><strong>${brl(pend.valor)}</strong>
-        <small>${Number(pend.quantidade)} ${Number(pend.quantidade) === 1 ? 'cobrança aguardando' : 'cobranças aguardando'} pagamento</small></a></li>`;
+    const vFat = variacaoKpi(d.faturamento, d.faturamento_anterior);
+    const vVen = variacaoKpi(vendas, d.vendas_anterior);
+    const ul = document.getElementById('kpis');
+    ul.innerHTML = [
+      { rotulo: 'Faturamento', valor: d.faturamento, formato: 'brl', icone: 'valor', destaque: true, variacao: vFat, nota: vFat ? 'vs. período anterior' : (Number(d.faturamento) ? 'sem vendas no período anterior' : 'nenhuma venda no período') },
+      { rotulo: 'Vendas', valor: vendas, icone: 'aprovar', variacao: vVen, nota: vVen ? 'vs. período anterior' : 'pagamentos confirmados' },
+      { rotulo: 'Em validação', valor: emValidacao.length, icone: 'em-validacao', href: 'admin.html?filtro=em_validacao', nota: 'solicitações para revisar', alerta: emValidacao.length ? 'atencao' : '' },
+      { rotulo: 'Pagamentos pendentes', valor: pend.valor, formato: 'brl', icone: 'recibo', href: 'admin.html?filtro=aguardando_pagamento', nota: `${Number(pend.quantidade)} ${Number(pend.quantidade) === 1 ? 'cobrança aguardando' : 'cobranças aguardando'}` },
+      { rotulo: 'Ticket médio', valor: ticket, formato: 'brl', icone: 'pagamentos', nota: 'faturamento ÷ vendas' }
+    ].map(kpiHtml).join('') + (conversao == null ? '' : kpiHtml({ rotulo: 'Conversão', valor: conversao, formato: 'pct', icone: 'subiu', nota: `${Number(sol.pagas)} de ${Number(sol.criadas)} solicitações pagas` }));
+    animarNumeros(ul);
   }
 
   function kpisProjetos(pr) {
-    const item = (filtro, rotulo, valor, extra, alerta) => `<li${alerta && Number(valor) ? ` data-alerta="${alerta}"` : ''}>
-        <a href="admin-clientes.html?filtro=${filtro}"><span>${rotulo}</span><strong>${Number(valor) || 0}</strong>${extra ? `<small>${extra}</small>` : ''}</a></li>`;
-    document.getElementById('kpis-projetos').innerHTML =
-      item('andamento', 'Em andamento', pr.em_andamento) +
-      item('concluido', 'Concluídos', pr.concluidos, `${Number(pr.concluidos_periodo) || 0} no período`) +
-      item('atrasado', 'Atrasados', pr.atrasados, 'prazo de entrega vencido', 'perigo') +
-      item('prazo7', 'Entrega nos próximos 7 dias', pr.prazo_7_dias, 'prazo chegando', 'atencao');
+    const ul = document.getElementById('kpis-projetos');
+    ul.innerHTML = [
+      { rotulo: 'Em andamento', valor: pr.em_andamento, icone: 'projetos', href: 'admin-clientes.html?filtro=andamento' },
+      { rotulo: 'Concluídos', valor: pr.concluidos, icone: 'concluido', href: 'admin-clientes.html?filtro=concluido', nota: `${Number(pr.concluidos_periodo) || 0} no período` },
+      { rotulo: 'Atrasados', valor: pr.atrasados, icone: 'alerta', href: 'admin-clientes.html?filtro=atrasado', nota: 'prazo vencido', alerta: Number(pr.atrasados) ? 'perigo' : '' },
+      { rotulo: 'Entrega em 7 dias', valor: pr.prazo_7_dias, icone: 'prazo', href: 'admin-clientes.html?filtro=prazo7', nota: 'prazo chegando', alerta: Number(pr.prazo_7_dias) ? 'atencao' : '' }
+    ].map(kpiHtml).join('');
+    animarNumeros(ul);
   }
 
   function maisVendido(m) {
@@ -304,15 +319,24 @@
 
   function atividades(lista) {
     const ul = document.getElementById('lista-atividades');
-    if (!lista.length) { ul.innerHTML = '<li data-vazio>Nada por aqui ainda.</li>'; return; }
-    const ROTULO = { pagamento: 'Pagamento', arquivo: 'Arquivo', solicitacao: 'Solicitação' };
-    ul.innerHTML = lista.map((a) => `
-      <li data-tipo="${esc(a.tipo)}">
-        <span data-etiqueta>${esc(ROTULO[a.tipo] || a.tipo)}</span>
-        ${linkInterno(a.link) ? `<a href="${esc(a.link)}">${esc(a.titulo)}</a>` : `<strong>${esc(a.titulo)}</strong>`}
-        <p>${esc(a.detalhe || '')}</p>
-        <small>${esc(tempoRelativo(a.quando))}</small>
-      </li>`).join('');
+    if (!lista.length) { ul.innerHTML = '<li><p class="widget-vazio">Nada por aqui ainda.</p></li>'; return; }
+    ul.innerHTML = linhaDoTempoHtml(lista.map((a) => ({ id: '', tipo: a.tipo, titulo: a.titulo, mensagem: a.detalhe, link: a.link, created_at: a.quando, lida: true })));
+  }
+
+  // Lista lateral: solicitações esperando validação (mais antigas primeiro)
+  async function carregarValidacao() {
+    const ul = document.getElementById('lista-validacao');
+    const { data, error } = await db.from('solicitacoes')
+      .select('id, codigo, created_at, valor_calculado, tipo_preco, cliente:profiles!solicitacoes_cliente_id_fkey(nome)')
+      .eq('status', 'em_validacao').order('created_at', { ascending: true }).limit(20);
+    if (error) { ul.innerHTML = '<li><p class="widget-vazio">Não foi possível carregar.</p></li>'; return []; }
+    const lista = (data || []).filter((s) => s.codigo);
+    ul.innerHTML = lista.length ? lista.slice(0, 5).map((s) => `
+      <li><a class="widget-item" href="admin.html?filtro=em_validacao&busca=${encodeURIComponent(s.codigo)}">${icone('em-validacao')}
+        <span><strong>${esc(s.codigo)} · ${esc((s.cliente && s.cliente.nome) || 'Cliente')}</strong><small>Enviada ${esc(tempoRelativo(s.created_at))}</small></span>
+        <span class="widget-valor">${s.tipo_preco === 'from' ? '<small>a partir de</small>' : ''}${brl(s.valor_calculado)}</span></a></li>`).join('')
+      : '<li><p class="widget-vazio">Nenhuma solicitação esperando validação.</p></li>';
+    return lista;
   }
 
   // ---------------- exportar CSV (vendas confirmadas do período) ----------------
