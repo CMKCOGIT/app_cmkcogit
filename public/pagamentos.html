@@ -20,36 +20,77 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Pagamentos</h1>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Plataforma do cliente</p>
+        <h1>Pagamentos</h1>
+        <p>Suas cobranças, o que já foi pago e o que está em aberto. Pix, cartão ou boleto pelo Mercado Pago.</p>
+      </div>
+    </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <section id="resumo-pagamentos"></section>
-
-    <section>
-      <h2>Cobranças</h2>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Descrição</th>
-            <th scope="col">Valor</th>
-            <th scope="col">Status</th>
-            <th scope="col">Método</th>
-            <th scope="col">Data</th>
-            <th scope="col">Ação</th>
-          </tr>
-        </thead>
-        <tbody id="tabela-pagamentos">
-          <tr><td colspan="6">Carregando...</td></tr>
-        </tbody>
-      </table>
-      <p><small>Pix, cartão ou boleto pelo Mercado Pago. O pagamento é confirmado direto com o Mercado Pago; boleto pode levar até 3 dias úteis.</small></p>
+    <section class="faixa-kpis" aria-labelledby="titulo-resumo-pag">
+      <h2 id="titulo-resumo-pag" class="so-leitor-tela">Resumo</h2>
+      <ul id="resumo-pagamentos" class="kpis" data-livre aria-busy="true">
+        <li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li>
+      </ul>
     </section>
 
-    <section>
-      <h2>Precisa de ajuda?</h2>
-      <a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Falar conosco pelo WhatsApp</a>
-    </section>
+    <div class="pagina-grade" data-larga>
+      <div class="coluna-principal">
+        <section aria-labelledby="titulo-cobrancas">
+          <div class="secao-topo secao-topo-filtros">
+            <h2 id="titulo-cobrancas">Cobranças</h2>
+            <div class="filtro-pilulas" id="filtro-status" role="group" aria-label="Filtrar por status">
+              <button type="button" data-status="todas" aria-pressed="true">Todas</button>
+              <button type="button" data-status="pendente" aria-pressed="false">Pendentes</button>
+              <button type="button" data-status="pago" aria-pressed="false">Pagas</button>
+            </div>
+            <div class="filtro-pilulas" id="filtro-periodo-pag" role="group" aria-label="Período">
+              <button type="button" data-periodo="30" aria-pressed="false">Mês</button>
+              <button type="button" data-periodo="90" aria-pressed="false">3 meses</button>
+              <button type="button" data-periodo="365" aria-pressed="false">Ano</button>
+              <button type="button" data-periodo="0" aria-pressed="true">Tudo</button>
+            </div>
+          </div>
+          <div class="tabela-rolagem">
+            <table class="tabela-limpa">
+              <caption class="so-leitor-tela">Cobranças</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Cobrança</th>
+                  <th scope="col">Valor</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Data</th>
+                  <th scope="col"><span class="so-leitor-tela">Ações</span></th>
+                </tr>
+              </thead>
+              <tbody id="tabela-pagamentos">
+                <tr><td colspan="5">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <aside class="coluna-lateral" aria-label="Como pagar e ajuda">
+        <section aria-labelledby="titulo-como-pagar">
+          <h2 id="titulo-como-pagar">Como pagar</h2>
+          <ul class="lista-widget" data-livre>
+            <li><span class="widget-item"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#valor"></use></svg><span><strong>Pix</strong><small>Confirma em instantes</small></span></span></li>
+            <li><span class="widget-item"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#pagamentos"></use></svg><span><strong>Cartão</strong><small>Aprovação na hora</small></span></span></li>
+            <li><span class="widget-item"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#recibo"></use></svg><span><strong>Boleto</strong><small>Até 3 dias úteis</small></span></span></li>
+          </ul>
+          <p class="nota">O pagamento é confirmado direto com o Mercado Pago. Pagou e não atualizou? Use "Já paguei".</p>
+        </section>
+        <section aria-labelledby="titulo-ajuda">
+          <h2 id="titulo-ajuda">Precisa de ajuda?</h2>
+          <a id="falar-conosco" class="widget-whatsapp" href="#" target="_blank" rel="noopener noreferrer"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+            <span>Falar com a equipe<small>Dúvidas sobre cobrança ou pagamento.</small></span></a>
+        </section>
+      </aside>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

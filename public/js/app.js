@@ -199,53 +199,19 @@ function itensHtml(resumo) {
   ].join('');
 }
 
-// Itens de uma solicitação com o botão "Remover" (cliente dono ou admin, antes de pagar).
+// Itens podem sair de uma solicitação (cliente dono ou admin) até ela ser paga.
 // O servidor recalcula o preço; quem remove a última solução precisa cancelar a solicitação.
 function solicitacaoEditavel(s) {
   return s.status === 'em_validacao' || s.status === 'aguardando_pagamento';
 }
-function itensEditaveisHtml(s) {
-  const r = s.resumo || {};
-  const editavel = solicitacaoEditavel(s);
-  const qtdSolucoes = (r.itens || []).length + (r.mensais || []).length;
-  const formato = (m) => (m === 'sob-medida' ? 'sob medida' : m === 'modelos-prontos' ? 'modelo pronto' : '');
-  const preco = (p, t) => (p == null ? 'sob análise' : (t === 'from' ? 'a partir de ' : '') + brl(p));
-  const botao = (tipo, item, ultimo) => (!editavel ? '' : ultimo
-    ? `<button type="button" disabled title="É a última solução. Para tirar tudo, cancele a solicitação.">Remover</button>`
-    : `<button type="button" data-remover-item data-sol="${esc(s.id)}" data-tipo="${tipo}" data-id="${esc(item.id)}"
-         data-nome="${esc(item.nome)}" aria-label="Remover ${esc(item.nome)}">Remover</button>`);
-  const linha = (tipo, item, detalhe, valor, ultimo) => `<li data-item-tipo="${tipo}">
-      <span data-item-nome>${esc(item.nome)}${detalhe ? ` <small>${esc(detalhe)}</small>` : ''}${item.adicionado === 'equipe' ? ' <small data-tag-equipe>adicionado pela equipe</small>' : ''}</span>
-      <span data-item-preco>${esc(valor)}</span>${botao(tipo, item, ultimo)}</li>`;
-  const itens = [
-    ...(r.itens || []).map((i) => linha('servico', i, i.personalizado ? i.descricao || 'personalizado' : formato(i.modelo), preco(i.preco, i.tipo_preco), qtdSolucoes <= 1)),
-    ...(r.mensais || []).map((m) => linha('servico', m, 'mensalidade após 3 meses grátis', m.preco != null ? brl(m.preco) + '/mês' : 'mensal', qtdSolucoes <= 1)),
-    ...(r.complementos || []).map((c) => linha('complemento', c, (c.quantidade > 1 ? '× ' + Number(c.quantidade) + ' · ' : '') + 'complemento', preco(c.preco, c.tipo_preco), false))
-  ].join('');
-  const removidos = (r.removidos || []).slice(-5).map((x) =>
-    `<li>${esc(x.nome)} <small>— tirado pel${x.por === 'equipe' ? 'a equipe' : 'o cliente'} em ${fmtData(x.em)}${x.motivo ? ' (' + esc(x.motivo) + ')' : ''}</small></li>`).join('');
-  return `<ul data-itens-solicitacao>${itens}</ul>${removidos ? `<details data-removidos><summary>Itens retirados (${(r.removidos || []).length})</summary><ul>${removidos}</ul></details>` : ''}`;
-}
-
-// Liga os botões "Remover" dentro de `raiz`; depoisDeRemover(resposta) recarrega a tela.
-function ligarRemoverItens(raiz, depoisDeRemover) {
-  raiz.querySelectorAll('[data-remover-item]').forEach((btn) => btn.addEventListener('click', async () => {
-    const { sol, tipo, id, nome } = btn.dataset;
-    if (!window.confirm(`Tirar "${nome}" desta solicitação?\n\nO valor é recalculado. Se a solicitação for sob medida, ela volta para a validação da equipe.`)) return;
-    btn.disabled = true;
-    mostrarErro('');
-    try {
-      const r = await api('solicitacao-itens', { solicitacao_id: sol, tipo, id });
-      const junto = r.removidos_junto && r.removidos_junto.length ? ` Também saiu: ${r.removidos_junto.join(', ')} (dependia dele).` : '';
-      avisar(`"${nome}" foi retirado.${junto} ` + (r.solicitacao.valor_final != null
-        ? 'Novo valor: ' + brl(r.solicitacao.valor_final) + '.'
-        : 'A solicitação voltou para a validação da equipe.'));
-      await depoisDeRemover(r);
-    } catch (e) {
-      mostrarErro(e.message);
-      btn.disabled = false;
-    }
-  }));
+// Pílula de status: texto + cor (nunca só cor)
+const TOM_STATUS = {
+  solicitacao: { em_validacao: 'atencao', aguardando_pagamento: 'info', paga: 'ok', cancelada: 'neutro' },
+  pagamento: { pendente: 'atencao', pago: 'ok', falhou: 'perigo', cancelado: 'neutro', reembolsado: 'neutro' },
+  projeto: { em_andamento: 'info', aguardando_cliente: 'atencao', pausado: 'neutro', concluido: 'ok', cancelado: 'neutro' }
+};
+function etiquetaStatus(grupo, valor) {
+  return `<span data-etiqueta="${(TOM_STATUS[grupo] || {})[valor] || 'neutro'}">${esc(rotulo(grupo, valor))}</span>`;
 }
 
 function valorSolicitacao(s) {

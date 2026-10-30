@@ -20,22 +20,67 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Minhas solicitações</h1>
-    <p>Aqui ficam as soluções que você montou no site. As de preço fechado (ex.: modelo pronto) você paga direto. As sob medida passam pela validação da equipe, que confirma o valor e libera o pagamento aqui.</p>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Plataforma do cliente</p>
+        <h1>Minhas solicitações</h1>
+        <p>As soluções que você montou no site. Preço fechado você paga direto; sob medida a equipe valida e libera o pagamento aqui.</p>
+      </div>
+      <div class="pagina-acoes"><a id="btn-nova-solucao" href="#">Montar nova solução</a></div>
+    </header>
 
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
     <p id="tentar-de-novo" hidden><button type="button" id="btn-tentar">Tentar salvar de novo</button></p>
 
-    <section id="lista-solicitacoes" aria-live="polite">
-      <p>Carregando...</p>
-    </section>
+    <div class="pagina-grade">
+      <div class="coluna-principal">
+        <form class="barra-ferramentas" id="barra-solicitacoes" role="search" aria-label="Buscar e filtrar solicitações">
+          <p class="campo-busca"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+            <label class="so-leitor-tela" for="busca">Buscar por código ou item</label>
+            <input type="search" id="busca" maxlength="80" placeholder="Buscar por código ou item (ex.: SOL-00013, Landing Page)" autocomplete="off"></p>
+          <div class="filtro-pilulas" id="filtro-status" role="group" aria-label="Filtrar por status">
+            <button type="button" data-status="todas" aria-pressed="true">Todas</button>
+            <button type="button" data-status="em_validacao" aria-pressed="false">Em validação</button>
+            <button type="button" data-status="aguardando_pagamento" aria-pressed="false">A pagar</button>
+            <button type="button" data-status="paga" aria-pressed="false">Pagas</button>
+            <button type="button" data-status="cancelada" aria-pressed="false">Canceladas</button>
+          </div>
+        </form>
+        <p id="contagem" class="contagem" aria-live="polite"></p>
 
-    <section>
-      <h2>Precisa de ajuda?</h2>
-      <a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Falar conosco pelo WhatsApp</a>
-    </section>
+        <section id="lista-solicitacoes" class="lista-cards" aria-label="Solicitações" aria-busy="true">
+          <article data-esqueleto></article><article data-esqueleto></article>
+        </section>
+      </div>
+
+      <aside class="coluna-lateral" aria-label="Como funciona e ajuda">
+        <section aria-labelledby="titulo-como-funciona">
+          <h2 id="titulo-como-funciona">Como funciona</h2>
+          <ol class="passos-lista">
+            <li><strong>Você monta a solução</strong><span>No site, com o valor de referência na hora.</span></li>
+            <li><strong>A equipe valida</strong><span>Sob medida: confirmamos escopo e valor.</span></li>
+            <li><strong>Você paga</strong><span>Pix, cartão ou boleto pelo Mercado Pago.</span></li>
+            <li><strong>O projeto começa</strong><span>Acompanhe em Meus projetos.</span></li>
+          </ol>
+        </section>
+        <section aria-labelledby="titulo-ajuda">
+          <h2 id="titulo-ajuda">Precisa de ajuda?</h2>
+          <a id="falar-conosco" class="widget-whatsapp" href="#" target="_blank" rel="noopener noreferrer"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+            <span>Falar com a equipe<small>Dúvidas sobre escopo, valor ou pagamento.</small></span></a>
+        </section>
+      </aside>
+    </div>
   </main>
+
+  <dialog id="painel-solicitacao" class="gaveta" aria-labelledby="painel-sol-titulo">
+    <header>
+      <div><p class="pagina-rotulo">Solicitação</p><h2 id="painel-sol-titulo">Detalhes</h2></div>
+      <button type="button" data-fechar aria-label="Fechar detalhes"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>
+    </header>
+    <div id="painel-sol-corpo" class="gaveta-corpo"></div>
+    <footer id="painel-sol-rodape" class="gaveta-rodape"></footer>
+  </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/config.js"></script>

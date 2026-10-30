@@ -23,6 +23,17 @@
   const paymentId = q.get('payment_id') || q.get('collection_id');
   if (retorno) history.replaceState(null, '', window.location.pathname);
 
+  let filtroStatus = ['pendente', 'pago'].includes(q.get('filtro')) ? q.get('filtro') : 'todas';
+  let periodo = 0;
+  const ligarPilulas = (id, attr, definir) => document.querySelectorAll(`#${id} > button`).forEach((b) => b.addEventListener('click', () => {
+    definir(b.dataset[attr]);
+    document.querySelectorAll(`#${id} > button`).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderTabela();
+  }));
+  ligarPilulas('filtro-status', 'status', (v) => { filtroStatus = v; });
+  ligarPilulas('filtro-periodo-pag', 'periodo', (v) => { periodo = Number(v); });
+  document.querySelectorAll('#filtro-status > button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.status === filtroStatus)));
+
   await carregar();
 
   if (ref && UUID.test(ref)) {
@@ -35,7 +46,7 @@
   async function carregar() {
     const { data, error } = await db
       .from('pagamentos')
-      .select('*, projetos(nome), solicitacoes(codigo)')
+      .select('*, projetos(nome), solicitacoes(codigo, comprovante_token)')
       .order('created_at', { ascending: false });
     if (error) {
       mostrarErro('Não foi possível carregar os pagamentos: ' + error.message);
@@ -48,49 +59,62 @@
 
   function renderResumo() {
     const soma = (st) => lista.filter((p) => p.status === st).reduce((t, p) => t + Number(p.valor), 0);
-    resumo.innerHTML = `<p>Total pago: <strong>${brl(soma('pago'))}</strong> · Em aberto: <strong>${brl(soma('pendente'))}</strong></p>`;
+    const abertas = lista.filter((p) => p.status === 'pendente').length;
+    resumo.innerHTML = [
+      { rotulo: 'Em aberto', valor: soma('pendente'), formato: 'brl', icone: 'recibo', destaque: true, nota: abertas ? `${abertas} ${abertas === 1 ? 'cobrança pendente' : 'cobranças pendentes'}` : 'nada em aberto' },
+      { rotulo: 'Total pago', valor: soma('pago'), formato: 'brl', icone: 'aprovar', nota: 'confirmado pelo Mercado Pago' },
+      { rotulo: 'Cobranças', valor: lista.length, icone: 'pagamentos', nota: 'desde o início' }
+    ].map(kpiHtml).join('');
+    resumo.removeAttribute('aria-busy');
+    animarNumeros(resumo);
   }
 
   function renderTabela() {
     if (!lista.length) {
-      tabela.innerHTML = '<tr><td colspan="6">Nenhuma cobrança ainda. As cobranças aparecem quando você clica em "Pagar" em Minhas solicitações.</td></tr>';
+      tabela.innerHTML = '<tr><td colspan="5"><p class="widget-vazio">Nenhuma cobrança ainda. Elas aparecem quando você clica em "Pagar" em Minhas solicitações.</p></td></tr>';
       return;
     }
-    tabela.innerHTML = lista.map((p) => {
+    const limite = periodo ? Date.now() - periodo * 86400000 : 0;
+    const visiveis = lista.filter((p) => (filtroStatus === 'todas' || p.status === filtroStatus)
+      && (!limite || new Date(p.pago_em || p.created_at).getTime() >= limite));
+    if (!visiveis.length) {
+      tabela.innerHTML = '<tr><td colspan="5"><p class="widget-vazio">Nenhuma cobrança nesse filtro.</p></td></tr>';
+      return;
+    }
+    tabela.innerHTML = visiveis.map((p) => {
       const tentativa = p.status === 'pendente' && p.mp_ultimo_status
-        ? `<br><small>Última tentativa no Mercado Pago: ${esc(rotulo('mp', p.mp_ultimo_status))}</small>` : '';
-      const data = p.status === 'pago' ? 'Pago em ' + fmtData(p.pago_em) : p.vencimento ? 'Vence em ' + fmtData(p.vencimento) : fmtData(p.created_at);
+        ? `<small>Última tentativa: ${esc(rotulo('mp', p.mp_ultimo_status))}</small>` : '';
+      const data = p.status === 'pago' ? fmtData(p.pago_em) : p.vencimento ? 'Vence em ' + fmtData(p.vencimento) : fmtData(p.created_at);
+      const comprovante = p.solicitacoes && p.solicitacoes.comprovante_token
+        ? `<a class="acao-icone" href="comprovante.html?t=${encodeURIComponent(p.solicitacoes.comprovante_token)}" target="_blank" rel="noopener" aria-label="Ver comprovante" title="Ver comprovante">${icone('comprovante')}</a>` : '';
       const acao = p.status === 'pendente'
-        ? `<button type="button" data-pagar="${esc(p.id)}">Pagar</button>
-           <button type="button" data-verificar="${esc(p.id)}">Já paguei — verificar</button>`
-        : p.status === 'pago' && p.projeto_id ? '<a href="projetos.html">Ver projeto</a>' : '';
+        ? `<button type="button" data-pagar="${esc(p.id)}">${icone('pagamentos')} Pagar</button>
+           <button type="button" class="botao-icone" data-verificar="${esc(p.id)}" aria-label="Já paguei: verificar no Mercado Pago" title="Já paguei: verificar no Mercado Pago">${icone('recarregar')}</button>`
+        : p.status === 'pago' && p.projeto_id ? `<a class="acao-icone" href="projetos.html" aria-label="Ver projeto" title="Ver projeto">${icone('projetos')}</a>` : '';
       return `<tr>
-        <td>${esc(p.descricao)}${p.projetos ? '<br><small>' + esc(p.projetos.nome) + '</small>' : ''}</td>
-        <td>${brl(p.valor)}</td>
-        <td>${esc(rotulo('pagamento', p.status))}${tentativa}</td>
-        <td>${esc(p.metodo ? rotulo('metodo', p.metodo) : '-')}</td>
-        <td>${data}</td>
-        <td>${acao}</td>
+        <td data-rotulo="Cobrança">${p.solicitacoes ? `<span class="codigo">${esc(p.solicitacoes.codigo)}</span>` : ''}<strong>${esc(p.descricao)}</strong>${p.projetos ? '<small>' + esc(p.projetos.nome) + '</small>' : ''}</td>
+        <td data-rotulo="Valor" class="num">${brl(p.valor)}</td>
+        <td data-rotulo="Status">${etiquetaStatus('pagamento', p.status)}${tentativa}${p.metodo ? `<small>${esc(rotulo('metodo', p.metodo))}</small>` : ''}</td>
+        <td data-rotulo="Data">${data}</td>
+        <td data-rotulo="Ações" class="acoes">${acao}${comprovante}</td>
       </tr>`;
     }).join('');
 
     tabela.querySelectorAll('[data-pagar]').forEach((btn) => btn.addEventListener('click', async () => {
-      btn.disabled = true;
-      btn.textContent = 'Abrindo...';
+      ocupado(btn, true, 'Abrindo...');
       mostrarErro('');
       try {
         await irParaCheckout({ pagamento_id: btn.dataset.pagar });
       } catch (e) {
         mostrarErro(e.message);
-        btn.disabled = false;
-        btn.textContent = 'Pagar';
+        ocupado(btn, false);
       }
     }));
     tabela.querySelectorAll('[data-verificar]').forEach((btn) => btn.addEventListener('click', async () => {
-      btn.disabled = true;
+      ocupado(btn, true, 'Verificando...');
       avisar('Consultando o Mercado Pago...');
       await verificar(btn.dataset.verificar, null, false);
-      btn.disabled = false;
+      ocupado(btn, false);
     }));
   }
 
