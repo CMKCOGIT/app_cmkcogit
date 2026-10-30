@@ -1,6 +1,6 @@
 // styleguide.js — monta as seções de tokens e ícones do styleguide LENDO os
 // valores do CSS carregado (tokens.css), para a documentação nunca divergir.
-// Mesmo arquivo no site (docs/styleguide.js) e na plataforma (public/js/styleguide.js).
+// Mesma base do site (docs/styleguide.js); aqui com a escala de raios da plataforma.
 (function () {
   'use strict';
   const raiz = getComputedStyle(document.documentElement);
@@ -44,7 +44,7 @@
   function escalas() {
     const espaco = ['--sp-1', '--sp-2', '--sp-3', '--sp-4', '--sp-5', '--sp-6', '--sp-8', '--sp-10', '--sp-12', '--sp-16', '--sp-20', '--sp-24'];
     document.getElementById('sg-espaco').innerHTML = espaco.map((n) => `<div class="sg-barra"><code>${n}</code><span style="width:var(${n})"></span><small>${esc(v(n))}</small></div>`).join('');
-    const raios = ['--radius-sm', '--radius-md', '--radius-lg', '--radius-xl', '--radius-pill'];
+    const raios = ['--radius-sm', '--radius-md', '--radius-lg', '--radius-xl', '--radius-2xl', '--radius-full'];
     document.getElementById('sg-raios').innerHTML = raios.map((n) => `<figure class="sg-caixa" style="border-radius:var(${n})"><figcaption><code>${n}</code><br>${esc(v(n))}</figcaption></figure>`).join('');
     const sombras = ['--shadow-1', '--shadow-2', '--shadow-3', '--shadow-4', '--shadow-brand'];
     document.getElementById('sg-sombras').innerHTML = sombras.map((n) => `<figure class="sg-caixa" style="box-shadow:var(${n})"><figcaption><code>${n}</code></figcaption></figure>`).join('');

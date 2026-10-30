@@ -639,6 +639,8 @@ function ligarShell(perfil, todos, m) {
     if (window.matchMedia('(max-width: 1023.98px)').matches) { // tablet: expande por cima do conteúdo
       const aberto = document.documentElement.classList.toggle('menu-aberto');
       e.currentTarget.setAttribute('aria-pressed', String(aberto));
+      e.currentTarget.title = aberto ? 'Recolher menu' : 'Expandir menu';
+      e.currentTarget.querySelector('[data-rotulo]').textContent = e.currentTarget.title;
       return;
     }
     const recolher = !menuRecolhido();
@@ -787,6 +789,7 @@ function abrirBusca(destinos, buscaEm) {
       <ul id="busca-global-lista" role="listbox" aria-label="Resultados"></ul>`;
     document.body.appendChild(dlg);
     dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+    dlg.addEventListener('close', () => document.getElementById('btn-busca')?.focus());
   }
   const campo = dlg.querySelector('input');
   const lista = dlg.querySelector('ul');
@@ -814,6 +817,7 @@ function abrirBusca(destinos, buscaEm) {
     if (e.key === 'ArrowDown') { e.preventDefault(); ativo = (ativo + 1) % Math.max(n, 1); render(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); ativo = (ativo - 1 + n) % Math.max(n, 1); render(); }
     else if (e.key === 'Enter') { e.preventDefault(); lista.querySelector(`#busca-op-${ativo} a`)?.click(); dlg.close(); }
+    else if (e.key === 'Escape') { e.preventDefault(); dlg.close(); } // o campo de busca consumiria o primeiro Esc
   };
   campo.value = '';
   ativo = 0;

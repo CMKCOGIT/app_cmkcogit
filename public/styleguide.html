@@ -65,7 +65,7 @@
       <h3>Raios</h3><div class="sg-linha" id="sg-raios"></div>
       <h3>Sombras</h3><div class="sg-linha" id="sg-sombras"></div>
       <h3>Movimento</h3><ul id="sg-movimento"></ul>
-      <p class="sg-nota">Só <code>transform</code> e <code>opacity</code>. Com <code>prefers-reduced-motion</code> as durações caem para ~0.</p>
+      <p class="sg-nota">Só <code>transform</code> e <code>opacity</code> (o anel anima uma propriedade registrada). Revelação ao rolar só no que começa fora da tela (classe <code>anima</code> no <code>&lt;html&gt;</code>, nunca sem JS); contadores e anéis animam ao entrar na tela; View Transitions entre páginas. Com <code>prefers-reduced-motion</code> tudo isso desliga.</p>
     </section>
 
     <section aria-labelledby="t-icones">
@@ -127,6 +127,43 @@
       <ul data-livre style="list-style:none;padding:0"><li data-esqueleto-linha></li><li data-esqueleto-linha style="width:70%"></li></ul>
       <h3>Estado vazio</h3>
       <section id="lista-admin" style="padding:0;border:0;box-shadow:none"><p data-vazio>Nenhuma solicitação neste filtro.</p></section>
+    </section>
+
+
+    <section aria-labelledby="t-shell">
+      <h2 id="t-shell">Shell da plataforma</h2>
+      <p class="sg-nota">Montado por <code>montarMenu()</code> em <code>js/app.js</code>; as páginas só têm <code>&lt;nav id="menu"&gt;</code> e <code>&lt;main&gt;</code>. Desktop (≥1024): menu lateral flutuante (inset 14 px, raio 24) com grupos, cartão de destaque e utilidades; recolhível. Tablet (768–1023): só ícones, expande por cima do conteúdo. Celular (&lt;768): menu inferior flutuante com indicador deslizante, botão central e folha "Mais" (arrastar para fechar). Barra superior: busca global (<kbd>Ctrl K</kbd> ou <kbd>/</kbd>), sino e menu do usuário.</p>
+      <p class="sg-nota">Grade: container fluido até 1600 px centralizado, padding <code>clamp(16px, 3vw, 48px)</code>, 12 colunas; <code>.coluna-principal</code> (8) + <code>.coluna-lateral</code> (4) a partir de 1280 px; <code>data-larga</code> = 9/3.</p>
+    </section>
+
+    <section aria-labelledby="t-kpi">
+      <h2 id="t-kpi">KPIs e filtros</h2>
+      <ul class="kpis" data-livre style="margin-bottom:var(--sp-6)">
+        <li class="kpi" data-destaque><div><span class="kpi-rotulo">Faturamento</span><span class="kpi-icone" aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#valor"></use></svg></span><strong class="kpi-valor">R$ 13.870,00</strong><small class="kpi-nota"><span class="kpi-variacao" data-sentido="subiu"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#subiu"></use></svg>+27%</span><span>vs. período anterior</span></small></div></li>
+        <li class="kpi"><a href="#t-kpi"><span class="kpi-rotulo">Em validação</span><span class="kpi-icone" aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#em-validacao"></use></svg></span><strong class="kpi-valor">3</strong><small class="kpi-nota"><span>card clicável</span></small></a></li>
+        <li class="kpi" data-alerta="perigo"><div><span class="kpi-rotulo">Atrasados</span><span class="kpi-icone" aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#alerta"></use></svg></span><strong class="kpi-valor">1</strong><small class="kpi-nota"><span class="kpi-variacao" data-sentido="desceu"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#desceu"></use></svg>-50%</span></small></div></li>
+      </ul>
+      <p class="sg-nota"><code>kpiHtml({ rotulo, valor, formato: 'brl'|'pct', icone, href, nota, destaque, alerta, variacao })</code>. Variação só com base real (período anterior); sem base, nada é inventado.</p>
+      <div class="filtro-pilulas" role="group" aria-label="Exemplo de filtro" style="width:max-content;max-width:100%"><button type="button" aria-pressed="false">Dia</button><button type="button" aria-pressed="false">Semana</button><button type="button" aria-pressed="true">Mês</button><button type="button" aria-pressed="false">Ano</button></div>
+      <h3>Abas</h3>
+      <div class="abas" role="tablist" aria-label="Exemplo"><button type="button" role="tab" aria-selected="true">Dados pessoais</button><button type="button" role="tab" aria-selected="false" tabindex="-1">Segurança</button><button type="button" role="tab" aria-selected="false" tabindex="-1">Notificações</button></div>
+    </section>
+
+    <section aria-labelledby="t-lt">
+      <h2 id="t-lt">Linha do tempo, progresso e status</h2>
+      <ul class="linha-tempo" data-livre>
+        <li class="linha-tempo-dia" aria-hidden="true">Hoje</li>
+        <li class="evento" data-nova><span class="evento-icone" aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#avancar"></use></svg></span><strong class="evento-titulo">Projeto avançou para Design</strong><time class="evento-quando">há 1 h</time><p class="evento-texto">Etapa 4 de 8.</p></li>
+        <li class="evento" data-tipo="pagamento"><span class="evento-icone" aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#pagamentos"></use></svg></span><strong class="evento-titulo">Pagamento confirmado</strong><time class="evento-quando">há 3 h</time></li>
+      </ul>
+      <h3>Anel de progresso</h3>
+      <p class="sg-linha"><span class="anel" style="--pct:45" role="img" aria-label="45% concluído"><span aria-hidden="true">45%</span></span>
+        <span class="anel" data-grande style="--pct:72" role="img" aria-label="72% concluído"><span aria-hidden="true">72%</span></span></p>
+      <h3>Status da solicitação</h3>
+      <ol class="linha-status" aria-label="Exemplo"><li data-estado="feito"><span aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#concluido"></use></svg></span>Enviada</li><li data-estado="atual" aria-current="step"><span aria-hidden="true">2</span>Em validação</li><li data-estado="futuro"><span aria-hidden="true">3</span>Aguardando pagamento</li><li data-estado="futuro"><span aria-hidden="true">4</span>Paga</li><li data-estado="futuro"><span aria-hidden="true">5</span>Em desenvolvimento</li></ol>
+      <h3>Seleção em massa</h3>
+      <div class="barra-selecao" style="position:static"><span>2 itens selecionados</span><button type="button" data-cancelar><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#remover"></use></svg> Remover selecionados</button></div>
+      <p class="sg-nota">Gaveta (<code>dialog.gaveta</code>): painel à direita no desktop, folha inferior no celular; foco preso, ESC, clique fora e X. Usada em Minhas solicitações e Clientes.</p>
     </section>
 
     <section aria-labelledby="t-modal">
