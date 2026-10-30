@@ -16,7 +16,7 @@ create sequence if not exists public.seq_solicitacao start 1;
 create table if not exists public.solicitacoes (
   id               uuid primary key default gen_random_uuid(),
   codigo           text unique not null
-                   default ('SOL-' || lpad(nextval('public.seq_solicitacao')::text, 5, '0')),
+                   default ('PLN-' || to_char(now() at time zone 'America/Sao_Paulo', 'YYYY') || '-' || lpad(nextval('public.seq_solicitacao')::text, 4, '0')),
   cliente_id       uuid not null references public.profiles(id) on delete cascade,
   ref_site         text not null,                 -- id aleatório gerado no site (evita duplicar ao recarregar)
   origem           text not null default 'configurador',

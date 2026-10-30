@@ -27,7 +27,7 @@ function criarSolicitacao(servicos, complementos = [], extra = {}) {
   const calc = calcular({ servicos, complementos }, catalogo);
   assert.ok(calc.ok, calc.erro);
   const s = {
-    id: crypto.randomUUID(), codigo: 'SOL-0000' + (banco.solicitacoes.length + 1), cliente_id: ANA,
+    id: crypto.randomUUID(), codigo: 'PLN-2026-000' + (banco.solicitacoes.length + 1), cliente_id: ANA,
     selecao: { objetivos: [], servicos, complementos }, resumo: calc.resumo, estruturado: calc.estruturado,
     tipo_preco: calc.tipo_preco, valor_calculado: calc.valor, valor_final: calc.estruturado ? calc.valor : null,
     status: calc.estruturado ? 'aguardando_pagamento' : 'em_validacao', updated_at: '2026-10-30T10:00:00.123456+00:00', ...extra

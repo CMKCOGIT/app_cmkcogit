@@ -852,7 +852,7 @@ function abrirBusca(destinos, buscaEm) {
     lista.innerHTML = itens.length ? itens.map((d, n) => `
       <li role="option" id="busca-op-${n}" aria-selected="${n === ativo}">
         <a href="${esc(d.href)}"${d.externo ? ' target="_blank" rel="noopener"' : ''} tabindex="-1">${icone(d.icone)}<span>${esc(d.texto)}</span><small>${esc(d.tipo)}</small></a></li>`).join('')
-      : '<li data-vazio>Nada encontrado. Tente o código (ex.: SOL-00013) ou o nome do cliente.</li>';
+      : '<li data-vazio>Nada encontrado. Tente o código (ex.: PLN-2026-0013) ou o nome do cliente.</li>';
     campo.setAttribute('aria-activedescendant', itens.length ? 'busca-op-' + ativo : '');
   }
   campo.oninput = () => { ativo = 0; render(); };

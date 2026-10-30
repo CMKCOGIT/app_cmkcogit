@@ -114,6 +114,12 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    "aguardando pagamento" (o checkout não muda).
 10. Opcional, só para ver o sino com dados: `14_seed_notificacoes_teste.sql` (troque o e-mail do cliente de teste
    dentro dele). Apague depois com a consulta do fim do arquivo.
+11. Rode `17_codigo_plano.sql`: as solicitações passam a se chamar **PLN-2026-0001** (Plano; quando pago vira o
+   projeto COG-2026-100). As que já existem são renumeradas e o código é trocado no nome do projeto, nas cobranças,
+   nas notificações e no comprovante.
+12. Opcional, para limpar testes: `16_opcional_zerar_solicitacoes.sql` mantém só as solicitações **pagas de verdade**
+   (status paga + cobrança confirmada) e apaga o resto. Rode a prévia antes; rode o 16 **antes** do 17 para a
+   numeração recomeçar do 0001.
 
 Se mudar um preço no site (`js/data.js`), mude também em `sql/02_catalogo.sql` e rode de novo:
 **quem decide o valor cobrado é o banco**, não o navegador.

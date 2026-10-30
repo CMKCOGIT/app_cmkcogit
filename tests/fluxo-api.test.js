@@ -84,7 +84,7 @@ globalThis.fetch = async (url, op = {}) => {
       if (tabela === 'solicitacoes' && linhas.some((l) => l.cliente_id === corpo.cliente_id && l.ref_site === corpo.ref_site)) return resposta(409, { code: '23505' });
       if (tabela === 'pagamentos' && linhas.some((l) => l.solicitacao_id === corpo.solicitacao_id && l.status === 'pendente')) return resposta(409, { code: '23505' });
       const nova = { id: uuid(), status: 'pendente', created_at: new Date().toISOString(), ...corpo };
-      if (tabela === 'solicitacoes') nova.codigo = 'SOL-' + String(++seq).padStart(5, '0');
+      if (tabela === 'solicitacoes') nova.codigo = 'PLN-2026-' + String(++seq).padStart(4, '0');
       linhas.push(nova);
       return resposta(201, [nova]);
     }

@@ -28,7 +28,7 @@ beforeEach(() => {
 function criar(servicos, extra = {}) {
   const calc = calcular({ servicos, complementos: [] }, catalogo);
   const s = {
-    id: crypto.randomUUID(), codigo: 'SOL-00013', cliente_id: ANA, created_at: '2026-10-27T20:09:43Z',
+    id: crypto.randomUUID(), codigo: 'PLN-2026-0013', cliente_id: ANA, created_at: '2026-10-27T20:09:43Z',
     selecao: { objetivos: [], servicos, complementos: [] }, resumo: calc.resumo, estruturado: calc.estruturado,
     tipo_preco: calc.tipo_preco, valor_calculado: calc.valor, valor_final: calc.estruturado ? calc.valor : null,
     status: calc.estruturado ? 'aguardando_pagamento' : 'em_validacao', updated_at: '2026-10-30T10:00:00.123456+00:00', ...extra
@@ -128,7 +128,7 @@ test('aprovar: grava itens, valor manual, quem/quando, comprovante com mensagem 
   assert.ok(r.json.whatsapp_url.startsWith('https://wa.me/5517981568889?text='));
   const texto = decodeURIComponent(r.json.whatsapp_url.split('?text=')[1]);
   assert.match(texto, /Olá, Ana!/);
-  assert.match(texto, /SOL-00013/);
+  assert.match(texto, /PLN-2026-0013/);
   assert.match(texto, /R\$\s?950,00/);
   assert.match(texto, /Inclui 2 rodadas de ajuste\./);
   assert.ok(texto.includes(r.json.comprovante_url));
@@ -137,7 +137,7 @@ test('aprovar: grava itens, valor manual, quem/quando, comprovante com mensagem 
   // página pública do comprovante
   const c = await chamar('comprovante', { metodo: 'GET', query: { t: s.comprovante_token } });
   assert.equal(c.status, 200);
-  assert.equal(c.json.comprovante.codigo, 'SOL-00013');
+  assert.equal(c.json.comprovante.codigo, 'PLN-2026-0013');
   assert.equal(c.json.pagamento.codigo, 'liberado');
   assert.equal((await chamar('comprovante', { metodo: 'GET', query: { t: 'x'.repeat(32) } })).status, 404);
   assert.equal((await chamar('comprovante', { metodo: 'GET', query: { t: 'curto' } })).status, 404);
