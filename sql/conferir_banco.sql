@@ -78,7 +78,10 @@ with item(arquivo, o_que, nome) as (values
   ('15_validacao_comprovante', 'coluna', 'solicitacoes.comprovante_token'),
   ('15_validacao_comprovante', 'coluna', 'solicitacoes.aprovado_por'),
   ('15_validacao_comprovante', 'coluna', 'solicitacoes.motivo_cancelamento'),
-  ('15_validacao_comprovante', 'índice', 'uq_solicitacoes_comprovante_token')
+  ('15_validacao_comprovante', 'índice', 'uq_solicitacoes_comprovante_token'),
+  ('18_cpf_cnpj', 'coluna', 'profiles.documento'),
+  ('18_cpf_cnpj', 'função', 'documento_valido'),
+  ('18_cpf_cnpj', 'função', 'salvar_documento')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

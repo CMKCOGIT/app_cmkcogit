@@ -49,6 +49,9 @@
                 <input type="text" id="perfil-nome" autocomplete="name" maxlength="120" required></p>
               <p><label for="perfil-telefone">WhatsApp (com DDD)</label>
                 <input type="tel" id="perfil-telefone" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000"></p>
+              <p><label for="perfil-documento">CPF ou CNPJ da empresa</label>
+                <input type="text" id="perfil-documento" inputmode="numeric" autocomplete="off" maxlength="18" placeholder="000.000.000-00" aria-describedby="ajuda-documento"></p>
+              <p class="nota" id="ajuda-documento">Usado no contrato, na nota fiscal e no pagamento. Por segurança aparece mascarado; para trocar, digite o número completo.</p>
               <button type="submit">Salvar dados</button>
             </form>
           </section>
@@ -117,7 +120,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/config.js"></script>
-  <script src="js/app.js?v=6f623e6c28"></script>
-  <script src="js/perfil.js?v=9f0e03e770"></script>
+  <script src="js/app.js?v=663eb5fad1"></script>
+  <script src="js/perfil.js?v=dd0bc69fd1"></script>
 </body>
 </html>

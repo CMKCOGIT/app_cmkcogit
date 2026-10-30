@@ -19,7 +19,7 @@ const USUARIOS = { 'tok-ana': { id: 'aaaaaaaa-0000-4000-8000-000000000001', emai
 let banco, mp, seq;
 
 beforeEach(() => {
-  const perfis = Object.values(USUARIOS).map((u) => ({ id: u.id, cadastro_concluido_em: '2026-01-01T00:00:00Z' }));
+  const perfis = Object.values(USUARIOS).map((u) => ({ id: u.id, cadastro_concluido_em: '2026-01-01T00:00:00Z', documento: '52998224725' }));
   banco = { solicitacoes: [], pagamentos: [], projetos: [], profiles: perfis, catalogo_precos: catalogo, pagamento_eventos: [] };
   mp = { prefs: [], pagamentos: [] };
   seq = 0;
@@ -170,6 +170,23 @@ test('admin não compra: solicitação e checkout recusados (403 somente_cliente
   assert.equal(mp.prefs.length, 0);
 });
 
+test('sem CPF/CNPJ (conta antiga): checkout recusado (409 documento_pendente) e nada vai ao Mercado Pago', async () => {
+  banco.profiles.find((p) => p.id === USUARIOS['tok-ana'].id).documento = null;
+  const cfg = cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos', nome: 'Landing', preco: 1 }]);
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
+  assert.equal(r.status, 201);
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  assert.equal(c.status, 409);
+  assert.equal(c.json.codigo, 'documento_pendente');
+  assert.equal(mp.prefs.length, 0);
+  assert.equal(banco.pagamentos.length, 0);
+
+  banco.profiles.find((p) => p.id === USUARIOS['tok-ana'].id).documento = '11222333000181';
+  const c2 = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  assert.equal(c2.status, 200);
+  assert.deepEqual(mp.prefs[0].payer.identification, { type: 'CNPJ', number: '11222333000181' });
+});
+
 test('logado sem perfil: 403 (não libera por falta de dado)', async () => {
   banco.profiles = banco.profiles.filter((p) => p.id !== USUARIOS['tok-bia'].id);
   const r = await chamar('solicitacoes', { token: 'tok-bia', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }]) } });
@@ -198,6 +215,7 @@ test('modelo pronto: salva com preço do servidor, recarregar não duplica, paga
   assert.equal(c1.status, 200);
   assert.match(c1.json.url, /^https:\/\/www\.mercadopago\.com\.br\//);
   const pref = mp.prefs[0];
+  assert.deepEqual(pref.payer.identification, { type: 'CPF', number: '52998224725' });
   assert.equal(pref.items[0].unit_price, 500);
   assert.equal(pref.external_reference, c1.json.pagamento_id);
   assert.equal(pref.auto_return, 'approved');

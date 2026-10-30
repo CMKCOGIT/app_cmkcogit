@@ -1,5 +1,5 @@
 // =====================================================================
-// perfil.js — o cliente altera nome e WhatsApp (tabela profiles), e-mail
+// perfil.js — o cliente altera nome, WhatsApp e CPF/CNPJ (tabela profiles), e-mail
 // e senha de acesso (Supabase Auth) e encerra as sessões abertas.
 // =====================================================================
 (async function () {
@@ -12,6 +12,19 @@
   nome.value = perfil.nome || '';
   telefone.value = formatarTelefone(perfil.telefone);
   telefone.addEventListener('input', () => { telefone.value = formatarTelefone(telefone.value); });
+  // CPF/CNPJ: lido à parte (não vai para o cache do perfil) e mostrado mascarado
+  const documento = document.getElementById('perfil-documento');
+  let docMascarado = '';
+  db.from('profiles').select('documento').eq('id', perfil.id).maybeSingle().then(({ data }) => {
+    docMascarado = mascararDocumento(data && data.documento);
+    documento.value = docMascarado;
+  });
+  documento.addEventListener('focus', () => { if (documento.value === docMascarado) documento.select(); });
+  documento.addEventListener('input', () => { documento.value = formatarDocumento(documento.value); });
+  if (new URLSearchParams(window.location.search).get('falta') === 'documento') {
+    avisar('Para pagar, informe seu CPF ou o CNPJ da empresa e clique em "Salvar dados".');
+    documento.focus();
+  }
   document.getElementById('cliente-desde').textContent = fmtData(perfil.created_at || sessao.user.created_at);
   mostrarEmail(sessao.user);
   preencherCartao();
@@ -88,11 +101,20 @@
     const fone = telefone.value.replace(/\D/g, '');
     if (novoNome.length < 2) return mostrarErro('Informe seu nome.');
     if (fone && (fone.length < 10 || fone.length > 11)) return mostrarErro('Informe o WhatsApp com DDD.');
+    const novoDoc = documento.value === docMascarado ? '' : documento.value.replace(/\D/g, '');
+    if (novoDoc && !documentoValido(novoDoc)) return mostrarErro('CPF ou CNPJ inválido. Confira os números.');
+    if (!novoDoc && documento.value !== docMascarado) return mostrarErro('Informe o CPF ou CNPJ completo.');
     const botao = e.target.querySelector('button');
     botao.disabled = true;
     const { error } = await db.from('profiles').update({ nome: novoNome, telefone: fone || null }).eq('id', perfil.id);
+    if (error) { botao.disabled = false; return mostrarErro('Não foi possível salvar: ' + error.message); }
+    if (novoDoc) {
+      const r = await db.rpc('salvar_documento', { p_documento: novoDoc });
+      if (r.error) { botao.disabled = false; return mostrarErro('Não foi possível salvar o CPF/CNPJ: ' + r.error.message); }
+      docMascarado = mascararDocumento(novoDoc);
+      documento.value = docMascarado;
+    }
     botao.disabled = false;
-    if (error) return mostrarErro('Não foi possível salvar: ' + error.message);
     perfil = { ...perfil, nome: novoNome, telefone: fone || null };
     salvarPerfilCache(perfil);
     montarMenu(perfil);

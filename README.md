@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13` e `15` (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17` e `18` (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -42,7 +42,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | Página | Quem | O que faz |
 |---|---|---|
 | `login.html` | todos | Entrar, criar conta (e-mail/senha ou **Continuar com Google**), recuperar senha (mostra a solução trazida do site) |
-| `completar-cadastro.html` | logado com cadastro pendente | Dados obrigatórios antes de liberar a plataforma (nome + aceite dos termos; WhatsApp opcional). Salva rascunho enquanto digita |
+| `completar-cadastro.html` | logado com cadastro pendente | Dados obrigatórios antes de liberar a plataforma (nome, CPF/CNPJ + aceite dos termos; WhatsApp opcional). Salva rascunho enquanto digita |
 | `admin-inicio.html` | admin | **Início do admin = painel de gestão**: faturamento (vs. período anterior), vendas, ticket médio, conversão, pendentes, mais vendido, o que vendemos, gráficos, top 5 clientes, atividades, prazos e exportar CSV. Filtro: hoje, 7 dias, 30 dias, mês atual ou personalizado |
 | `inicio.html` | cliente | Botão "Montar nova solução", resumo, atualizações dos projetos (notificações), próximo passo, dicas de funcionalidades com preço (e faixa de oferta no topo) e suporte |
 | `continuar.html` | cliente | Minhas solicitações: recebe a solução do site, pagar ou aguardar validação |
@@ -50,7 +50,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `projetos.html` | cliente | Sites/soluções adquiridos com % de progresso, previsão de entrega e atalho para o repositório |
 | `projeto.html?id=...` | cliente/admin | Tudo sobre o produto: etapas, prazo, domínio, pendências, repositório, funcionalidades, pagamentos. Admin avança etapa, muda status/previsão/domínio e cria pendências |
 | `projeto.html?id=...#repositorio` | cliente/admin | Repositório do projeto: a equipe envia código e entregas, o cliente envia documentação (até 50 MB por arquivo); cada lado é avisado |
-| `perfil.html` | cliente | Nome, WhatsApp, troca de e-mail (com confirmação), troca de senha e "sair de todos os dispositivos" |
+| `perfil.html` | cliente | Nome, WhatsApp, CPF/CNPJ (mascarado), troca de e-mail (com confirmação), troca de senha e "sair de todos os dispositivos" |
 | `funcionalidades.html` | cliente | Adquirir nova funcionalidade para um projeto e pagar no Mercado Pago |
 | `admin.html` | admin | Solicitações: cada card abre o **modal de validação** — itens com checkbox ("Remover selecionados"), "+ Adicionar funcionalidade" (catálogo ou item personalizado, marcados como "adicionado pela equipe"), valor sugerido recalculado + valor final editável, mensagem ao cliente, resumo com prévia do comprovante, aprovação (quem/quando) e envio pelo WhatsApp; cancelar com motivo. Também os avisos do Mercado Pago |
 | `comprovante.html?t=...` | público | Comprovante do pedido aprovado (link único e aleatório, sem login): itens, valor final, status do pagamento e a mensagem da equipe em destaque. "Baixar PDF" usa a impressão do navegador (Salvar como PDF) |
@@ -120,6 +120,11 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
 12. Opcional, para limpar testes: `16_opcional_zerar_solicitacoes.sql` mantém só as solicitações **pagas de verdade**
    (status paga + cobrança confirmada) e apaga o resto. Rode a prévia antes; rode o 16 **antes** do 17 para a
    numeração recomeçar do 0001.
+13. Rode `18_cpf_cnpj.sql` **antes** de publicar a versão que pede CPF/CNPJ. O perfil ganha `documento` (só números,
+   dígitos verificadores conferidos pelo banco), visível só para o próprio cliente e o admin. O cliente grava pela
+   função `salvar_documento` (Meu perfil) ou ao concluir o cadastro, que passa a exigir o documento. Contas antigas
+   continuam entrando, mas o `/api/checkout` só abre o pagamento depois do documento informado (manda para
+   "Meu perfil") e envia CPF/CNPJ ao Mercado Pago. Na tela ele aparece mascarado (`***.456.789-**`).
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.

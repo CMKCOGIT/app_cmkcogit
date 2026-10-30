@@ -24,7 +24,7 @@
   let abertoId = null;
 
   const [perfis, projs, pags, sols, funcs] = await Promise.all([
-    db.from('profiles').select('id, nome, email, telefone, role, created_at').order('nome'),
+    db.from('profiles').select('id, nome, email, telefone, documento, role, created_at').order('nome'),
     db.from('projetos').select('*, projeto_etapas(status), solicitacao:solicitacoes!projetos_solicitacao_fk(codigo, resumo)')
       .order('created_at', { ascending: false }),
     db.from('pagamentos').select('id, cliente_id, projeto_id, valor, status, descricao, pago_em, created_at'),
@@ -56,7 +56,7 @@
         pago: soma(pagamentos.filter((p) => p.status === 'pago')),
         aberto: soma(pagamentos.filter((p) => p.status === 'pendente')),
         solicitacoesAbertas: sols.data.filter((s) => s.cliente_id === c.id && (s.status === 'em_validacao' || s.status === 'aguardando_pagamento')).length,
-        texto: normalizar([c.nome, c.email, c.telefone].join(' '))
+        texto: normalizar([c.nome, c.email, c.telefone, c.documento].join(' '))
       };
     });
   }
@@ -239,6 +239,9 @@
     conteudo.innerHTML = `
       <section id="detalhe-contato" aria-label="Contato e valores">
         <p>${esc(c.email || '')}${c.telefone ? ' · ' + esc(formatarTelefone(c.telefone)) + ' · ' + whatsapp(c) : ''} · cliente desde ${fmtData(c.created_at)}</p>
+        <p>${c.documento
+          ? `${c.documento.length === 11 ? 'CPF' : 'CNPJ'}: <span data-documento>${esc(mascararDocumento(c.documento))}</span> <button type="button" data-mostrar-documento aria-pressed="false">Mostrar</button>`
+          : '<span>CPF/CNPJ não informado (será pedido antes do pagamento)</span>'}</p>
         <ul data-numeros>
           <li><span>Projetos</span><strong>${c.projetos.length}</strong></li>
           <li><span>Total pago</span><strong>${brl(c.pago)}</strong></li>
@@ -248,6 +251,13 @@
       </section>
       ${c.projetos.length ? c.projetos.map(projetoHtml).join('') : '<p data-vazio>Este cliente ainda não tem projetos.</p>'}`;
     conteudo.querySelectorAll('form[data-andamento]').forEach(ligarFormAndamento);
+    const botaoDoc = conteudo.querySelector('[data-mostrar-documento]');
+    if (botaoDoc) botaoDoc.addEventListener('click', () => {
+      const aberto = botaoDoc.getAttribute('aria-pressed') !== 'true';
+      conteudo.querySelector('[data-documento]').textContent = aberto ? formatarDocumento(c.documento) : mascararDocumento(c.documento);
+      botaoDoc.setAttribute('aria-pressed', String(aberto));
+      botaoDoc.textContent = aberto ? 'Ocultar' : 'Mostrar';
+    });
   }
 
   function projetoHtml(p) {

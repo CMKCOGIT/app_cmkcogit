@@ -34,6 +34,11 @@
         <input type="text" id="comp-nome" autocomplete="name" required maxlength="120">
       </p>
       <p>
+        <label for="comp-documento">CPF ou CNPJ da empresa</label><br>
+        <input type="text" id="comp-documento" inputmode="numeric" autocomplete="off" maxlength="18" required placeholder="000.000.000-00" aria-describedby="ajuda-documento">
+        <small id="ajuda-documento">Usado no contrato, na nota fiscal e no pagamento. Só você e a equipe veem.</small>
+      </p>
+      <p>
         <label for="comp-telefone">WhatsApp (com DDD, opcional)</label><br>
         <input type="tel" id="comp-telefone" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000">
       </p>
@@ -49,7 +54,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/config.js"></script>
-  <script src="js/app.js?v=6f623e6c28"></script>
-  <script src="js/completar-cadastro.js?v=33f8f63232"></script>
+  <script src="js/app.js?v=663eb5fad1"></script>
+  <script src="js/completar-cadastro.js?v=3c5f5dcfa2"></script>
 </body>
 </html>

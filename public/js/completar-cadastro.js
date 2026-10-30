@@ -1,7 +1,7 @@
 // =====================================================================
 // completar-cadastro.js — dados obrigatórios antes de liberar a plataforma
 // (quem entrou pelo Google, ou qualquer conta com cadastro pendente).
-// O rascunho (nome/WhatsApp) é salvo no perfil enquanto a pessoa digita, então
+// O rascunho (nome/WhatsApp; o CPF/CNPJ só é gravado na conclusão) é salvo no perfil enquanto a pessoa digita, então
 // sair, fechar o navegador ou atualizar a página não perde nada. A conclusão só
 // é gravada pelo banco (concluir_cadastro), depois de validar tudo.
 // =====================================================================
@@ -10,6 +10,7 @@
   const form = document.getElementById('form-completar');
   const campoNome = document.getElementById('comp-nome');
   const campoFone = document.getElementById('comp-telefone');
+  const campoDoc = document.getElementById('comp-documento');
   const campoAceite = document.getElementById('comp-aceite');
   const pendencias = document.getElementById('pendencias');
   const rascunho = document.getElementById('rascunho');
@@ -50,6 +51,14 @@
   campoNome.value = perfil.nome || '';
   campoFone.value = perfil.telefone || '';
   campoFone.value = formatarTelefone(campoFone.value);
+  // Documento: lido à parte (não entra no cache do perfil). Já salvo -> só mostra mascarado.
+  const { data: docSalvo } = await db.from('profiles').select('documento').eq('id', sessao.user.id).maybeSingle();
+  const jaTemDoc = Boolean(docSalvo && docSalvo.documento);
+  if (jaTemDoc) {
+    campoDoc.value = mascararDocumento(docSalvo.documento);
+    campoDoc.readOnly = true;
+    campoDoc.required = false;
+  }
   const jaAceitou = Boolean(perfil.aceite_termos_em);
   if (jaAceitou) {
     campoAceite.checked = true;
@@ -59,10 +68,12 @@
   const nomeValido = () => campoNome.value.trim().replace(/\s+/g, ' ').length >= 2;
   const digitosFone = () => campoFone.value.replace(/\D/g, '');
   const foneValido = () => !digitosFone() || /^\d{10,11}$/.test(digitosFone());
+  const docValido = () => jaTemDoc || documentoValido(campoDoc.value);
 
   function faltando() {
     const f = [];
     if (!nomeValido()) f.push('seu nome');
+    if (!docValido()) f.push(campoDoc.value.trim() ? 'um CPF ou CNPJ válido (confira os números)' : 'seu CPF ou o CNPJ da empresa');
     if (!foneValido()) f.push('um WhatsApp válido com DDD (ou deixe em branco)');
     if (!jaAceitou && !campoAceite.checked) f.push('aceitar os Termos de Uso e a Política de Privacidade');
     return f;
@@ -102,6 +113,7 @@
   campoNome.addEventListener('change', salvarRascunho);
   campoFone.addEventListener('change', salvarRascunho);
   campoAceite.addEventListener('change', mostrarPendencias);
+  if (!jaTemDoc) campoDoc.addEventListener('input', () => { campoDoc.value = formatarDocumento(campoDoc.value); mostrarPendencias(); });
 
   function traduzirErro(m) {
     const t = String(m || '').toLowerCase();
@@ -117,7 +129,7 @@
     mostrarPendencias();
     if (f.length) {
       mensagem('Para concluir, falta: ' + f.join('; ') + '.', true);
-      (!nomeValido() ? campoNome : !foneValido() ? campoFone : campoAceite).focus();
+      (!nomeValido() ? campoNome : !docValido() ? campoDoc : !foneValido() ? campoFone : campoAceite).focus();
       return;
     }
     const botao = form.querySelector('button[type=submit]');
@@ -128,7 +140,8 @@
     const { error } = await db.rpc('concluir_cadastro', {
       p_nome: campoNome.value,
       p_telefone: digitosFone() || null,
-      p_aceite: jaAceitou || campoAceite.checked
+      p_aceite: jaAceitou || campoAceite.checked,
+      p_documento: jaTemDoc ? null : campoDoc.value.replace(/\D/g, '')
     });
     if (error) {
       botao.disabled = false;
@@ -159,5 +172,5 @@
   mostrarPendencias();
   mensagem('');
   form.hidden = false;
-  (nomeValido() ? (jaAceitou ? campoFone : campoAceite) : campoNome).focus();
+  (!nomeValido() ? campoNome : !docValido() ? campoDoc : jaAceitou ? campoFone : campoAceite).focus();
 })();

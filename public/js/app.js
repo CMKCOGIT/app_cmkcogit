@@ -69,6 +69,38 @@ function formatarTelefone(valor) {
   if (d.length > 2) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
   return d;
 }
+// CPF (11 números) ou CNPJ (14). A mesma regra roda no banco (documento_valido).
+function documentoValido(valor) {
+  const d = String(valor || '').replace(/\D/g, '');
+  if (!/^(\d{11}|\d{14})$/.test(d) || /^(\d)\1+$/.test(d)) return false;
+  const n = [...d].map(Number);
+  const dv = (pesos) => {
+    const s = pesos.reduce((t, p, i) => t + n[i] * p, 0) % 11;
+    return s < 2 ? 0 : 11 - s;
+  };
+  if (d.length === 11) {
+    const p1 = [10, 9, 8, 7, 6, 5, 4, 3, 2];
+    return dv(p1) === n[9] && dv([11, ...p1]) === n[10];
+  }
+  const p1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  return dv(p1) === n[12] && dv([6, ...p1]) === n[13];
+}
+function formatarDocumento(valor) {
+  const d = String(valor || '').replace(/\D/g, '').slice(0, 14);
+  const partes = d.length <= 11 ? [[3, ''], [3, '.'], [3, '.'], [2, '-']] : [[2, ''], [3, '.'], [3, '.'], [4, '/'], [2, '-']];
+  let i = 0;
+  return partes.map(([qtd, sep]) => {
+    const pedaco = d.slice(i, i += qtd);
+    return pedaco ? sep + pedaco : '';
+  }).join('');
+}
+// Na tela o documento aparece mascarado: ***.456.789-** / **.345.678/0001-**
+function mascararDocumento(valor) {
+  const d = String(valor || '').replace(/\D/g, '');
+  if (d.length === 11) return '***.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-**';
+  if (d.length === 14) return '**.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8, 12) + '-**';
+  return '';
+}
 function fmtDataHora(data) {
   return data ? new Date(data).toLocaleString('pt-BR') : '-';
 }
@@ -505,6 +537,9 @@ async function api(caminho, corpo, metodo = 'POST') {
   const dados = await resp.json().catch(() => ({}));
   if (resp.status === 403 && dados.codigo === 'cadastro_incompleto') {
     window.location.replace(PAGINA_CADASTRO);
+  }
+  if (dados.codigo === 'documento_pendente') {
+    window.location.href = 'perfil.html?falta=documento';
   }
   if (!resp.ok || dados.ok === false) {
     throw Object.assign(new Error(dados.erro || 'Não foi possível concluir agora.'), { status: resp.status });

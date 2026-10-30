@@ -16,7 +16,13 @@ export default async function handler(req, res) {
 
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
-  if (!(await exigirCadastroCompleto(usuario, res, db, { somenteCliente: true }))) return;
+  const perfil = await exigirCadastroCompleto(usuario, res, db, { somenteCliente: true });
+  if (!perfil) return;
+  // CPF/CNPJ do contratante é obrigatório para pagar (contas antigas informam em Meu perfil)
+  const documento = String(perfil.documento || '').replace(/\D/g, '');
+  if (!/^(\d{11}|\d{14})$/.test(documento)) {
+    return json(res, 409, { ok: false, codigo: 'documento_pendente', erro: 'Informe seu CPF ou o CNPJ da empresa em Meu perfil para continuar com o pagamento.' });
+  }
 
   let corpo;
   try { corpo = await lerCorpo(req, 2000); } catch { return erro(res, 400, 'Requisição inválida.'); }
@@ -58,7 +64,7 @@ export default async function handler(req, res) {
         unit_price: Number(pag.valor),
         currency_id: 'BRL'
       }],
-      payer: { email: usuario.email },
+      payer: { email: usuario.email, identification: { type: documento.length === 11 ? 'CPF' : 'CNPJ', number: documento } },
       external_reference: pag.id,
       metadata: { pagamento_id: pag.id },
       back_urls: {
