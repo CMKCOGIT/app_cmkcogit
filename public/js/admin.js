@@ -58,7 +58,7 @@
 
   function render() {
     if (!solicitacoes.length) {
-      lista.innerHTML = '<p>Nada por aqui.</p>';
+      lista.innerHTML = '<p data-vazio>Nenhuma solicitação neste filtro.</p>';
       return;
     }
     lista.innerHTML = solicitacoes.map(cardHtml).join('');
@@ -90,8 +90,8 @@
         ${s.status === 'cancelada' && s.motivo_cancelamento ? `<p data-motivo><small>Motivo do cancelamento:</small> ${esc(s.motivo_cancelamento)}</p>` : ''}
         <p data-acoes-card>
           <button type="button" data-abrir="${esc(s.id)}">${acao}</button>
-          ${s.comprovante_token ? `<button type="button" data-reenviar="${esc(s.id)}">Reenviar comprovante</button>
-            <a href="comprovante.html?t=${encodeURIComponent(s.comprovante_token)}" target="_blank" rel="noopener">Ver comprovante</a>` : ''}
+          ${s.comprovante_token ? `<button type="button" data-reenviar="${esc(s.id)}">${icone('whatsapp')} Reenviar comprovante</button>
+            <a href="comprovante.html?t=${encodeURIComponent(s.comprovante_token)}" target="_blank" rel="noopener">${icone('comprovante')} Ver comprovante</a>` : ''}
           ${s.aprovado_em ? `<small>Aprovada em ${fmtDataHora(s.aprovado_em)}${s.comprovante && s.comprovante.aprovado_por ? ' por ' + esc(s.comprovante.aprovado_por) : ''}</small>` : ''}
         </p>
       </article>`;
@@ -244,11 +244,11 @@
         <div data-itens-topo>
           <h3 id="titulo-itens-modal">Itens <small>(${linhas.length})</small></h3>
           ${editavel ? `<label data-sel-todos><input type="checkbox" id="sel-todos"${todos ? ' checked' : ''}${linhas.length ? '' : ' disabled'}> Selecionar todos</label>
-            <button type="button" data-ir="adicionar">+ Adicionar funcionalidade</button>` : ''}
+            <button type="button" data-ir="adicionar">${icone('adicionar')} Adicionar funcionalidade</button>` : ''}
         </div>
         ${editavel ? `<div data-barra-selecao${n ? '' : ' hidden'} role="region" aria-label="Ações dos itens selecionados">
             <span>${n} ${n === 1 ? 'item selecionado' : 'itens selecionados'}</span>
-            <button type="button" data-remover-selecionados>Remover selecionados (${n})</button>
+            <button type="button" data-remover-selecionados>${icone('remover')} <span>Remover selecionados (${n})</span></button>
             <button type="button" data-limpar-selecao>Limpar seleção</button>
           </div>` : ''}
         <ul data-itens-modal${M.simulando ? ' aria-busy="true"' : ''}>
@@ -281,12 +281,12 @@
         </p>
       </section>`;
     rodape.innerHTML = editavel ? `
-        <button type="button" data-ir="cancelar" data-perigo>Cancelar solicitação</button>
+        <button type="button" data-ir="cancelar" data-perigo>${icone('fechar')} Cancelar solicitação</button>
         <span data-espaco></span>
         <button type="button" data-salvar${sujoItens() ? '' : ' disabled'}>Salvar itens</button>
-        <button type="button" data-ir="resumo" data-primario>Aprovar e liberar</button>`
-      : `${M.s.comprovante_token ? `<button type="button" data-reenviar-modal>Reenviar comprovante</button>
-          <a href="comprovante.html?t=${encodeURIComponent(M.s.comprovante_token)}" target="_blank" rel="noopener">Ver comprovante</a>` : ''}
+        <button type="button" data-ir="resumo" data-primario>${icone('aprovar')} Aprovar e liberar</button>`
+      : `${M.s.comprovante_token ? `<button type="button" data-reenviar-modal>${icone('whatsapp')} Reenviar comprovante</button>
+          <a href="comprovante.html?t=${encodeURIComponent(M.s.comprovante_token)}" target="_blank" rel="noopener">${icone('comprovante')} Ver comprovante</a>` : ''}
         <span data-espaco></span><button type="button" data-fechar>Fechar</button>`;
   }
 
@@ -403,24 +403,24 @@
     rodape.innerHTML = `
       <button type="button" data-ir="editar">← Voltar e editar</button>
       <span data-espaco></span>
-      <button type="button" data-confirmar-aprovacao data-primario>Confirmar e liberar pagamento</button>`;
+      <button type="button" data-confirmar-aprovacao data-primario>${icone('aprovar')} Confirmar e liberar pagamento</button>`;
   }
 
   function telaConcluido() {
     const r = M.resultado;
     corpo.innerHTML = `
       <section data-concluido aria-labelledby="titulo-concluido">
-        <p data-sucesso><span aria-hidden="true">✓</span></p>
+        <p data-sucesso><span>${icone('aprovar', 'i-xl')}</span></p>
         <h3 id="titulo-concluido" tabindex="-1">Pedido ${esc(M.s.codigo)} aprovado</h3>
         <p>Pagamento de <strong>${brl(r.solicitacao.valor_final)}</strong> liberado para o cliente. O comprovante foi gerado${r.janelaAberta ? ' e o WhatsApp foi aberto em outra aba' : ''}.</p>
         <p data-link-comprovante>
           <label for="link-comprovante">Link do comprovante</label>
           <input type="text" id="link-comprovante" readonly value="${esc(r.comprovante_url)}">
-          <button type="button" data-copiar-link>Copiar link</button>
+          <button type="button" data-copiar-link>${icone('copiar')} <span>Copiar link</span></button>
         </p>
         <p data-acoes-concluido>
-          <a href="${esc(r.whatsapp_url)}" target="_blank" rel="noopener noreferrer" data-whats>${r.janelaAberta ? 'Abrir WhatsApp de novo' : 'Enviar pelo WhatsApp'}</a>
-          <a href="${esc(r.comprovante_url)}" target="_blank" rel="noopener">Ver comprovante</a>
+          <a href="${esc(r.whatsapp_url)}" target="_blank" rel="noopener noreferrer" data-whats>${icone('whatsapp')} ${r.janelaAberta ? 'Abrir WhatsApp de novo' : 'Enviar pelo WhatsApp'}</a>
+          <a href="${esc(r.comprovante_url)}" target="_blank" rel="noopener">${icone('comprovante')} Ver comprovante</a>
         </p>
         ${r.cliente_sem_telefone ? '<p><small>O cliente não tem WhatsApp cadastrado: escolha o contato no WhatsApp.</small></p>' : ''}
       </section>`;
@@ -525,7 +525,7 @@
     const barra = corpo.querySelector('[data-barra-selecao]');
     barra.hidden = !n;
     barra.querySelector('span').textContent = `${n} ${n === 1 ? 'item selecionado' : 'itens selecionados'}`;
-    barra.querySelector('[data-remover-selecionados]').textContent = `Remover selecionados (${n})`;
+    barra.querySelector('[data-remover-selecionados] span').textContent = `Remover selecionados (${n})`;
     corpo.querySelectorAll('[data-item-chave]').forEach((c) => c.closest('li').toggleAttribute('data-marcado', c.checked));
     const todos = corpo.querySelector('#sel-todos');
     const total = linhasItens().length;
@@ -701,8 +701,9 @@
       campo.select();
       document.execCommand('copy');
     }
-    btn.textContent = 'Copiado!';
-    setTimeout(() => { btn.textContent = 'Copiar link'; }, 2000);
+    const rotulo = btn.querySelector('span');
+    rotulo.textContent = 'Copiado!';
+    setTimeout(() => { rotulo.textContent = 'Copiar link'; }, 2000);
   }
 
   function valorNumero() {

@@ -134,7 +134,7 @@
     try { if (Number(localStorage.getItem(chave)) > Date.now()) return; } catch (_) {}
     const box = document.getElementById('oferta');
     box.innerHTML = `
-      <button type="button" id="fechar-oferta" aria-label="Fechar dica">×</button>
+      <button type="button" id="fechar-oferta" aria-label="Fechar dica">${icone('fechar')}</button>
       <small>Dica para o seu site</small>
       <h2 id="oferta-titulo">${esc(f.nome)}</h2>
       <p>${esc(DICAS[f.slug] || f.descricao || '')}</p>

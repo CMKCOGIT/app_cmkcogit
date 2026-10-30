@@ -136,8 +136,8 @@
     if (!anterior) return atual ? `<small data-delta="neutro">sem vendas no período anterior</small>` : '';
     const pct = Math.round((atual - anterior) / anterior * 100);
     const dir = pct > 0 ? 'sobe' : pct < 0 ? 'desce' : 'neutro';
-    const seta = pct > 0 ? '▲' : pct < 0 ? '▼' : '=';
-    return `<small data-delta="${dir}"><span aria-hidden="true">${seta}</span> ${pct > 0 ? '+' : ''}${pct}% ${esc(rotuloAnterior)}</small>`;
+    const seta = pct > 0 ? icone('subiu') : pct < 0 ? icone('desceu') : '';
+    return `<small data-delta="${dir}">${seta} ${pct > 0 ? '+' : ''}${pct}% ${esc(rotuloAnterior)}</small>`;
   }
 
   function kpis(d) {

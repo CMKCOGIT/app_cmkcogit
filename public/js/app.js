@@ -435,33 +435,54 @@ function montarMenu(perfil) {
   if (!nav) return;
   const admin = ehAdmin(perfil);
   const itens = admin ? [
-    { href: INICIO_ADMIN, texto: 'Início' },
-    { href: 'admin.html', texto: 'Solicitações' },
-    { href: 'admin-clientes.html', texto: 'Clientes' },
-    { href: 'perfil.html', texto: 'Meu perfil' }
+    { href: INICIO_ADMIN, texto: 'Início', icone: 'painel' },
+    { href: 'admin.html', texto: 'Solicitações', icone: 'solicitacoes' },
+    { href: 'admin-clientes.html', texto: 'Clientes', icone: 'clientes' },
+    { href: 'perfil.html', texto: 'Meu perfil', icone: 'perfil' }
   ] : [
-    { href: 'inicio.html', texto: 'Início' },
-    { href: 'continuar.html', texto: 'Minhas solicitações' },
-    { href: 'pagamentos.html', texto: 'Pagamentos' },
-    { href: 'projetos.html', texto: 'Meus projetos' },
-    { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade' },
-    { href: 'perfil.html', texto: 'Meu perfil' }
+    { href: 'inicio.html', texto: 'Início', icone: 'inicio' },
+    { href: 'continuar.html', texto: 'Minhas solicitações', icone: 'solicitacoes' },
+    { href: 'pagamentos.html', texto: 'Pagamentos', icone: 'pagamentos' },
+    { href: 'projetos.html', texto: 'Meus projetos', icone: 'projetos' },
+    { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade', icone: 'adquirir' },
+    { href: 'perfil.html', texto: 'Meu perfil', icone: 'perfil' }
   ];
   let atual = paginaAtual();
   if (atual === 'projeto.html') atual = admin ? 'admin-clientes.html' : 'projetos.html';
+  const link = (i, extra = '') => `<a href="${i.href}"${i.href === atual ? ' aria-current="page"' : ''} title="${esc(i.texto)}"${extra}>${icone(i.icone)}<span data-rotulo>${esc(i.texto)}</span></a>`;
 
   nav.innerHTML = `
     <strong>CMKCOGIT</strong> · <span>${admin ? 'Painel de gestão' : 'Plataforma do cliente'}</span>
     ${sinoHtml()}
     <ul>
-      ${itens.map((i) => `<li><a href="${i.href}"${i.href === atual ? ' aria-current="page"' : ''}>${i.texto}</a></li>`).join('')}
-      ${admin ? '' : `<li><a href="${esc(urlSite('monte-sua-solucao.html'))}" data-externo>Montar nova solução (site)</a></li>`}
+      ${itens.map((i) => `<li>${link(i)}</li>`).join('')}
+      ${admin ? '' : `<li>${link({ href: esc(urlSite('monte-sua-solucao.html')), texto: 'Montar nova solução (site)', icone: 'adicionar' }, ' data-externo')}</li>`}
     </ul>
     <p><a href="perfil.html" title="Meu perfil">${esc(perfil?.nome || 'Meu perfil')}</a> <small>${esc(perfil?.email || '')}</small>
-      <button type="button" id="btn-sair">Sair</button></p>
+      <button type="button" id="btn-sair" title="Sair">${icone('sair')}<span data-rotulo>Sair</span></button></p>
+    <button type="button" id="btn-recolher" aria-pressed="${menuRecolhido()}" title="Recolher menu">${icone('recolher')}<span data-rotulo>Recolher menu</span></button>
     <hr>`;
   document.getElementById('btn-sair').addEventListener('click', sair);
+  document.getElementById('btn-recolher').addEventListener('click', (e) => {
+    const recolher = !menuRecolhido();
+    document.documentElement.classList.toggle('menu-recolhido', recolher);
+    e.currentTarget.setAttribute('aria-pressed', String(recolher));
+    try { localStorage.setItem(CHAVE_MENU, recolher ? '1' : '0'); } catch (_) {}
+  });
   if (perfil) iniciarSino(perfil);
+}
+
+// Menu lateral recolhido (só no desktop; preferência deste navegador)
+const CHAVE_MENU = 'cmk_menu_recolhido';
+function menuRecolhido() {
+  return document.documentElement.classList.contains('menu-recolhido');
+}
+try { if (localStorage.getItem(CHAVE_MENU) === '1') document.documentElement.classList.add('menu-recolhido'); } catch (_) {}
+
+// Ícone do Bootstrap Icons pelo NOME DO CONCEITO (assets/icons/icones.json).
+// Decorativo por padrão; botão só com ícone precisa de aria-label próprio.
+function icone(nome, classe = '') {
+  return `<svg class="i${classe ? ' ' + classe : ''}" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#${nome}"></use></svg>`;
 }
 
 // Contador do sino. Mantido com este nome: o Início do cliente chama depois de
@@ -625,15 +646,16 @@ function toast(texto, tipo = 'ok') {
 }
 
 // Botão em andamento: desabilita (evita clique duplo) e troca o texto
+const CONTEUDO_BOTAO = new WeakMap();
 function ocupado(botao, sim, textoCarregando) {
   if (!botao) return;
   if (sim) {
-    botao.dataset.textoOriginal = botao.textContent;
+    CONTEUDO_BOTAO.set(botao, botao.innerHTML); // guarda ícone + texto
     if (textoCarregando) botao.textContent = textoCarregando;
     botao.disabled = true;
     botao.setAttribute('aria-busy', 'true');
   } else {
-    if (botao.dataset.textoOriginal) botao.textContent = botao.dataset.textoOriginal;
+    if (CONTEUDO_BOTAO.has(botao)) botao.innerHTML = CONTEUDO_BOTAO.get(botao);
     botao.disabled = false;
     botao.removeAttribute('aria-busy');
   }

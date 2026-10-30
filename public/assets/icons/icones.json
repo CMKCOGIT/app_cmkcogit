@@ -44,6 +44,8 @@
     "historico": "clock-history",
     "vazio": "inbox",
     "seguranca": "shield-check",
-    "menu": "list"
+    "menu": "list",
+    "subiu": "arrow-up-right",
+    "desceu": "arrow-down-right"
   }
 }
