@@ -121,6 +121,9 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    (status paga + cobrança confirmada) e apaga o resto. Rode a prévia antes; rode o 16 **antes** do 17 para a
    numeração recomeçar do 0001.
 
+**O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
+A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.
+
 Se mudar um preço no site (`js/data.js`), mude também em `sql/02_catalogo.sql` e rode de novo:
 **quem decide o valor cobrado é o banco**, não o navegador.
 
