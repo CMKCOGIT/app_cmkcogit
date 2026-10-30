@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Styleguide | CMKCOGIT</title>
+  <meta name="theme-color" content="#0F1B33">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/plataforma.css">
+  <style>
+    body.sg { display: block; }
+    .sg-topo { padding: var(--sp-8) var(--gutter); background: var(--gradient-navy); color: #fff; }
+    .sg-topo img { width: 168px; height: auto; }
+    .sg-topo h1 { margin: var(--sp-4) 0 var(--sp-2); color: #fff; }
+    .sg-topo p { max-width: 70ch; color: var(--color-text-on-dark-muted); }
+    .sg-conteudo { display: grid; gap: var(--sp-6); max-width: 1180px; margin: 0 auto; padding: var(--sp-8) var(--gutter) var(--sp-16); }
+    .sg-conteudo > section { padding: var(--sp-6); border: 1px solid var(--color-border-brand); border-radius: var(--radius-lg); background: var(--color-surface); }
+    .sg-conteudo h2 { margin-bottom: var(--sp-4); }
+    .sg-conteudo h3 { margin: var(--sp-5) 0 var(--sp-3); font-size: var(--fs-small); color: var(--color-text-subtle); text-transform: uppercase; letter-spacing: var(--tracking-overline); }
+    .sg-amostras { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); }
+    .sg-amostra { margin: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: var(--fs-caption); }
+    .sg-amostra > span { display: block; height: 56px; border-bottom: 1px solid var(--color-border); }
+    .sg-amostra figcaption { padding: var(--sp-2) var(--sp-3); }
+    .sg-tipo-linha { display: grid; grid-template-columns: 140px minmax(0, 1fr) 260px; align-items: baseline; gap: var(--sp-4); padding: var(--sp-2) 0; border-bottom: 1px solid var(--color-neutral-200); }
+    .sg-tipo-linha small { font-size: var(--fs-caption); overflow-wrap: anywhere; }
+    .sg-overline { margin-top: var(--sp-4); color: var(--color-brand-600); font-family: var(--font-heading); font-size: var(--fs-overline); font-weight: 700; letter-spacing: var(--tracking-overline); text-transform: uppercase; }
+    .sg-barra { display: grid; grid-template-columns: 90px 1fr 120px; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-2); }
+    .sg-barra span { display: block; height: 12px; border-radius: var(--radius-pill); background: var(--color-brand-500); }
+    .sg-linha { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: center; }
+    .sg-caixa { display: grid; place-items: center; width: 140px; height: 96px; margin: 0; border: 1px solid var(--color-border-brand); background: var(--color-surface); font-size: var(--fs-caption); text-align: center; }
+    .sg-icones { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--sp-3); }
+    .sg-icone { display: flex; gap: var(--sp-3); align-items: center; margin: 0; padding: var(--sp-3); border: 1px solid var(--color-neutral-200); border-radius: var(--radius-md); font-size: var(--fs-caption); }
+    .sg-icone .i { width: var(--icon-lg); height: var(--icon-lg); color: var(--color-brand-600); }
+    .sg-tamanhos .i { color: var(--color-navy-900); }
+    .sg-toast { position: static; transform: none; width: auto; max-width: 420px; }
+    .sg-nota { color: var(--color-text-muted); font-size: var(--fs-small); }
+    @media (max-width: 700px) { .sg-tipo-linha { grid-template-columns: 1fr; gap: var(--sp-1); } }
+  </style>
+</head>
+<body class="sg" data-base="/">
+  <header class="sg-topo">
+    <img src="/assets/images/logo-white.png" alt="CMKCOGIT" width="168" height="38">
+    <h1>Styleguide</h1>
+    <p>Tokens e componentes da plataforma e do painel. Cores, tipografia, espaços, raios, sombras e movimento são lidos de <code>css/tokens.css</code> (o mesmo arquivo do site institucional). Página interna, fora da navegação.</p>
+  </header>
+
+  <main class="sg-conteudo" id="conteudo">
+    <section aria-labelledby="t-cores">
+      <h2 id="t-cores">Cores</h2>
+      <p class="sg-nota">Texto só em pares AA (4,5:1). <code>--color-neutral-400</code> é só para borda e ícone decorativo. Estados sempre com texto + ícone, nunca só cor.</p>
+      <div id="sg-cores"></div>
+    </section>
+
+    <section aria-labelledby="t-tipo">
+      <h2 id="t-tipo">Tipografia</h2>
+      <p class="sg-nota">Inter (títulos, 600–800) e Manrope (corpo, 400–700), WOFF2 locais com <code>font-display: swap</code>. Escala fluida com <code>clamp()</code>.</p>
+      <div id="sg-tipo"></div>
+    </section>
+
+    <section aria-labelledby="t-escalas">
+      <h2 id="t-escalas">Espaço, raios, sombras e movimento</h2>
+      <h3>Espaço (grade 4/8 px)</h3><div id="sg-espaco"></div>
+      <h3>Raios</h3><div class="sg-linha" id="sg-raios"></div>
+      <h3>Sombras</h3><div class="sg-linha" id="sg-sombras"></div>
+      <h3>Movimento</h3><ul id="sg-movimento"></ul>
+      <p class="sg-nota">Só <code>transform</code> e <code>opacity</code>. Com <code>prefers-reduced-motion</code> as durações caem para ~0.</p>
+    </section>
+
+    <section aria-labelledby="t-icones">
+      <h2 id="t-icones">Ícones — Bootstrap Icons 1.11.3</h2>
+      <p class="sg-nota">Um ícone por conceito (<code>assets/icons/icones.json</code>), sprite <code>assets/icons/bi.svg</code>. Decorativo: <code>aria-hidden="true"</code>. Botão só com ícone: <code>aria-label</code>. Cor por <code>currentColor</code>. Proibido: emojis, outras bibliotecas, clipart.</p>
+      <h3>Tamanhos (16 · 20 · 24 · 32)</h3>
+      <div class="sg-linha sg-tamanhos">
+        <svg class="i" style="width:16px;height:16px" aria-hidden="true"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+        <svg class="i" style="width:20px;height:20px" aria-hidden="true"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+        <svg class="i i-lg" aria-hidden="true"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+        <svg class="i i-xl" aria-hidden="true"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+      </div>
+      <h3>Mapa</h3>
+      <div class="sg-icones" id="sg-icones"></div>
+    </section>
+
+    <section aria-labelledby="t-botoes">
+      <h2 id="t-botoes">Botões</h2>
+      <p class="sg-linha">
+        <button type="submit"><svg class="i" aria-hidden="true"><use href="/assets/icons/bi.svg#aprovar"></use></svg> Primário</button>
+        <button type="button">Secundário</button>
+        <button type="button" data-cancelar><svg class="i" aria-hidden="true"><use href="/assets/icons/bi.svg#remover"></use></svg> Destrutivo</button>
+        <button type="submit" disabled>Desabilitado</button>
+        <button type="submit" disabled aria-busy="true">Salvando...</button>
+        <button type="button" aria-label="Fechar"><svg class="i" aria-hidden="true"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>
+      </p>
+      <p class="sg-nota">Foco visível em todos (anel violeta), alvo mínimo de 44 px, <code>ocupado(botao, true, 'Salvando...')</code> desabilita e evita clique duplo.</p>
+    </section>
+
+    <section aria-labelledby="t-campos">
+      <h2 id="t-campos">Campos</h2>
+      <div class="sg-campos">
+        <p><label for="sg-nome">Nome</label><input id="sg-nome" type="text" placeholder="Ex.: Ana Souza"></p>
+        <p><label for="sg-valor">Valor (R$)</label><input id="sg-valor" type="number" min="0.01" step="0.01" inputmode="decimal" value="1234.56"></p>
+        <p><label for="sg-sel">Status</label><select id="sg-sel"><option>Em andamento</option><option>Concluído</option></select></p>
+        <p><label for="sg-msg">Mensagem</label><textarea id="sg-msg" rows="2"></textarea></p>
+        <p><input type="checkbox" id="sg-chk" checked> <label for="sg-chk">Selecionar todos</label></p>
+        <p><label for="sg-faixa">Progresso</label><input id="sg-faixa" type="range" min="0" max="100" value="45"></p>
+        <p><label for="sg-dis">Desabilitado</label><input id="sg-dis" type="text" disabled value="Somente leitura"></p>
+      </div>
+    </section>
+
+    <section aria-labelledby="t-etiquetas">
+      <h2 id="t-etiquetas">Etiquetas (status)</h2>
+      <p class="sg-linha">
+        <span data-etiqueta="ok">Pagamento pago</span>
+        <span data-etiqueta="atencao">Em validação pela equipe</span>
+        <span data-etiqueta="perigo">Atrasado 3d</span>
+        <span data-etiqueta="info">Em andamento</span>
+        <span data-etiqueta="neutro">Sob medida</span>
+      </p>
+    </section>
+
+    <section aria-labelledby="t-feedback">
+      <h2 id="t-feedback">Feedback: toast, aviso, carregando e vazio</h2>
+      <div data-toasts class="sg-toast"><p data-tipo="ok" role="status">Pagamento liberado e comprovante gerado.</p><p data-tipo="erro" role="alert">Informe um valor final maior que zero.</p></div>
+      <p id="aviso" role="status">Itens salvos. A solicitação está em validação.</p>
+      <h3>Esqueleto (carregando)</h3>
+      <ul data-livre style="list-style:none;padding:0"><li data-esqueleto-linha></li><li data-esqueleto-linha style="width:70%"></li></ul>
+      <h3>Estado vazio</h3>
+      <section id="lista-admin" style="padding:0;border:0;box-shadow:none"><p data-vazio>Nenhuma solicitação neste filtro.</p></section>
+    </section>
+
+    <section aria-labelledby="t-modal">
+      <h2 id="t-modal">Modal</h2>
+      <p class="sg-nota"><code>&lt;dialog&gt;</code> com <code>showModal()</code>: foco preso, ESC, clique fora e X; pede confirmação se houver alteração não salva; devolve o foco ao botão que abriu. Tela cheia abaixo de 600 px. Exemplo real: Solicitações → Validar.</p>
+    </section>
+  </main>
+
+  <script src="/js/styleguide.js"></script>
+</body>
+</html>

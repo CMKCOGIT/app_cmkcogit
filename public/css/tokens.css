@@ -91,7 +91,8 @@
   --section-y: clamp(3.5rem, 2rem + 6vw, 7rem);
 
   /* ── Raios ── */
-  --radius-sm: 6px;  --radius-md: 10px;  --radius-lg: 16px;  --radius-xl: 24px;  --radius-pill: 9999px;
+  /* mesmos valores já usados no site e no painel (cards = xl, campos = md) */
+  --radius-sm: 4px;  --radius-md: 8px;  --radius-lg: 12px;  --radius-xl: 16px;  --radius-2xl: 24px;  --radius-pill: 9999px;
 
   /* ── Sombras (4 níveis + marca) ── */
   --shadow-1: 0 1px 3px rgba(15, 27, 51, 0.06);
