@@ -20,12 +20,32 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Meus projetos</h1>
-    <p>Os sites e soluções que você adquiriu. Clique em um projeto para ver etapas, prazo e funcionalidades, ou acesse o repositório para baixar o código e enviar documentos.</p>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Plataforma do cliente</p>
+        <h1>Meus projetos</h1>
+        <p>Os sites e soluções que você adquiriu: etapa atual, prazo, arquivos e o que mais precisar.</p>
+      </div>
+    </header>
     <p id="erro" role="alert"></p>
-    <section id="lista-projetos" aria-live="polite">
-      <p>Carregando...</p>
-    </section>
+    <div class="pagina-grade">
+      <div class="coluna-principal">
+        <section id="lista-projetos" class="lista-cards grade-cards" aria-label="Projetos" aria-busy="true">
+          <article data-esqueleto></article><article data-esqueleto></article>
+        </section>
+      </div>
+      <aside class="coluna-lateral" aria-label="Visão geral">
+        <section id="secao-visao" aria-labelledby="titulo-visao">
+          <h2 id="titulo-visao">Visão geral</h2>
+          <div id="visao-geral" class="visao-geral"><p data-esqueleto-linha></p></div>
+        </section>
+        <section aria-labelledby="titulo-crescer">
+          <h2 id="titulo-crescer">Quer ir além?</h2>
+          <p class="nota">Acrescente recursos a um projeto que você já tem: blog, pagamentos online, painel e mais.</p>
+          <a class="botao-link" href="funcionalidades.html"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#adquirir"></use></svg> Ver funcionalidades</a>
+        </section>
+      </aside>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

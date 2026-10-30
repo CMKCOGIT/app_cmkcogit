@@ -20,24 +20,48 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Adquirir nova funcionalidade</h1>
-    <p>Acrescente recursos a um site ou sistema que você já tem com a COGIT. O valor é do catálogo; o pagamento é pelo Mercado Pago (Pix, cartão ou boleto).</p>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Plataforma do cliente</p>
+        <h1>Adquirir nova funcionalidade</h1>
+        <p>Acrescente recursos a um projeto que você já tem com a COGIT. O valor é do catálogo; o pagamento é pelo Mercado Pago.</p>
+      </div>
+    </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <p>
-      <label for="projeto">Para qual projeto?</label><br>
-      <select id="projeto"><option value="">Carregando...</option></select>
-    </p>
+    <div class="pagina-grade">
+      <div class="coluna-principal">
+        <form class="barra-ferramentas" id="barra-catalogo" role="search" aria-label="Buscar no catálogo">
+          <p class="campo-busca"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+            <label class="so-leitor-tela" for="busca">Buscar funcionalidade</label>
+            <input type="search" id="busca" maxlength="80" placeholder="Buscar funcionalidade (ex.: blog, Pix, WhatsApp)" autocomplete="off"></p>
+          <div class="filtro-pilulas" id="filtro-categoria" role="group" aria-label="Categoria"></div>
+        </form>
 
-    <section id="lista-funcionalidades" aria-live="polite">
-      <p>Carregando...</p>
-    </section>
+        <section id="lista-funcionalidades" class="lista-cards grade-cards" aria-live="polite" aria-busy="true">
+          <article data-esqueleto></article><article data-esqueleto></article>
+        </section>
+      </div>
 
-    <section>
-      <h2>Não achou o que precisa?</h2>
-      <a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Fale conosco: fazemos sob medida</a>
-    </section>
+      <aside class="coluna-lateral" aria-label="Resumo do pedido">
+        <section id="resumo-pedido" class="resumo-pedido" aria-labelledby="titulo-pedido">
+          <h2 id="titulo-pedido">Seu pedido</h2>
+          <p>
+            <label for="projeto">Para qual projeto?</label>
+            <select id="projeto"><option value="">Carregando...</option></select>
+          </p>
+          <div id="pedido-item"><p class="widget-vazio">Escolha uma funcionalidade no catálogo.</p></div>
+          <button type="button" id="btn-pagar-pedido" disabled>Adquirir e pagar</button>
+          <p class="nota">Pix, cartão ou boleto. A equipe começa assim que o pagamento é confirmado.</p>
+        </section>
+        <section aria-labelledby="titulo-sob-medida">
+          <h2 id="titulo-sob-medida">Não achou o que precisa?</h2>
+          <a id="falar-conosco" class="widget-whatsapp" href="#" target="_blank" rel="noopener noreferrer"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+            <span>Fale com a equipe<small>Fazemos sob medida.</small></span></a>
+        </section>
+      </aside>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

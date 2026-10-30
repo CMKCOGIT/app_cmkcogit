@@ -174,27 +174,4 @@ const DICAS = {
   'blog-seo': 'Conteúdo com SEO faz seu site aparecer no Google sem pagar por anúncio.'
 };
 
-// Linha do tempo agrupada por dia, com ícone por tipo de evento
-const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar' };
-function rotuloDia(data) {
-  const d = new Date(data);
-  const hoje = new Date();
-  const ontem = new Date(hoje); ontem.setDate(hoje.getDate() - 1);
-  const mesmo = (a, b) => a.toDateString() === b.toDateString();
-  return mesmo(d, hoje) ? 'Hoje' : mesmo(d, ontem) ? 'Ontem' : fmtData(data);
-}
-function linhaDoTempoHtml(lista) {
-  let dia = '';
-  return lista.map((n) => {
-    const r = rotuloDia(n.created_at);
-    const cabeca = r !== dia ? `<li class="linha-tempo-dia" aria-hidden="true">${esc(r)}</li>` : '';
-    dia = r;
-    const titulo = linkInterno(n.link) ? `<a class="evento-titulo" href="${esc(n.link)}">${esc(n.titulo)}</a>` : `<strong class="evento-titulo">${esc(n.titulo)}</strong>`;
-    return `${cabeca}<li class="evento" data-notificacao="${esc(n.id)}" data-tipo="${esc(n.tipo || '')}"${n.lida ? '' : ' data-nova'}>
-      <span class="evento-icone" aria-hidden="true">${icone(ICONE_EVENTO[n.tipo] || 'notificacoes')}</span>
-      ${titulo}<time class="evento-quando" datetime="${esc(n.created_at)}">${esc(tempoRelativo(n.created_at))}${n.lida ? '' : '<span class="so-leitor-tela"> (nova)</span>'}</time>
-      ${n.mensagem ? `<p class="evento-texto">${esc(n.mensagem)}</p>` : ''}</li>`;
-  }).join('');
-}
-
-// linkInterno() e tempoRelativo() ficam em app.js (usados também pelo sino)
+// linkInterno(), tempoRelativo() e linhaDoTempoHtml() ficam em app.js (usados também pelo sino e pelo perfil)

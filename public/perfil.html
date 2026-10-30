@@ -20,52 +20,96 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <h1>Meu perfil</h1>
-    <p>Seus dados de contato e de acesso à plataforma.</p>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo" id="perfil-rotulo">Minha conta</p>
+        <h1>Meu perfil</h1>
+        <p>Seus dados de contato, acesso à plataforma e notificações.</p>
+      </div>
+    </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <section>
-      <h2>Dados pessoais</h2>
-      <form id="form-dados">
-        <p><label for="perfil-nome">Nome</label><br>
-          <input type="text" id="perfil-nome" autocomplete="name" maxlength="120" required></p>
-        <p><label for="perfil-telefone">WhatsApp (com DDD)</label><br>
-          <input type="tel" id="perfil-telefone" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000"></p>
-        <button type="submit">Salvar dados</button>
-      </form>
-    </section>
+    <div class="pagina-grade">
+      <div class="coluna-principal">
+        <div class="abas" role="tablist" aria-label="Seções do perfil">
+          <button type="button" role="tab" id="aba-dados" aria-controls="painel-dados" aria-selected="true">Dados pessoais</button>
+          <button type="button" role="tab" id="aba-seguranca" aria-controls="painel-seguranca" aria-selected="false" tabindex="-1">Segurança</button>
+          <button type="button" role="tab" id="aba-notificacoes" aria-controls="painel-notificacoes" aria-selected="false" tabindex="-1">Notificações</button>
+        </div>
 
-    <section>
-      <h2>E-mail de acesso</h2>
-      <p>E-mail atual: <strong id="email-atual">-</strong></p>
-      <form id="form-email">
-        <p><label for="novo-email">Novo e-mail</label><br>
-          <input type="email" id="novo-email" autocomplete="email" maxlength="200" required></p>
-        <button type="submit">Trocar e-mail</button>
-      </form>
-      <p><small>Enviamos um link de confirmação para o novo endereço. A troca só vale depois que você clicar nele.</small></p>
-    </section>
+        <div role="tabpanel" id="painel-dados" aria-labelledby="aba-dados" class="painel-aba">
+          <section aria-labelledby="titulo-dados">
+            <h2 id="titulo-dados">Dados pessoais</h2>
+            <form id="form-dados" class="form-grade">
+              <p><label for="perfil-nome">Nome</label>
+                <input type="text" id="perfil-nome" autocomplete="name" maxlength="120" required></p>
+              <p><label for="perfil-telefone">WhatsApp (com DDD)</label>
+                <input type="tel" id="perfil-telefone" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000"></p>
+              <button type="submit">Salvar dados</button>
+            </form>
+          </section>
+        </div>
 
-    <section>
-      <h2>Senha</h2>
-      <form id="form-senha">
-        <p><label for="senha-atual">Senha atual</label><br>
-          <input type="password" id="senha-atual" autocomplete="current-password" required></p>
-        <p><label for="senha-nova">Nova senha (mínimo 8 caracteres)</label><br>
-          <input type="password" id="senha-nova" autocomplete="new-password" minlength="8" required></p>
-        <p><label for="senha-nova2">Repita a nova senha</label><br>
-          <input type="password" id="senha-nova2" autocomplete="new-password" minlength="8" required></p>
-        <button type="submit">Alterar senha</button>
-      </form>
-    </section>
+        <div role="tabpanel" id="painel-seguranca" aria-labelledby="aba-seguranca" class="painel-aba" hidden>
+          <section aria-labelledby="titulo-email">
+            <h2 id="titulo-email">E-mail de acesso</h2>
+            <p>E-mail atual: <strong id="email-atual">-</strong></p>
+            <form id="form-email" class="form-grade">
+              <p><label for="novo-email">Novo e-mail</label>
+                <input type="email" id="novo-email" autocomplete="email" maxlength="200" required aria-describedby="ajuda-email"></p>
+              <button type="submit">Trocar e-mail</button>
+            </form>
+            <p class="nota" id="ajuda-email">Enviamos um link de confirmação para o novo endereço. A troca só vale depois que você clicar nele.</p>
+          </section>
 
-    <section>
-      <h2>Segurança da conta</h2>
-      <p>Cliente desde <strong id="cliente-desde">-</strong>.</p>
-      <p>Esqueceu algum aparelho conectado? Saia de todos os lugares onde sua conta está aberta.</p>
-      <p><button type="button" id="sair-todos">Sair de todos os dispositivos</button></p>
-    </section>
+          <section aria-labelledby="titulo-senha">
+            <h2 id="titulo-senha">Senha</h2>
+            <form id="form-senha" class="form-grade">
+              <p><label for="senha-atual">Senha atual</label>
+                <input type="password" id="senha-atual" autocomplete="current-password" required></p>
+              <p><label for="senha-nova">Nova senha (mínimo 8 caracteres)</label>
+                <input type="password" id="senha-nova" autocomplete="new-password" minlength="8" required></p>
+              <p><label for="senha-nova2">Repita a nova senha</label>
+                <input type="password" id="senha-nova2" autocomplete="new-password" minlength="8" required></p>
+              <button type="submit">Alterar senha</button>
+            </form>
+          </section>
+
+          <section aria-labelledby="titulo-sessoes">
+            <h2 id="titulo-sessoes">Aparelhos conectados</h2>
+            <p>Esqueceu algum aparelho conectado? Saia de todos os lugares onde sua conta está aberta.</p>
+            <p><button type="button" id="sair-todos" data-cancelar>Sair de todos os dispositivos</button></p>
+          </section>
+        </div>
+
+        <div role="tabpanel" id="painel-notificacoes" aria-labelledby="aba-notificacoes" class="painel-aba" hidden>
+          <section aria-labelledby="titulo-notif">
+            <div class="secao-topo"><h2 id="titulo-notif">Notificações</h2>
+              <button type="button" id="perfil-marcar-lidas" hidden>Marcar todas como lidas</button></div>
+            <p class="nota">Avisamos aqui e no sino quando um projeto avança de etapa, recebe um arquivo, precisa de uma decisão sua ou um pagamento é confirmado.</p>
+            <ul id="perfil-notificacoes" class="linha-tempo" data-livre><li><p data-esqueleto-linha></p></li></ul>
+          </section>
+        </div>
+      </div>
+
+      <aside class="coluna-lateral" aria-label="Sua conta">
+        <section class="cartao-perfil" aria-labelledby="perfil-nome-cartao">
+          <span class="avatar avatar-grande" id="perfil-avatar" aria-hidden="true"></span>
+          <h2 id="perfil-nome-cartao">-</h2>
+          <p id="perfil-email-cartao" class="nota"></p>
+          <dl class="numeros-mini">
+            <div><dt>Conta</dt><dd id="perfil-papel">-</dd></div>
+            <div><dt>Desde</dt><dd id="cliente-desde">-</dd></div>
+          </dl>
+        </section>
+        <section aria-labelledby="titulo-ajuda-perfil">
+          <h2 id="titulo-ajuda-perfil">Precisa de ajuda?</h2>
+          <a id="falar-conosco" class="widget-whatsapp" href="#" target="_blank" rel="noopener noreferrer"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+            <span>Falar com a equipe<small>Acesso, dados ou qualquer dúvida.</small></span></a>
+        </section>
+      </aside>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

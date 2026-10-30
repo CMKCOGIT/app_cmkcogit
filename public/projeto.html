@@ -20,13 +20,21 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <p><a id="voltar" href="projetos.html">← Meus projetos</a></p>
-    <h1 id="titulo">Projeto</h1>
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo"><a id="voltar" href="projetos.html">← Meus projetos</a></p>
+        <h1 id="titulo">Projeto</h1>
+        <p id="subtitulo-projeto"></p>
+      </div>
+    </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <section id="resumo-projeto" aria-live="polite"><p>Carregando...</p></section>
-
+    <div class="pagina-grade">
+      <aside class="coluna-lateral coluna-lateral-topo" aria-label="Resumo do projeto">
+        <section id="resumo-projeto" aria-live="polite"><p data-esqueleto-linha></p></section>
+      </aside>
+      <div class="coluna-principal">
     <section>
       <h2>Etapas</h2>
       <ol id="lista-etapas"></ol>
@@ -98,6 +106,8 @@
         <button type="submit">Adicionar arquivo</button>
       </form>
     </section>
+      </div>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

@@ -63,19 +63,22 @@
     document.getElementById('titulo').textContent = p.nome;
     document.title = p.nome + ' | CMKCOGIT';
     const atrasado = p.previsao_entrega && p.status_projeto !== 'concluido' && new Date(p.previsao_entrega + 'T23:59:59') < new Date();
+    const pct = progressoProjeto(p);
+    document.getElementById('subtitulo-projeto').innerHTML = `${esc(p.codigo || '')} · ${esc(rotulo('tipo', p.tipo))} · ${etiquetaStatus('projeto', p.status_projeto)}`;
     document.getElementById('resumo-projeto').innerHTML = `
-      <p>Progresso: ${barraProgresso(progressoProjeto(p))}</p>
-      <dl>
+      <div class="resumo-anel">${anelHtml(pct, `Progresso: ${pct}%`, true)}
+        <p><strong>${p.status_projeto === 'concluido' ? 'Concluído' : 'Etapa ' + Number(p.etapa_atual) + ' de 8'}</strong>
+        <small>${esc(rotulo('projeto', p.status_projeto))}</small></p></div>
+      <dl class="dados-projeto">
         <dt>Código</dt><dd>${esc(p.codigo || '-')}</dd>
-        <dt>Tipo</dt><dd>${esc(rotulo('tipo', p.tipo))}</dd>
         <dt>Endereço do site</dt><dd>${p.dominio ? linkDominio(p.dominio) : 'definido na publicação'}</dd>
-        <dt>Status</dt><dd>${esc(rotulo('projeto', p.status_projeto))} — etapa ${Number(p.etapa_atual)} de 8</dd>
-        <dt>Previsão de entrega</dt><dd>${p.previsao_entrega ? fmtData(p.previsao_entrega) : 'a definir'}${atrasado ? ' <small>(em revisão pela equipe)</small>' : ''}
-          <br><small>Projetos maiores (mais soluções, sob medida ou complementos) têm prazo maior.</small></dd>
-        <dt>Valor do projeto</dt><dd>${brl(p.valor_total)} · Pagamento: ${esc(rotulo('status_pagamento', p.status_pagamento))}</dd>
+        <dt>Previsão de entrega</dt><dd>${p.previsao_entrega ? fmtData(p.previsao_entrega) : 'a definir'}${atrasado ? ' <small>(em revisão pela equipe)</small>' : ''}</dd>
+        <dt>Valor do projeto</dt><dd>${brl(p.valor_total)} <small>${esc(rotulo('status_pagamento', p.status_pagamento))}</small></dd>
         <dt>Início</dt><dd>${fmtData(p.created_at)}</dd>
       </dl>
-      <p><a href="${esc(linkWhatsApp('Olá! Sobre o meu projeto ' + (p.codigo || p.nome) + ' na plataforma COGIT.'))}" target="_blank" rel="noopener noreferrer">Falar com a equipe sobre este projeto</a></p>`;
+      <p class="nota">Projetos maiores (mais soluções, sob medida ou complementos) têm prazo maior.</p>
+      <a class="widget-whatsapp" href="${esc(linkWhatsApp('Olá! Sobre o meu projeto ' + (p.codigo || p.nome) + ' na plataforma COGIT.'))}" target="_blank" rel="noopener noreferrer">${icone('whatsapp')}<span>Falar com a equipe<small>Sobre este projeto</small></span></a>`;
+    animarNumeros(document.getElementById('resumo-projeto'));
   }
 
   function renderEtapas(etapas) {

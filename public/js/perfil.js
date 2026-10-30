@@ -14,6 +14,65 @@
   telefone.addEventListener('input', () => { telefone.value = formatarTelefone(telefone.value); });
   document.getElementById('cliente-desde').textContent = fmtData(perfil.created_at || sessao.user.created_at);
   mostrarEmail(sessao.user);
+  preencherCartao();
+  document.getElementById('falar-conosco').href = linkWhatsApp(`Olá! Sou ${perfil.nome || 'cliente'} (${perfil.email || ''}) e preciso de ajuda com minha conta na plataforma COGIT.`);
+  if (ehAdmin(perfil)) document.getElementById('perfil-rotulo').textContent = 'Painel de gestão';
+  ligarAbas();
+  carregarNotificacoes();
+
+  function preencherCartao() {
+    document.getElementById('perfil-avatar').textContent = iniciais(perfil.nome || perfil.email);
+    document.getElementById('perfil-nome-cartao').textContent = perfil.nome || 'Sem nome';
+    document.getElementById('perfil-email-cartao').textContent = perfil.email || '';
+    document.getElementById('perfil-papel').textContent = ehAdmin(perfil) ? 'Admin' : 'Cliente';
+  }
+
+  // Abas acessíveis: setas, Home/End; a aba aberta fica no endereço (#seguranca)
+  function ligarAbas() {
+    const abas = [...document.querySelectorAll('[role=tab]')];
+    const abrir = (aba, focar) => {
+      abas.forEach((a) => {
+        const sel = a === aba;
+        a.setAttribute('aria-selected', String(sel));
+        a.tabIndex = sel ? 0 : -1;
+        document.getElementById(a.getAttribute('aria-controls')).hidden = !sel;
+      });
+      if (focar) aba.focus();
+      history.replaceState(null, '', '#' + aba.id.replace('aba-', ''));
+      limpar();
+    };
+    abas.forEach((a, i) => {
+      a.addEventListener('click', () => abrir(a, false));
+      a.addEventListener('keydown', (e) => {
+        const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: abas.length - 1 }[e.key];
+        if (n === undefined) return;
+        e.preventDefault();
+        abrir(abas[(n + abas.length) % abas.length], true);
+      });
+    });
+    const inicial = abas.find((a) => '#' + a.id.replace('aba-', '') === window.location.hash);
+    if (inicial) abrir(inicial, false);
+  }
+
+  async function carregarNotificacoes() {
+    const ul = document.getElementById('perfil-notificacoes');
+    const botao = document.getElementById('perfil-marcar-lidas');
+    try {
+      const r = await api('notificacoes?limite=20', null, 'GET');
+      const lista = r.notificacoes || [];
+      ul.innerHTML = lista.length ? linhaDoTempoHtml(lista) : '<li><p class="widget-vazio">Nenhuma notificação por enquanto.</p></li>';
+      botao.hidden = !Number(r.nao_lidas);
+    } catch (e) {
+      ul.innerHTML = '<li><p class="widget-vazio">Não foi possível carregar as notificações agora.</p></li>';
+    }
+  }
+  document.getElementById('perfil-marcar-lidas').addEventListener('click', async (e) => {
+    ocupado(e.currentTarget, true, 'Marcando...');
+    await Sino.marcar(null);
+    ocupado(e.currentTarget, false);
+    toast('Notificações marcadas como lidas.');
+    carregarNotificacoes();
+  });
 
   function mostrarEmail(usuario) {
     document.getElementById('email-atual').textContent = usuario.email +
@@ -36,7 +95,8 @@
     if (error) return mostrarErro('Não foi possível salvar: ' + error.message);
     perfil = { ...perfil, nome: novoNome, telefone: fone || null };
     montarMenu(perfil);
-    avisar('Dados salvos.');
+    preencherCartao();
+    toast('Dados salvos.');
   });
 
   // e-mail: o Supabase manda o link de confirmação; o profiles acompanha (sql/11)
@@ -76,7 +136,7 @@
     botao.disabled = false;
     if (error) return mostrarErro('Não foi possível alterar a senha: ' + error.message);
     e.target.reset();
-    avisar('Senha alterada.');
+    toast('Senha alterada.');
   });
 
   document.getElementById('sair-todos').addEventListener('click', async () => {
