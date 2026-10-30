@@ -140,3 +140,50 @@ Lighthouse mobile (4G simulada), servidor local sem compressão — ver `docs/pe
 4. Marca padronizada; favicon completo e manifest.
 5. Painel com Bootstrap Icons, menu recolhível, cabeçalhos de página e estados vazios.
 6. Medir de novo e registrar em `docs/performance-report.md`.
+
+---
+
+# Parte 2 — Reestruturação da plataforma (branch `redesign/plataforma`)
+
+Auditoria feita antes de mexer no layout da área do cliente e do painel de gestão. Parte da branch `redesign/visual` (tokens, ícones, fontes WOFF2 e favicon já prontos).
+
+## Stack e estrutura
+
+- HTML estático + CSS + JavaScript puro, sem build. Supabase (auth, banco com RLS, Realtime) via CDN `supabase-js@2.45.4`; funções `/api/*` na Vercel; Mercado Pago no checkout.
+- CSP: `script-src 'self' https://cdn.jsdelivr.net` (nada de script inline nem `onclick`), `style-src 'unsafe-inline'`.
+- Um arquivo de página + um `js/<página>.js` por tela. `js/app.js` é a base comum (sessão, `protegerPagina()`, `montarMenu()`, sino, `toast()`, `ocupado()`, formatação `brl()`/`fmtData()`).
+- CSS: `css/tokens.css` (igual ao site) + `css/plataforma.css` (≈2.800 linhas, seletores semânticos: `main > section` vira card, `#resumo` vira grade de números etc.).
+
+## Telas
+
+| Área | Página | Script | Observação |
+|---|---|---|---|
+| Cliente | `inicio.html` | `inicio.js` | resumo (5 números), atualizações, próximo passo (no fim), dicas, suporte |
+| Cliente | `continuar.html` (Minhas solicitações) | `continuar.js` | cards com itens e botão "Remover" por item |
+| Cliente | `pagamentos.html` | `pagamentos.js` | resumo + tabela + Mercado Pago |
+| Cliente | `projetos.html` / `projeto.html` | `projetos.js` / `projeto.js` | cards de projeto; detalhe com etapas, pendências, repositório, extras, pagamentos (e painel admin) |
+| Cliente | `funcionalidades.html` | `funcionalidades.js` | catálogo por projeto, compra individual |
+| Ambos | `perfil.html` | `perfil.js` | dados, e-mail, senha, sair de todos |
+| Admin | `admin-inicio.html` | `admin-inicio.js` | KPIs, gráfico SVG, o que vendemos, top clientes, atividades, filtro de período |
+| Admin | `admin.html` (Solicitações) | `admin.js` | filtro por `<select>`, cards, modal de validação, eventos do Mercado Pago |
+| Admin | `admin-clientes.html` | `admin-clientes.js` | busca, filtros rápidos, cards/tabela, detalhe em `<dialog>` |
+| Público | `login`, `redefinir-senha`, `completar-cadastro`, `comprovante`, `index`, `404` | — | fora do shell; só ajustes de token |
+
+## Problemas de layout confirmados
+
+1. `body.app` é uma grade `272px | 1fr`, mas `main` tem `max-width: 1080px` sem `margin: auto`: a coluna de conteúdo para em 1.144 px e fica colada à esquerda: em 1920 px sobram ~500 px vazios à direita; em 2560 px, ~1.140 px.
+2. Uma coluna só: resumo, atualizações e próximo passo com o mesmo peso; "Próximo passo" é a terceira seção do Início.
+3. Abaixo de 1024 px o menu vira faixa com rolagem horizontal no topo; não há navegação inferior nem atalho de ação no celular.
+4. Sino de notificações dentro do menu; não há barra superior, busca nem menu do usuário.
+5. Filtros de Solicitações em `<select>`; sem busca por código/cliente.
+6. Raios de 8–16 px nos cards (a referência pede 20–24 px).
+
+## Reaproveitado × substituído
+
+| Reaproveitado | Substituído / novo |
+|---|---|
+| tokens de cor, fontes, ícones (sprite Bootstrap Icons), `toast`, `ocupado`, sino (lógica), modal de validação, `dialog` de clientes, todos os IDs usados pelos scripts e testes | menu lateral (agora flutuante, com grupos, cartão de destaque e utilidades), barra superior nova (busca, sino, avatar), menu inferior com FAB e folha "Mais", grade de 12 colunas com painel lateral, cabeçalho de página com ação principal, cards de KPI com destaque, filtros em pílula |
+
+Ícones novos no sprite (mesma biblioteca): ajuda, mais, abrir-menu, relógio, teclado, configurações, período, enviado, cancelado, ok, mensagem, recibo; `solicitacoes` passou a `inboxes`, `projetos` a `kanban`, `adquirir` a `puzzle` (mapa sugerido no briefing). O gerador do sprite agora também existe aqui: `node tools/build-icons.mjs <pasta icons do pacote>`.
+
+Raios da plataforma: o briefing pede sm 10 · md 14 · lg 20 · xl 24. `tokens.css` continua idêntico ao do site (que usa a escala menor); a plataforma redefine `--radius-*` em `plataforma.css`, só para as páginas dela.

@@ -3,14 +3,14 @@
   "icones": {
     "inicio": "house",
     "painel": "bar-chart-line",
-    "solicitacoes": "inbox",
+    "solicitacoes": "inboxes",
     "clientes": "people",
     "perfil": "person-circle",
     "sair": "box-arrow-right",
     "notificacoes": "bell",
-    "projetos": "folder2-open",
+    "projetos": "kanban",
     "pagamentos": "credit-card",
-    "adquirir": "bag-plus",
+    "adquirir": "puzzle",
     "solucoes": "grid-3x3-gap",
     "atrair": "graph-up-arrow",
     "eficiencia": "lightning-charge",
@@ -46,6 +46,19 @@
     "seguranca": "shield-check",
     "menu": "list",
     "subiu": "arrow-up-right",
-    "desceu": "arrow-down-right"
+    "desceu": "arrow-down-right",
+    "ajuda": "question-circle",
+    "mais": "three-dots",
+    "abrir-menu": "chevron-down",
+    "relogio": "clock",
+    "teclado": "command",
+    "configuracoes": "gear",
+    "periodo": "calendar-range",
+    "enviado": "send",
+    "cancelado": "x-circle",
+    "ok": "check-circle-fill",
+    "loja": "bag-plus",
+    "mensagem": "chat-dots",
+    "recibo": "receipt"
   }
 }
