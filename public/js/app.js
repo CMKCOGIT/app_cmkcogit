@@ -120,6 +120,73 @@ function barraProgresso(pct) {
   return `<progress max="100" value="${Number(pct)}">${Number(pct)}%</progress> <strong>${Number(pct)}%</strong>`;
 }
 
+// Anel de progresso (preenche ao entrar na tela). Rótulo para leitores de tela.
+function anelHtml(pct, rotulo, grande = false) {
+  const n = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+  return `<span class="anel" data-anel${grande ? ' data-grande' : ''} style="--pct:${n}" role="img" aria-label="${esc(rotulo || n + '% concluído')}"><span aria-hidden="true">${n}%</span></span>`;
+}
+
+// Card de indicador. k = { rotulo, valor (número), formato: 'numero'|'brl', icone, href,
+// nota, destaque, alerta: 'perigo'|'atencao', variacao: { pct, sentido: 'subiu'|'desceu', texto } }
+function kpiHtml(k) {
+  const valor = k.formato === 'brl' ? brl(k.valor) : String(Number(k.valor) || 0);
+  const variacao = k.variacao ? `<span class="kpi-variacao" data-sentido="${esc(k.variacao.sentido)}">${icone(k.variacao.sentido === 'desceu' ? 'desceu' : 'subiu')}${esc(k.variacao.texto)}</span>` : '';
+  const corpo = `
+    <span class="kpi-rotulo">${esc(k.rotulo)}</span>
+    <span class="kpi-icone" aria-hidden="true">${icone(k.icone || 'info')}</span>
+    <strong class="kpi-valor" data-contar="${Number(k.valor) || 0}" data-formato="${k.formato || 'numero'}">${esc(valor)}</strong>
+    ${variacao || k.nota ? `<small class="kpi-nota">${variacao}${k.nota ? `<span>${esc(k.nota)}</span>` : ''}</small>` : ''}`;
+  return `<li class="kpi"${k.destaque ? ' data-destaque' : ''}${k.alerta ? ` data-alerta="${esc(k.alerta)}"` : ''}>${k.href ? `<a href="${esc(k.href)}">${corpo}</a>` : `<div>${corpo}</div>`}</li>`;
+}
+
+// ---------------------------------------------------------------------
+// Movimento: contadores, anéis e revelação ao rolar. Tudo já nasce com o
+// valor final no HTML; a animação só acontece com movimento permitido.
+// ---------------------------------------------------------------------
+const MOVIMENTO_REDUZIDO = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!MOVIMENTO_REDUZIDO && 'IntersectionObserver' in window) document.documentElement.classList.add('anima');
+
+function animarNumeros(raiz = document) {
+  const alvos = [...raiz.querySelectorAll('[data-contar]:not([data-contado]), [data-anel]:not(.visivel)')];
+  if (!alvos.length) return;
+  const mostrar = (el) => {
+    if (el.hasAttribute('data-anel')) { el.classList.add('visivel'); return; }
+    el.setAttribute('data-contado', '');
+    const fim = Number(el.dataset.contar) || 0;
+    const fmt = (v) => (el.dataset.formato === 'brl' ? brl(v) : String(Math.round(v)));
+    if (MOVIMENTO_REDUZIDO || !fim) { el.textContent = fmt(fim); return; }
+    const inicio = performance.now();
+    const dur = 900;
+    const passo = (t) => {
+      const x = Math.min(1, (t - inicio) / dur);
+      const e = 1 - Math.pow(1 - x, 3);
+      el.textContent = fmt(x < 1 ? (el.dataset.formato === 'brl' ? fim * e : Math.floor(fim * e)) : fim);
+      if (x < 1) requestAnimationFrame(passo);
+    };
+    requestAnimationFrame(passo);
+  };
+  if (!('IntersectionObserver' in window)) { alvos.forEach(mostrar); return; }
+  const io = new IntersectionObserver((entradas) => entradas.forEach((en) => {
+    if (en.isIntersecting) { io.unobserve(en.target); mostrar(en.target); }
+  }), { threshold: 0.3 });
+  alvos.forEach((el) => io.observe(el));
+}
+
+// Revela ao rolar só o que começa fora da tela (o que já está visível não pisca).
+function revelar(seletor = '.coluna-principal > *, .coluna-lateral > *, [data-revelar-grupo] > *') {
+  if (!document.documentElement.classList.contains('anima')) return;
+  const alvos = [...document.querySelectorAll(seletor)].filter((el) => !el.hasAttribute('data-revelar') && !el.hidden);
+  const io = new IntersectionObserver((entradas) => entradas.forEach((en) => {
+    if (en.isIntersecting) { io.unobserve(en.target); en.target.classList.add('visivel'); }
+  }), { rootMargin: '0px 0px -8% 0px' });
+  alvos.forEach((el, i) => {
+    if (el.getBoundingClientRect().top < window.innerHeight) return;
+    el.setAttribute('data-revelar', '');
+    el.style.setProperty('--atraso', Math.min(i % 4, 3) * 70 + 'ms');
+    io.observe(el);
+  });
+}
+
 // Lista de itens de uma solicitação (resumo calculado pelo servidor)
 function itensHtml(resumo) {
   const r = resumo || {};
@@ -430,46 +497,340 @@ async function irParaCheckout(corpo) {
 // Menu (cada página protegida tem <nav id="menu"></nav>)
 // Cliente: telas de compra e acompanhamento. Admin: painel de gestão.
 // ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// Shell da plataforma: menu lateral flutuante (desktop/tablet), barra
+// superior (busca, sino, usuário), menu inferior com botão central e folha
+// "Mais" (celular). Tudo montado aqui; as páginas só têm <nav id="menu"> e <main>.
+// Pode ser chamado de novo (ex.: perfil salvo): substitui o que já existe.
+// ---------------------------------------------------------------------
+function itensMenu(perfil) {
+  const admin = ehAdmin(perfil);
+  const ajuda = linkWhatsApp(`Olá! Sou ${perfil?.nome || 'cliente'} (${perfil?.email || ''}) e preciso de ajuda na plataforma COGIT.`);
+  return admin ? {
+    rotulo: 'Painel de gestão',
+    grupos: [{ titulo: 'Gestão', itens: [
+      { href: INICIO_ADMIN, texto: 'Início', curto: 'Início', icone: 'painel' },
+      { href: 'admin.html', texto: 'Solicitações', curto: 'Solicitações', icone: 'solicitacoes', contador: 'menu-cont-validacao' },
+      { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' }
+    ] }],
+    fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', icone: 'aprovar' },
+    inferior: [INICIO_ADMIN, 'admin.html', 'fab', 'admin-clientes.html'],
+    ajuda
+  } : {
+    rotulo: 'Plataforma do cliente',
+    grupos: [
+      { titulo: 'Principal', itens: [
+        { href: 'inicio.html', texto: 'Início', curto: 'Início', icone: 'inicio' },
+        { href: 'continuar.html', texto: 'Minhas solicitações', curto: 'Solicitações', icone: 'solicitacoes' },
+        { href: 'pagamentos.html', texto: 'Pagamentos', curto: 'Pagamentos', icone: 'pagamentos' },
+        { href: 'projetos.html', texto: 'Meus projetos', curto: 'Projetos', icone: 'projetos' }
+      ] },
+      { titulo: 'Crescer', itens: [
+        { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade', curto: 'Funcionalidades', icone: 'adquirir' }
+      ] }
+    ],
+    fab: { href: urlSite('monte-sua-solucao.html'), texto: 'Montar nova solução', curto: 'Nova', icone: 'adicionar', externo: true },
+    inferior: ['inicio.html', 'continuar.html', 'fab', 'pagamentos.html'],
+    ajuda
+  };
+}
+
+function iniciais(nome) {
+  const partes = String(nome || '').trim().split(/\s+/).filter(Boolean);
+  return ((partes[0] || '?')[0] + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase();
+}
+
 function montarMenu(perfil) {
   const nav = document.getElementById('menu');
-  if (!nav) return;
+  const main = document.querySelector('body.app > main');
+  if (!nav || !main) return;
   const admin = ehAdmin(perfil);
-  const itens = admin ? [
-    { href: INICIO_ADMIN, texto: 'Início', icone: 'painel' },
-    { href: 'admin.html', texto: 'Solicitações', icone: 'solicitacoes' },
-    { href: 'admin-clientes.html', texto: 'Clientes', icone: 'clientes' },
-    { href: 'perfil.html', texto: 'Meu perfil', icone: 'perfil' }
-  ] : [
-    { href: 'inicio.html', texto: 'Início', icone: 'inicio' },
-    { href: 'continuar.html', texto: 'Minhas solicitações', icone: 'solicitacoes' },
-    { href: 'pagamentos.html', texto: 'Pagamentos', icone: 'pagamentos' },
-    { href: 'projetos.html', texto: 'Meus projetos', icone: 'projetos' },
-    { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade', icone: 'adquirir' },
-    { href: 'perfil.html', texto: 'Meu perfil', icone: 'perfil' }
-  ];
+  const m = itensMenu(perfil);
+  const tablet = window.matchMedia('(max-width: 1023.98px)').matches;
+  const todos = m.grupos.flatMap((g) => g.itens);
   let atual = paginaAtual();
   if (atual === 'projeto.html') atual = admin ? 'admin-clientes.html' : 'projetos.html';
-  const link = (i, extra = '') => `<a href="${i.href}"${i.href === atual ? ' aria-current="page"' : ''} title="${esc(i.texto)}"${extra}>${icone(i.icone)}<span data-rotulo>${esc(i.texto)}</span></a>`;
+  const corrente = (href) => (href === atual ? ' aria-current="page"' : '');
+  const link = (i) => `<a href="${esc(i.href)}"${corrente(i.href)} title="${esc(i.texto)}">${icone(i.icone)}<span data-rotulo>${esc(i.texto)}</span>${i.contador ? `<span class="menu-contador" id="${i.contador}" hidden></span>` : ''}</a>`;
+  const externo = (i) => (i.externo ? ' target="_blank" rel="noopener"' : '');
 
+  // ---- menu lateral ----
   nav.innerHTML = `
-    <strong>CMKCOGIT</strong> · <span>${admin ? 'Painel de gestão' : 'Plataforma do cliente'}</span>
-    ${sinoHtml()}
-    <ul>
-      ${itens.map((i) => `<li>${link(i)}</li>`).join('')}
-      ${admin ? '' : `<li>${link({ href: esc(urlSite('monte-sua-solucao.html')), texto: 'Montar nova solução (site)', icone: 'adicionar' }, ' data-externo')}</li>`}
+    <strong>CMKCOGIT</strong> · <span>${m.rotulo}</span>
+    ${m.grupos.map((g, n) => `<p class="menu-grupo" id="menu-grupo-${n}" data-rotulo>${esc(g.titulo)}</p>
+      <ul aria-labelledby="menu-grupo-${n}">${g.itens.map((i) => `<li>${link(i)}</li>`).join('')}</ul>`).join('')}
+    <div class="menu-destaque" data-rotulo-bloco>
+      <p><strong>${admin ? 'Validação' : 'Nova ideia?'}</strong>
+        ${admin ? '<span id="menu-destaque-texto">Solicitações esperando revisão.</span>' : 'Monte outra solução no site e acompanhe tudo por aqui.'}</p>
+      <a href="${esc(m.fab.href)}"${externo(m.fab)}>${icone(m.fab.icone)}<span>${admin ? 'Revisar agora' : 'Montar nova solução'}</span></a>
+    </div>
+    <ul class="menu-util" aria-label="Conta e ajuda">
+      <li>${link({ href: 'perfil.html', texto: 'Meu perfil', icone: 'perfil' })}</li>
+      <li><a href="${esc(m.ajuda)}" target="_blank" rel="noopener" title="Ajuda pelo WhatsApp">${icone('ajuda')}<span data-rotulo>Ajuda</span></a></li>
+      <li><button type="button" id="btn-sair" title="Sair">${icone('sair')}<span data-rotulo>Sair</span></button></li>
     </ul>
-    <p><a href="perfil.html" title="Meu perfil">${esc(perfil?.nome || 'Meu perfil')}</a> <small>${esc(perfil?.email || '')}</small>
-      <button type="button" id="btn-sair" title="Sair">${icone('sair')}<span data-rotulo>Sair</span></button></p>
-    <button type="button" id="btn-recolher" aria-pressed="${menuRecolhido()}" title="Recolher menu">${icone('recolher')}<span data-rotulo>Recolher menu</span></button>
-    <hr>`;
+    <button type="button" id="btn-recolher" aria-pressed="${tablet ? 'false' : menuRecolhido()}" title="${tablet ? 'Expandir menu' : 'Recolher menu'}">${icone('recolher')}<span data-rotulo>${tablet ? 'Expandir menu' : 'Recolher menu'}</span></button>`;
+
+  // ---- barra superior ----
+  document.getElementById('barra-topo')?.remove();
+  const topo = document.createElement('header');
+  topo.id = 'barra-topo';
+  topo.innerHTML = `
+    <a class="topo-marca" href="${paginaInicial(perfil)}" aria-label="CMKCOGIT, ir para o início"></a>
+    <button type="button" id="btn-busca" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">
+      ${icone('buscar')}<span>Buscar</span><kbd>Ctrl K</kbd></button>
+    ${sinoHtml()}
+    <div id="usuario">
+      <button type="button" id="btn-usuario" aria-expanded="false" aria-controls="menu-usuario" aria-label="Conta: ${esc(perfil?.nome || 'Meu perfil')}">
+        <span class="avatar" aria-hidden="true">${esc(iniciais(perfil?.nome || perfil?.email))}</span>
+        <span class="usuario-nome">${esc(perfil?.nome || 'Meu perfil')}<small>${admin ? 'Administrador' : 'Cliente'}</small></span>
+        ${icone('abrir-menu')}
+      </button>
+      <div id="menu-usuario" hidden>
+        <p><strong>${esc(perfil?.nome || '')}</strong><small>${esc(perfil?.email || '')}</small></p>
+        <a href="perfil.html">${icone('perfil')} Meu perfil</a>
+        <a href="${esc(m.ajuda)}" target="_blank" rel="noopener">${icone('ajuda')} Ajuda</a>
+        <button type="button" data-sair>${icone('sair')} Sair</button>
+      </div>
+    </div>`;
+  main.before(topo);
+
+  // ---- menu inferior (celular) + folha "Mais" ----
+  document.getElementById('menu-inferior')?.remove();
+  document.getElementById('folha-mais')?.remove();
+  const porHref = Object.fromEntries(todos.map((i) => [i.href, i]));
+  const inferior = document.createElement('nav');
+  inferior.id = 'menu-inferior';
+  inferior.setAttribute('aria-label', 'Navegação rápida');
+  inferior.innerHTML = `<span class="inferior-indicador" aria-hidden="true"></span><ul>
+    ${m.inferior.map((h) => (h === 'fab'
+      ? `<li class="inferior-fab"><a href="${esc(m.fab.href)}"${externo(m.fab)} aria-label="${esc(m.fab.texto)}">${icone(m.fab.icone)}<span>${esc(m.fab.curto)}</span></a></li>`
+      : `<li><a href="${esc(h)}"${corrente(h)}>${icone(porHref[h].icone)}<span>${esc(porHref[h].curto)}</span></a></li>`)).join('')}
+    <li><button type="button" id="btn-mais" aria-haspopup="dialog" aria-controls="folha-mais"${m.inferior.includes(atual) ? '' : ' aria-current="page"'}>${icone('mais')}<span>Mais</span></button></li>
+  </ul>`;
+  document.body.appendChild(inferior);
+
+  const folha = document.createElement('dialog');
+  folha.id = 'folha-mais';
+  folha.setAttribute('aria-labelledby', 'folha-mais-titulo');
+  folha.innerHTML = `
+    <div class="folha-alca" aria-hidden="true"><span></span></div>
+    <header><h2 id="folha-mais-titulo">Menu</h2>
+      <button type="button" data-fechar aria-label="Fechar menu">${icone('fechar')}</button></header>
+    <p class="folha-usuario"><span class="avatar" aria-hidden="true">${esc(iniciais(perfil?.nome || perfil?.email))}</span>
+      <span><strong>${esc(perfil?.nome || '')}</strong><small>${esc(perfil?.email || '')}</small></span></p>
+    <ul>
+      ${todos.filter((i) => !m.inferior.includes(i.href)).map((i) => `<li>${link(i)}</li>`).join('')}
+      <li>${link({ href: 'perfil.html', texto: 'Meu perfil', icone: 'perfil' })}</li>
+      <li><a href="${esc(m.ajuda)}" target="_blank" rel="noopener">${icone('ajuda')}<span>Ajuda pelo WhatsApp</span></a></li>
+      <li><button type="button" data-sair>${icone('sair')}<span>Sair</span></button></li>
+    </ul>`;
+  document.body.appendChild(folha);
+
+  ligarShell(perfil, todos, m);
+  if (perfil) iniciarSino(perfil);
+  if (admin) contarEmValidacao();
+}
+
+// Admin: quantas solicitações esperam validação (menu e cartão de destaque)
+async function contarEmValidacao() {
+  const { count, error } = await db.from('solicitacoes').select('id', { count: 'exact', head: true }).eq('status', 'em_validacao');
+  if (error || typeof count !== 'number') return;
+  const cont = document.getElementById('menu-cont-validacao');
+  if (cont) { cont.hidden = !count; cont.textContent = count > 99 ? '99+' : String(count); cont.setAttribute('aria-label', count + ' em validação'); }
+  const texto = document.getElementById('menu-destaque-texto');
+  if (texto) texto.textContent = count ? `${count} ${count === 1 ? 'solicitação espera' : 'solicitações esperam'} revisão.` : 'Nenhuma solicitação esperando revisão.';
+}
+
+let SHELL_GLOBAL = false;
+function ligarShell(perfil, todos, m) {
   document.getElementById('btn-sair').addEventListener('click', sair);
+  document.querySelectorAll('[data-sair]').forEach((b) => b.addEventListener('click', sair));
   document.getElementById('btn-recolher').addEventListener('click', (e) => {
+    if (window.matchMedia('(max-width: 1023.98px)').matches) { // tablet: expande por cima do conteúdo
+      const aberto = document.documentElement.classList.toggle('menu-aberto');
+      e.currentTarget.setAttribute('aria-pressed', String(aberto));
+      return;
+    }
     const recolher = !menuRecolhido();
     document.documentElement.classList.toggle('menu-recolhido', recolher);
     e.currentTarget.setAttribute('aria-pressed', String(recolher));
     try { localStorage.setItem(CHAVE_MENU, recolher ? '1' : '0'); } catch (_) {}
   });
-  if (perfil) iniciarSino(perfil);
+
+  // menu do usuário
+  const btnUsuario = document.getElementById('btn-usuario');
+  const menuUsuario = document.getElementById('menu-usuario');
+  const abrirUsuario = (abrir) => { menuUsuario.hidden = !abrir; btnUsuario.setAttribute('aria-expanded', String(abrir)); };
+  btnUsuario.addEventListener('click', () => {
+    abrirUsuario(menuUsuario.hidden);
+    if (!menuUsuario.hidden) menuUsuario.querySelector('a').focus();
+  });
+  menuUsuario.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { abrirUsuario(false); btnUsuario.focus(); }
+  });
+
+  // folha "Mais"
+  const folha = document.getElementById('folha-mais');
+  document.getElementById('btn-mais').addEventListener('click', () => abrirFolha(folha));
+  folha.querySelector('[data-fechar]').addEventListener('click', () => fecharFolha(folha));
+  folha.addEventListener('click', (e) => { if (e.target === folha) fecharFolha(folha); });
+  folha.addEventListener('cancel', (e) => { e.preventDefault(); fecharFolha(folha); });
+  arrastarParaFechar(folha);
+
+  // indicador deslizante do menu inferior
+  posicionarIndicador();
+
+  // busca global
+  const destinos = [
+    ...todos.map((i) => ({ texto: i.texto, href: i.href, icone: i.icone, tipo: 'Ir para' })),
+    { texto: 'Meu perfil', href: 'perfil.html', icone: 'perfil', tipo: 'Ir para' },
+    { texto: m.fab.texto, href: m.fab.href, icone: m.fab.icone, tipo: 'Ação', externo: m.fab.externo },
+    { texto: 'Ajuda pelo WhatsApp', href: m.ajuda, icone: 'whatsapp', tipo: 'Ação', externo: true }
+  ];
+  const buscaEm = ehAdmin(perfil)
+    ? [{ rotulo: 'Solicitações', href: 'admin.html', icone: 'solicitacoes' }, { rotulo: 'Clientes', href: 'admin-clientes.html', icone: 'clientes' }]
+    : [{ rotulo: 'Minhas solicitações', href: 'continuar.html', icone: 'solicitacoes' }];
+  document.getElementById('btn-busca').addEventListener('click', () => abrirBusca(destinos, buscaEm));
+
+  if (SHELL_GLOBAL) return;
+  SHELL_GLOBAL = true;
+  document.addEventListener('click', (e) => {
+    if (document.documentElement.classList.contains('menu-aberto') && !e.target.closest('#menu')) {
+      document.documentElement.classList.remove('menu-aberto');
+      document.getElementById('btn-recolher')?.setAttribute('aria-pressed', 'false');
+    }
+    const caixa = document.getElementById('usuario');
+    const mu = document.getElementById('menu-usuario');
+    if (mu && !mu.hidden && caixa && !caixa.contains(e.target)) {
+      mu.hidden = true;
+      document.getElementById('btn-usuario').setAttribute('aria-expanded', 'false');
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    const alvo = e.target;
+    const digitando = alvo && (alvo.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName));
+    if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && !digitando)) {
+      if (document.querySelector('dialog[open]:not(#busca-global)')) return;
+      e.preventDefault();
+      document.getElementById('btn-busca')?.click();
+    }
+  });
+  window.addEventListener('resize', posicionarIndicador, { passive: true });
+  // menu inferior: recolhe ao rolar para baixo, volta ao rolar para cima
+  let ultimoY = window.scrollY;
+  let agendado = false;
+  window.addEventListener('scroll', () => {
+    if (agendado) return;
+    agendado = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY;
+      const nav = document.getElementById('menu-inferior');
+      if (nav) nav.classList.toggle('recolhido', y > ultimoY + 4 && y > 120);
+      if (y < ultimoY - 4 && nav) nav.classList.remove('recolhido');
+      ultimoY = y;
+      agendado = false;
+    });
+  }, { passive: true });
+}
+
+function posicionarIndicador() {
+  const nav = document.getElementById('menu-inferior');
+  if (!nav) return;
+  const ativo = nav.querySelector('li:not(.inferior-fab) > [aria-current=page]');
+  const ind = nav.querySelector('.inferior-indicador');
+  if (!ativo || !ind) { if (ind) ind.hidden = true; return; }
+  const a = ativo.getBoundingClientRect();
+  const n = nav.getBoundingClientRect();
+  if (!a.width) return;
+  ind.hidden = false;
+  ind.style.width = a.width + 'px';
+  ind.style.transform = `translateX(${a.left - n.left}px)`;
+}
+
+// Folha inferior (<dialog>): abre com showModal (foco preso, ESC) e fecha com animação
+function abrirFolha(folha) {
+  folha.classList.remove('fechando');
+  folha.style.removeProperty('--arraste');
+  folha.showModal();
+}
+function fecharFolha(folha) {
+  if (!folha.open || folha.classList.contains('fechando')) return;
+  const reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduzir) { folha.close(); return; }
+  folha.classList.add('fechando');
+  setTimeout(() => { folha.classList.remove('fechando'); folha.style.removeProperty('--arraste'); folha.close(); }, 220);
+}
+function arrastarParaFechar(folha) {
+  const alca = folha.querySelector('.folha-alca');
+  let inicio = null;
+  alca.addEventListener('pointerdown', (e) => { inicio = e.clientY; alca.setPointerCapture(e.pointerId); folha.classList.add('arrastando'); });
+  alca.addEventListener('pointermove', (e) => {
+    if (inicio === null) return;
+    folha.style.setProperty('--arraste', Math.max(0, e.clientY - inicio) + 'px');
+  });
+  const soltar = (e) => {
+    if (inicio === null) return;
+    const dist = e.clientY - inicio;
+    inicio = null;
+    folha.classList.remove('arrastando');
+    if (dist > 80) fecharFolha(folha); else folha.style.removeProperty('--arraste');
+  };
+  alca.addEventListener('pointerup', soltar);
+  alca.addEventListener('pointercancel', soltar);
+}
+
+// Busca global (Ctrl+K ou "/"): páginas, ações e "buscar X em ..."
+function abrirBusca(destinos, buscaEm) {
+  let dlg = document.getElementById('busca-global');
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'busca-global';
+    dlg.setAttribute('aria-label', 'Buscar na plataforma');
+    dlg.innerHTML = `
+      <form method="dialog" role="search">
+        ${icone('buscar')}
+        <label class="so-leitor-tela" for="busca-global-campo">Buscar páginas, ações, códigos ou clientes</label>
+        <input type="search" id="busca-global-campo" autocomplete="off" placeholder="Buscar páginas, códigos, clientes..."
+          role="combobox" aria-expanded="true" aria-controls="busca-global-lista" aria-autocomplete="list">
+        <kbd>Esc</kbd>
+      </form>
+      <ul id="busca-global-lista" role="listbox" aria-label="Resultados"></ul>`;
+    document.body.appendChild(dlg);
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  }
+  const campo = dlg.querySelector('input');
+  const lista = dlg.querySelector('ul');
+  let ativo = 0;
+  const normal = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  function resultados() {
+    const q = campo.value.trim();
+    const nq = normal(q);
+    const achados = destinos.filter((d) => !nq || normal(d.texto).includes(nq));
+    const extras = q ? buscaEm.map((b) => ({ texto: `Buscar “${q}” em ${b.rotulo}`, href: b.href + '?busca=' + encodeURIComponent(q), icone: b.icone, tipo: 'Busca' })) : [];
+    return [...achados, ...extras];
+  }
+  function render() {
+    const itens = resultados();
+    ativo = Math.min(ativo, Math.max(0, itens.length - 1));
+    lista.innerHTML = itens.length ? itens.map((d, n) => `
+      <li role="option" id="busca-op-${n}" aria-selected="${n === ativo}">
+        <a href="${esc(d.href)}"${d.externo ? ' target="_blank" rel="noopener"' : ''} tabindex="-1">${icone(d.icone)}<span>${esc(d.texto)}</span><small>${esc(d.tipo)}</small></a></li>`).join('')
+      : '<li data-vazio>Nada encontrado. Tente o código (ex.: SOL-00013) ou o nome do cliente.</li>';
+    campo.setAttribute('aria-activedescendant', itens.length ? 'busca-op-' + ativo : '');
+  }
+  campo.oninput = () => { ativo = 0; render(); };
+  campo.onkeydown = (e) => {
+    const n = lista.querySelectorAll('[role=option]').length;
+    if (e.key === 'ArrowDown') { e.preventDefault(); ativo = (ativo + 1) % Math.max(n, 1); render(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); ativo = (ativo - 1 + n) % Math.max(n, 1); render(); }
+    else if (e.key === 'Enter') { e.preventDefault(); lista.querySelector(`#busca-op-${ativo} a`)?.click(); dlg.close(); }
+  };
+  campo.value = '';
+  ativo = 0;
+  render();
+  dlg.showModal();
+  campo.focus();
 }
 
 // Menu lateral recolhido (só no desktop; preferência deste navegador)
@@ -496,13 +857,12 @@ function mostrarNaoLidas() {
 // "marcar como lida". Dados pela rota /api/notificacoes; atualiza em tempo
 // real (Supabase Realtime, sql/13) e, por garantia, a cada 45 s com a aba visível.
 // ---------------------------------------------------------------------
-const ICONE_SINO = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
 const INTERVALO_SINO = 45000;
 
 function sinoHtml() {
   return `<div id="sino">
       <button type="button" id="btn-sino" aria-expanded="false" aria-controls="painel-sino" aria-label="Notificações">
-        ${ICONE_SINO}<span id="sino-contador" hidden></span>
+        ${icone('notificacoes', 'i-sino')}<span id="sino-contador" hidden></span>
       </button>
       <section id="painel-sino" aria-labelledby="painel-sino-titulo" hidden>
         <header>

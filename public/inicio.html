@@ -20,54 +20,77 @@
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
-    <aside id="oferta" aria-labelledby="oferta-titulo" hidden></aside>
-
-    <header id="cabecalho-inicio">
+    <header class="pagina-cabecalho" id="cabecalho-inicio">
       <div>
+        <p class="pagina-rotulo">Plataforma do cliente</p>
         <h1 id="saudacao">Olá!</h1>
         <p>Acompanhe seus projetos, pagamentos e novidades em um só lugar.</p>
       </div>
-      <a id="btn-nova-solucao" href="#">Montar nova solução</a>
+      <div class="pagina-acoes"><a id="btn-nova-solucao" href="#">Montar nova solução</a></div>
     </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
 
-    <section>
-      <h2>Resumo</h2>
-      <ul id="resumo">
-        <li>Carregando...</li>
+    <section class="faixa-kpis" aria-labelledby="titulo-resumo">
+      <h2 id="titulo-resumo" class="so-leitor-tela">Resumo</h2>
+      <ul id="resumo" class="kpis" data-livre aria-busy="true">
+        <li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li>
       </ul>
     </section>
 
-    <section id="secao-notificacoes" hidden>
-      <h2>Atualizações dos seus projetos</h2>
-      <p><button type="button" id="marcar-lidas" hidden>Marcar todas como lidas</button></p>
-      <ul id="lista-notificacoes"></ul>
-    </section>
+    <div class="pagina-grade">
+      <div class="coluna-principal">
+        <section id="secao-proximo-passo" aria-labelledby="titulo-proximo-passo">
+          <h2 id="titulo-proximo-passo">Próximo passo</h2>
+          <div id="proximo-passo"><p data-esqueleto-linha></p></div>
+        </section>
 
-    <section>
-      <h2>Próximo passo</h2>
-      <div id="proximo-passo"></div>
-    </section>
+        <section id="secao-notificacoes" aria-labelledby="titulo-notificacoes" hidden>
+          <div class="secao-topo">
+            <h2 id="titulo-notificacoes">Atualizações dos seus projetos</h2>
+            <button type="button" id="marcar-lidas" hidden>Marcar todas como lidas</button>
+          </div>
+          <ul id="lista-notificacoes" class="linha-tempo" data-livre></ul>
+        </section>
 
-    <section id="secao-dicas" hidden>
-      <h2>Dicas para o seu site vender mais</h2>
-      <p id="dicas-intro"></p>
-      <div id="lista-dicas"></div>
-    </section>
+        <section id="secao-dicas" aria-labelledby="titulo-dicas" hidden>
+          <h2 id="titulo-dicas">Dicas para o seu site vender mais</h2>
+          <p id="dicas-intro"></p>
+          <div id="lista-dicas"></div>
+        </section>
+      </div>
 
-    <section id="secao-suporte">
-      <h2>Suporte</h2>
-      <p>Estamos junto com você do projeto à publicação — e depois dela.</p>
-      <ul id="lista-suporte">
-        <li><a id="falar-conosco" href="#" target="_blank" rel="noopener noreferrer">Falar conosco pelo WhatsApp</a>
-          <small>Dúvidas, ajustes e suporte do seu site.</small></li>
-        <li><a id="link-repositorio" href="projetos.html">Enviar documentos e acessar arquivos</a>
-          <small>Repositório de cada projeto: código, entregas e o que você mandar para a equipe.</small></li>
-        <li><a href="perfil.html">Meu perfil</a>
-          <small>Altere nome, WhatsApp, e-mail e senha.</small></li>
-      </ul>
-    </section>
+      <aside class="coluna-lateral" aria-label="Seus projetos, pagamentos e suporte">
+        <section id="secao-progresso" aria-labelledby="titulo-progresso">
+          <div class="secao-topo"><h2 id="titulo-progresso">Seus projetos</h2><a href="projetos.html">Ver todos</a></div>
+          <ul id="projetos-andamento" class="lista-widget" data-livre><li><p data-esqueleto-linha></p></li></ul>
+        </section>
+
+        <section id="secao-decisoes" aria-labelledby="titulo-decisoes" hidden>
+          <h2 id="titulo-decisoes">Aguardando sua decisão</h2>
+          <ul id="lista-decisoes" class="lista-widget" data-livre></ul>
+        </section>
+
+        <section id="secao-pagamentos-proximos" aria-labelledby="titulo-pagamentos-proximos">
+          <div class="secao-topo"><h2 id="titulo-pagamentos-proximos">Pagamentos pendentes</h2><a href="pagamentos.html">Ver todos</a></div>
+          <ul id="pagamentos-proximos" class="lista-widget" data-livre><li><p data-esqueleto-linha></p></li></ul>
+        </section>
+
+        <aside id="oferta" aria-labelledby="oferta-titulo" hidden></aside>
+
+        <section id="secao-suporte" aria-labelledby="titulo-suporte">
+          <h2 id="titulo-suporte">Suporte</h2>
+          <a id="falar-conosco" class="widget-whatsapp" href="#" target="_blank" rel="noopener noreferrer"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg>
+            <span>Falar com a equipe<small>Dúvidas, ajustes e suporte do seu site.</small></span></a>
+          <ul id="lista-suporte" class="lista-widget" data-livre>
+            <li><a class="widget-item" id="link-repositorio" href="projetos.html"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#enviado"></use></svg>
+              <span><strong>Enviar documentos</strong><small>Repositório de cada projeto</small></span></a></li>
+            <li><a class="widget-item" href="perfil.html"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#perfil"></use></svg>
+              <span><strong>Meu perfil</strong><small>Nome, WhatsApp, e-mail e senha</small></span></a></li>
+          </ul>
+        </section>
+      </aside>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
