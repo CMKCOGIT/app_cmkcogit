@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12` e `13` (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13` e `15` (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -52,7 +52,8 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `projeto.html?id=...#repositorio` | cliente/admin | Repositório do projeto: a equipe envia código e entregas, o cliente envia documentação (até 50 MB por arquivo); cada lado é avisado |
 | `perfil.html` | cliente | Nome, WhatsApp, troca de e-mail (com confirmação), troca de senha e "sair de todos os dispositivos" |
 | `funcionalidades.html` | cliente | Adquirir nova funcionalidade para um projeto e pagar no Mercado Pago |
-| `admin.html` | admin | Solicitações: validar o sob medida (definir valor) e avisos do Mercado Pago |
+| `admin.html` | admin | Solicitações: cada card abre o **modal de validação** — itens com checkbox ("Remover selecionados"), "+ Adicionar funcionalidade" (catálogo ou item personalizado, marcados como "adicionado pela equipe"), valor sugerido recalculado + valor final editável, mensagem ao cliente, resumo com prévia do comprovante, aprovação (quem/quando) e envio pelo WhatsApp; cancelar com motivo. Também os avisos do Mercado Pago |
+| `comprovante.html?t=...` | público | Comprovante do pedido aprovado (link único e aleatório, sem login): itens, valor final, status do pagamento e a mensagem da equipe em destaque. "Baixar PDF" usa a impressão do navegador (Salvar como PDF) |
 | `admin-clientes.html` | admin | Clientes: cards ou tabela, busca em tempo real por projeto/código/cliente, filtros rápidos (pago/pendente, em andamento/concluído, atrasado, entrega em 7 dias) e o detalhe de cada projeto, onde o admin atualiza % e status até concluir |
 
 **Cliente × admin.** O admin não compra: o menu dele é só Início (painel), Solicitações, Clientes, Meu perfil e Sair.
@@ -108,7 +109,10 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    (100% = concluído, com data registrada), as consultas agregadas do painel (`admin_dashboard` e
    `admin_vendas_periodo`, que contam só pagamentos **pagos**, no fuso de Brasília) e, nas notificações, `metadados`,
    `lida_em` e o tempo real.
-9. Opcional, só para ver o sino com dados: `14_seed_notificacoes_teste.sql` (troque o e-mail do cliente de teste
+9. Rode `15_validacao_comprovante.sql` **antes** de publicar o modal de validação: guarda quem aprovou e quando,
+   o link único e a cópia do comprovante, e o motivo/quem/quando do cancelamento. A aprovação continua sendo o status
+   "aguardando pagamento" (o checkout não muda).
+10. Opcional, só para ver o sino com dados: `14_seed_notificacoes_teste.sql` (troque o e-mail do cliente de teste
    dentro dele). Apague depois com a consulta do fim do arquivo.
 
 Se mudar um preço no site (`js/data.js`), mude também em `sql/02_catalogo.sql` e rode de novo:
@@ -156,6 +160,12 @@ Roteiro de teste:
    a tabela "Últimos avisos do Mercado Pago" mostra tudo que o Mercado Pago informou.
 9. No **Início** do admin confira o painel (troque o período, passe o mouse no gráfico, exporte o CSV). Digite
    `/pagamentos.html` logado como admin: volta para o painel. Logado como cliente, `/admin-clientes.html` volta ao início.
+10. Em **Solicitações**, clique num card "Em validação": marque dois itens → "Remover selecionados" (o valor sugerido
+   cai), "+ Adicionar funcionalidade" (busque no catálogo ou crie um personalizado), mude o valor final e escreva a
+   mensagem → "Aprovar e liberar" → confira a prévia → confirme: o WhatsApp do cliente abre com o link do comprovante e
+   a solicitação sai do filtro "Em validação". Feche com alteração não salva: o modal pede confirmação.
+   **WhatsApp:** o link `wa.me` só leva texto, por isso o comprovante vai como link. Envio automático do PDF exige a API
+   oficial do WhatsApp Business (fase 2).
 
 **Webhook no computador (opcional):** o Mercado Pago só chama endereços públicos. Rode um túnel
 (ex.: `cloudflared tunnel --url http://localhost:3000`), coloque o endereço https em `PUBLIC_URL`

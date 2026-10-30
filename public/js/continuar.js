@@ -94,6 +94,7 @@
         <p>Investimento inicial: <strong>${esc(valorSolicitacao(s))}</strong></p>
         ${s.notas ? `<p><small>Seu contexto: ${esc(s.notas)}</small></p>` : ''}
         ${s.observacao_admin ? `<p>Mensagem da equipe: ${esc(s.observacao_admin)}</p>` : ''}
+        ${s.comprovante_token ? `<p><a href="comprovante.html?t=${encodeURIComponent(s.comprovante_token)}" target="_blank" rel="noopener">Ver comprovante do pedido</a></p>` : ''}
         ${acoes(s)}
       </article>
       <hr>`).join('');

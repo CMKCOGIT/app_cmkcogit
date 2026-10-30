@@ -16,7 +16,7 @@
   <nav id="menu" aria-label="Menu principal"></nav>
   <main id="conteudo">
     <h1>Solicitações</h1>
-    <p>Valide as solicitações sob medida: defina o valor para liberar o pagamento ao cliente, ou cancele.</p>
+    <p>Abra uma solicitação para revisar os itens, ajustar o valor e aprovar: o pagamento é liberado e o cliente recebe o comprovante pelo WhatsApp.</p>
 
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
@@ -25,7 +25,7 @@
       <label for="filtro">Mostrar:</label>
       <select id="filtro">
         <option value="em_validacao">Em validação</option>
-        <option value="aguardando_pagamento">Aguardando pagamento</option>
+        <option value="aguardando_pagamento">Aprovadas · pagamento liberado</option>
         <option value="paga">Pagas</option>
         <option value="cancelada">Canceladas</option>
         <option value="todas">Todas</option>
@@ -51,7 +51,20 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/config.js"></script>
+  <dialog id="modal-solicitacao" aria-labelledby="modal-sol-titulo">
+    <header>
+      <div>
+        <h2 id="modal-sol-titulo" tabindex="-1">Solicitação</h2>
+        <p id="modal-sol-sub"></p>
+      </div>
+      <button type="button" id="modal-sol-fechar" aria-label="Fechar">×</button>
+    </header>
+    <div id="modal-sol-corpo"></div>
+    <footer id="modal-sol-rodape"></footer>
+  </dialog>
+
   <script src="js/app.js"></script>
+  <script src="js/comprovante-render.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

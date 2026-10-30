@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Comprovante de pedido | CMK COGIT</title>
+  <meta name="theme-color" content="#0F1B33">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/images/favicon-64.png">
+  <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="/css/plataforma.css">
+</head>
+<body class="comprovante">
+  <main id="conteudo">
+    <p id="acoes-comprovante" hidden>
+      <button type="button" id="btn-pdf">Baixar PDF</button>
+      <a id="btn-pagar" href="/continuar.html" hidden>Pagar agora</a>
+    </p>
+    <div id="area-comprovante" aria-live="polite"><p data-carregando-comp>Carregando comprovante...</p></div>
+  </main>
+  <script src="js/comprovante-render.js"></script>
+  <script src="js/comprovante.js"></script>
+</body>
+</html>

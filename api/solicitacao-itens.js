@@ -43,11 +43,15 @@ export default async function handler(req, res) {
     const selecao = s.selecao || {};
     const servicos = Array.isArray(selecao.servicos) ? selecao.servicos : [];
     let complementos = Array.isArray(selecao.complementos) ? selecao.complementos : [];
-    const lista = tipo === 'servico' ? servicos : complementos;
+    let personalizados = Array.isArray(selecao.personalizados) ? selecao.personalizados : [];
+    // item personalizado da equipe chega como "servico" com id custom-...
+    const ehPersonalizado = tipo === 'servico' && personalizados.some((x) => x && x.id === id);
+    const lista = ehPersonalizado ? personalizados : tipo === 'servico' ? servicos : complementos;
     if (!lista.some((x) => x && x.id === id)) return erro(res, 404, 'Este item não está mais na solicitação.');
 
-    const restantes = tipo === 'servico' ? servicos.filter((x) => x.id !== id) : servicos;
-    if (!restantes.length) return erro(res, 409, 'Esta é a última solução da solicitação. Para tirar tudo, cancele a solicitação.');
+    const restantes = tipo === 'servico' && !ehPersonalizado ? servicos.filter((x) => x.id !== id) : servicos;
+    if (ehPersonalizado) personalizados = personalizados.filter((x) => x.id !== id);
+    if (!restantes.length && !personalizados.length) return erro(res, 409, 'Esta é a última solução da solicitação. Para tirar tudo, cancele a solicitação.');
     if (tipo === 'complemento') complementos = complementos.filter((x) => x.id !== id);
 
     const catalogo = await db.select('catalogo_precos', { select: '*' });
@@ -60,8 +64,8 @@ export default async function handler(req, res) {
     const tirados = complementos.filter((c) => !permitidos.has(c.id));
     complementos = complementos.filter((c) => permitidos.has(c.id));
 
-    const novaSelecao = { ...selecao, servicos: restantes, complementos };
-    const calc = calcular({ servicos: restantes, complementos }, catalogo);
+    const novaSelecao = { ...selecao, servicos: restantes, complementos, personalizados };
+    const calc = calcular({ servicos: restantes, complementos, personalizados }, catalogo);
     if (!calc.ok) return erro(res, 400, calc.erro);
 
     // histórico do que saiu (aparece na tela de solicitações)

@@ -148,10 +148,10 @@ function itensEditaveisHtml(s) {
     : `<button type="button" data-remover-item data-sol="${esc(s.id)}" data-tipo="${tipo}" data-id="${esc(item.id)}"
          data-nome="${esc(item.nome)}" aria-label="Remover ${esc(item.nome)}">Remover</button>`);
   const linha = (tipo, item, detalhe, valor, ultimo) => `<li data-item-tipo="${tipo}">
-      <span data-item-nome>${esc(item.nome)}${detalhe ? ` <small>${esc(detalhe)}</small>` : ''}</span>
+      <span data-item-nome>${esc(item.nome)}${detalhe ? ` <small>${esc(detalhe)}</small>` : ''}${item.adicionado === 'equipe' ? ' <small data-tag-equipe>adicionado pela equipe</small>' : ''}</span>
       <span data-item-preco>${esc(valor)}</span>${botao(tipo, item, ultimo)}</li>`;
   const itens = [
-    ...(r.itens || []).map((i) => linha('servico', i, formato(i.modelo), preco(i.preco, i.tipo_preco), qtdSolucoes <= 1)),
+    ...(r.itens || []).map((i) => linha('servico', i, i.personalizado ? i.descricao || 'personalizado' : formato(i.modelo), preco(i.preco, i.tipo_preco), qtdSolucoes <= 1)),
     ...(r.mensais || []).map((m) => linha('servico', m, 'mensalidade após 3 meses grátis', m.preco != null ? brl(m.preco) + '/mês' : 'mensal', qtdSolucoes <= 1)),
     ...(r.complementos || []).map((c) => linha('complemento', c, (c.quantidade > 1 ? '× ' + Number(c.quantidade) + ' · ' : '') + 'complemento', preco(c.preco, c.tipo_preco), false))
   ].join('');
@@ -602,6 +602,40 @@ function iniciarSino(perfil) {
       .subscribe();
   } catch (e) {
     console.warn('Tempo real indisponível; usando atualização periódica.', e.message);
+  }
+}
+
+// Aviso flutuante (toast). Dentro de um <dialog> aberto vai para ele (camada de cima).
+function toast(texto, tipo = 'ok') {
+  const dono = document.querySelector('dialog[open]') || document.body;
+  let caixa = dono.querySelector(':scope > [data-toasts]');
+  if (!caixa) {
+    caixa = document.createElement('div');
+    caixa.setAttribute('data-toasts', '');
+    dono.appendChild(caixa);
+  }
+  if (tipo !== 'erro') caixa.querySelectorAll('[data-tipo=erro]').forEach((x) => x.remove()); // deu certo: some o erro antigo
+  const el = document.createElement('p');
+  el.setAttribute('role', tipo === 'erro' ? 'alert' : 'status');
+  el.dataset.tipo = tipo;
+  el.textContent = texto;
+  caixa.appendChild(el);
+  while (caixa.children.length > 2) caixa.firstElementChild.remove(); // só os 2 mais recentes
+  setTimeout(() => el.remove(), tipo === 'erro' ? 8000 : 4500);
+}
+
+// Botão em andamento: desabilita (evita clique duplo) e troca o texto
+function ocupado(botao, sim, textoCarregando) {
+  if (!botao) return;
+  if (sim) {
+    botao.dataset.textoOriginal = botao.textContent;
+    if (textoCarregando) botao.textContent = textoCarregando;
+    botao.disabled = true;
+    botao.setAttribute('aria-busy', 'true');
+  } else {
+    if (botao.dataset.textoOriginal) botao.textContent = botao.dataset.textoOriginal;
+    botao.disabled = false;
+    botao.removeAttribute('aria-busy');
   }
 }
 
