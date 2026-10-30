@@ -1,0 +1,125 @@
+/* =====================================================================
+   CMKCOGIT — tokens do design system (fonte única)
+   Arquivo IDÊNTICO no site (css/tokens.css) e na plataforma
+   (public/css/tokens.css). Mudou aqui? Copie para o outro repositório.
+   Os nomes antigos (--purple, --ink, --neutral...) continuam valendo:
+   viraram apelidos destes tokens em variables.css / plataforma.css.
+
+   Contraste (WCAG 2.1, conferido por script em docs/design-audit.md):
+   texto só com pares marcados "AA" no styleguide. --color-neutral-400 é
+   para bordas e ícones decorativos, nunca texto (2,3:1 sobre branco).
+   ===================================================================== */
+:root {
+  /* ── Marca: violeta (600 = cor do "COGIT" no logo) ── */
+  --color-brand-50:  #F1EFFF;
+  --color-brand-100: #E4E0FF;
+  --color-brand-200: #CBC4FF;
+  --color-brand-300: #A79BFF;   /* lilás: detalhes sobre fundo escuro (7,2:1 sobre navy-900) */
+  --color-brand-400: #8579F5;
+  --color-brand-500: #5B4FE6;
+  --color-brand-600: #4A3DDB;   /* primária: 7,0:1 com branco */
+  --color-brand-700: #3D31C4;   /* hover / ativo */
+  --color-brand-800: #2E2499;
+  --color-brand-900: #1E1868;
+
+  /* ── Navy (fundos escuros, menu lateral, texto principal) ── */
+  --color-navy-950: #0A1326;
+  --color-navy-900: #0F1B33;
+  --color-navy-800: #1A2847;
+  --color-navy-700: #243560;
+  --color-navy-600: #34477A;
+
+  /* ── Neutros ── */
+  --color-neutral-0:   #FFFFFF;
+  --color-neutral-50:  #F8F9FC;
+  --color-neutral-100: #F4F5F8;  /* fundo da página */
+  --color-neutral-200: #E8EAF0;  /* divisórias */
+  --color-neutral-300: #D5D9E3;  /* bordas fortes */
+  --color-neutral-400: #A3ABBD;  /* só borda/ícone decorativo */
+  --color-neutral-500: #5F6B7F;  /* texto terciário: 5,4:1 branco · 4,9:1 neutral-100 */
+  --color-neutral-600: #4A5568;  /* texto secundário: 7,5:1 */
+  --color-neutral-700: #2D3748;
+
+  /* ── Estados (texto sobre o fundo do próprio estado passa AA) ── */
+  --color-success: #1E7A4C;  --color-success-bg: #E8F6EE;
+  --color-warning: #8A5A00;  --color-warning-bg: #FFF5DB;
+  --color-danger:  #B42318;  --color-danger-bg:  #FDECEA;
+  --color-info:    var(--color-brand-600); --color-info-bg: var(--color-brand-50);
+
+  /* ── Papéis (use estes nos componentes) ── */
+  --color-bg:            var(--color-neutral-100);
+  --color-surface:       var(--color-neutral-0);
+  --color-surface-muted: var(--color-neutral-50);
+  --color-surface-dark:  var(--color-navy-900);
+  --color-text:          var(--color-navy-900);
+  --color-text-muted:    var(--color-neutral-600);
+  --color-text-subtle:   var(--color-neutral-500);
+  --color-text-on-dark:  #FFFFFF;
+  --color-text-on-dark-muted: rgba(255, 255, 255, 0.72);
+  --color-border:        rgba(15, 27, 51, 0.12);
+  --color-border-strong: rgba(15, 27, 51, 0.22);
+  --color-border-brand:  rgba(74, 61, 219, 0.16);
+  --color-focus:         var(--color-brand-600);
+  --gradient-brand: linear-gradient(120deg, var(--color-brand-500) 0%, var(--color-brand-600) 50%, var(--color-brand-800) 100%);
+  --gradient-navy:  radial-gradient(120% 60% at 0% 0%, rgba(74, 61, 219, 0.28), transparent 60%), var(--color-navy-900);
+
+  /* ── Tipografia ── */
+  --font-heading-stack: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body-stack:    'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-heading-stack);
+  --font-body:    var(--font-body-stack);
+  --font-mono:    ui-monospace, 'Cascadia Code', Consolas, monospace;
+  /* escala modular fluida (~1,25), 360 px → 1280 px */
+  --fs-display: clamp(2.25rem, 1.45rem + 3.55vw, 4.25rem);  /* 36 → 68 */
+  --fs-h1:      clamp(1.875rem, 1.4rem + 2.1vw, 3rem);      /* 30 → 48 */
+  --fs-h2:      clamp(1.5rem, 1.2rem + 1.35vw, 2.25rem);    /* 24 → 36 */
+  --fs-h3:      clamp(1.25rem, 1.1rem + 0.65vw, 1.625rem);  /* 20 → 26 */
+  --fs-h4:      clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem); /* 18 → 21 */
+  --fs-h5:      1.0625rem;
+  --fs-h6:      1rem;
+  --fs-body:    clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);    /* 15 → 16 */
+  --fs-small:   0.875rem;
+  --fs-caption: 0.75rem;
+  --fs-overline: 0.75rem;  /* caixa alta com --tracking-overline */
+  --lh-tight: 1.15;  --lh-snug: 1.3;  --lh-body: 1.6;
+  --tracking-tight: -0.02em;  --tracking-overline: 0.1em;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700; --fw-extrabold: 800;
+
+  /* ── Espaço (grade de 4/8 px) ── */
+  --sp-0: 0;  --sp-1: 0.25rem;  --sp-2: 0.5rem;  --sp-3: 0.75rem;  --sp-4: 1rem;  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;  --sp-8: 2rem;  --sp-10: 2.5rem;  --sp-12: 3rem;  --sp-16: 4rem;  --sp-20: 5rem;  --sp-24: 6rem;
+  --section-y: clamp(3.5rem, 2rem + 6vw, 7rem);
+
+  /* ── Raios ── */
+  --radius-sm: 6px;  --radius-md: 10px;  --radius-lg: 16px;  --radius-xl: 24px;  --radius-pill: 9999px;
+
+  /* ── Sombras (4 níveis + marca) ── */
+  --shadow-1: 0 1px 3px rgba(15, 27, 51, 0.06);
+  --shadow-2: 0 4px 14px rgba(15, 27, 51, 0.08);
+  --shadow-3: 0 10px 30px rgba(15, 27, 51, 0.10);
+  --shadow-4: 0 24px 60px rgba(15, 27, 51, 0.18);
+  --shadow-brand: 0 6px 22px rgba(74, 61, 219, 0.28);
+  --ring-focus: 0 0 0 3px rgba(74, 61, 219, 0.32);
+
+  /* ── Layout (mobile first: 360 · 600 · 768 · 1024 · 1280 · 1536) ── */
+  --container: 1200px;  --container-wide: 1400px;  --container-narrow: 800px;
+  --gutter: clamp(1rem, 3vw, 2rem);
+  --tap-min: 44px;
+
+  /* ── Movimento ── */
+  --dur-fast: 150ms;  --dur-base: 300ms;  --dur-slow: 600ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --reveal-distance: 20px;
+
+  /* ── Ícones (Bootstrap Icons) ── */
+  --icon-sm: 16px;  --icon-md: 20px;  --icon-lg: 24px;  --icon-xl: 32px;
+
+  /* ── Camadas ── */
+  --z-base: 1;  --z-dropdown: 100;  --z-sticky: 200;  --z-overlay: 300;  --z-modal: 400;  --z-toast: 500;  --z-header: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0.01ms; --dur-base: 0.01ms; --dur-slow: 0.01ms; --reveal-distance: 0px; }
+}

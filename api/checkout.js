@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     const preferencia = {
       items: [{
         id: pag.id,
-        title: texto(pag.descricao, 120) || 'Projeto CMK COGIT',
+        title: texto(pag.descricao, 120) || 'Projeto CMKCOGIT',
         quantity: 1,
         unit_price: Number(pag.valor),
         currency_id: 'BRL'

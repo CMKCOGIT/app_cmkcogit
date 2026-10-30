@@ -17,7 +17,7 @@
   }
 
   const c = dados.comprovante;
-  document.title = 'Comprovante ' + c.codigo + ' | CMK COGIT';
+  document.title = 'Comprovante ' + c.codigo + ' | CMKCOGIT';
   area.innerHTML = Comprovante.html(c, dados.pagamento);
   document.getElementById('acoes-comprovante').hidden = false;
   document.getElementById('btn-pagar').hidden = dados.pagamento.codigo !== 'liberado';

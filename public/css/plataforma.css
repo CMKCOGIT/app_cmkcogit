@@ -1,5 +1,5 @@
 /* =====================================================================
-   plataforma.css — identidade visual da plataforma CMK COGIT
+   plataforma.css — identidade visual da plataforma CMKCOGIT
    Baseada no site institucional (www.cmkcogit.com.br/css/variables.css).
    Só estiliza o HTML que já existe (inclusive o gerado pelos js/*.js):
    nenhum seletor depende de classes novas no JavaScript.
@@ -14,38 +14,39 @@
 /* ---------------------------------------------------------------------
    1. Fontes oficiais (mesmos arquivos do site, servidos localmente)
    --------------------------------------------------------------------- */
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url(../assets/fonts/cogit-font-1.ttf) format('truetype'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/cogit-font-2.ttf) format('truetype'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url(../assets/fonts/cogit-font-3.ttf) format('truetype'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url(../assets/fonts/cogit-font-4.ttf) format('truetype'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 800; font-display: swap; src: url(../assets/fonts/cogit-font-5.ttf) format('truetype'); }
-@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap; src: url(../assets/fonts/cogit-font-6.ttf) format('truetype'); }
-@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/cogit-font-7.ttf) format('truetype'); }
-@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap; src: url(../assets/fonts/cogit-font-8.ttf) format('truetype'); }
-@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 700; font-display: swap; src: url(../assets/fonts/cogit-font-9.ttf) format('truetype'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url(../assets/fonts/cogit-font-1.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/cogit-font-2.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url(../assets/fonts/cogit-font-3.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url(../assets/fonts/cogit-font-4.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 800; font-display: swap; src: url(../assets/fonts/cogit-font-5.woff2) format('woff2'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap; src: url(../assets/fonts/cogit-font-6.woff2) format('woff2'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/cogit-font-7.woff2) format('woff2'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap; src: url(../assets/fonts/cogit-font-8.woff2) format('woff2'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 700; font-display: swap; src: url(../assets/fonts/cogit-font-9.woff2) format('woff2'); }
 
 /* ---------------------------------------------------------------------
-   2. Tokens
+   2. Tokens — cores e fontes vêm de css/tokens.css (fonte única, igual no
+   site); estes nomes antigos continuam valendo como apelidos.
    --------------------------------------------------------------------- */
 :root {
   /* Marca (valores do site) */
-  --ink: #0F1B33;
-  --ink-light: #1A2847;
-  --ink-lighter: #243560;
-  --purple: #4A3DDB;
-  --purple-hover: #3D31C4;
-  --purple-light: #5B4FE6;
-  --lilac: #A79BFF;
+  --ink: var(--color-navy-900);
+  --ink-light: var(--color-navy-800);
+  --ink-lighter: var(--color-navy-700);
+  --purple: var(--color-brand-600);
+  --purple-hover: var(--color-brand-700);
+  --purple-light: var(--color-brand-500);
+  --lilac: var(--color-brand-300);
   --lilac-soft: rgba(167, 155, 255, 0.12);
   --lilac-bg: rgba(167, 155, 255, 0.06);
-  --neutral: #F4F5F8;
-  --neutral-dark: #E8EAF0;
-  --white: #FFFFFF;
+  --neutral: var(--color-neutral-100);
+  --neutral-dark: var(--color-neutral-200);
+  --white: var(--color-neutral-0);
 
   /* Texto */
-  --text-primary: #0F1B33;
-  --text-secondary: #4A5568;
-  --text-tertiary: #5F6B7E;           /* site usa #718096; escurecido para AA em texto pequeno */
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-muted);
+  --text-tertiary: var(--color-text-subtle);           /* site usa #718096; escurecido para AA em texto pequeno */
   --text-on-dark: #FFFFFF;
   --text-on-dark-secondary: rgba(255, 255, 255, 0.72);
 
@@ -58,17 +59,17 @@
 
   /* Semânticas (o site só define o erro #dc3545; demais escolhidas para AA) */
   --info: var(--purple);
-  --info-bg: #EFEDFF;
-  --success: #1E7A4C;
-  --success-bg: #E8F6EE;
-  --danger: #B42318;
-  --danger-bg: #FDECEA;
-  --warning: #8A5A00;
-  --warning-bg: #FFF5DB;
+  --info-bg: var(--color-brand-50);
+  --success: var(--color-success);
+  --success-bg: var(--color-success-bg);
+  --danger: var(--color-danger);
+  --danger-bg: var(--color-danger-bg);
+  --warning: var(--color-warning);
+  --warning-bg: var(--color-warning-bg);
 
   /* Tipografia */
-  --font-heading: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-heading-stack);
+  --font-body: var(--font-body-stack);
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-semibold: 600;
@@ -128,10 +129,10 @@
   --duration-base: 300ms;
 
   /* Ícones (SVG em data URI; a CSP permite img-src data:) */
-  --icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234A3DDB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E");
-  --icon-erro: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B42318' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'/%3E%3Cpath d='M12 9v4M12 17h.01'/%3E%3C/svg%3E");
-  --icon-seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235F6B7E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  --icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%234A3DDB' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16'/%3E%3Cpath d='m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0'/%3E%3C/svg%3E");
+  --icon-erro: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23B42318' viewBox='0 0 16 16'%3E%3Cpath d='M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z'/%3E%3Cpath d='M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z'/%3E%3C/svg%3E");
+  --icon-seta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%235F6B7F' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708'/%3E%3C/svg%3E");
+  --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23FFFFFF' viewBox='0 0 16 16'%3E%3Cpath d='M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z'/%3E%3C/svg%3E");
 }
 
 /* ---------------------------------------------------------------------
@@ -474,7 +475,7 @@ progress + strong { margin-left: var(--space-2); font-family: var(--font-heading
 
 /* ---------------------------------------------------------------------
    5. Navegação — <nav id="menu"> preenchido por montarMenu() em app.js:
-   <strong>CMK COGIT</strong> · <span>…</span> <ul>…</ul> <p>nome <small>e-mail</small> <button>Sair</button></p> <hr>
+   <strong>CMKCOGIT</strong> · <span>…</span> <ul>…</ul> <p>nome <small>e-mail</small> <button>Sair</button></p> <hr>
    --------------------------------------------------------------------- */
 body.app {
   display: grid;
@@ -585,7 +586,7 @@ body.app {
   height: 14px;
   margin-left: var(--space-2);
   flex: none;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A79BFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M7 7h10v10'/%3E%3C/svg%3E") center / contain no-repeat;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23A79BFF' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5'/%3E%3Cpath fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 /* Usuário + Sair */
@@ -1761,7 +1762,7 @@ body.acesso .auth-form h2 { margin-bottom: var(--space-1); font-size: var(--text
   content: '';
   width: 16px;
   height: 16px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230F1B33' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'/%3E%3C/svg%3E") center / contain no-repeat;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%230F1B33' viewBox='0 0 16 16'%3E%3Cpath d='M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5'/%3E%3Cpath d='M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 #filtro-periodo {
   display: flex;
@@ -1987,7 +1988,7 @@ details[open] > summary { margin-bottom: var(--space-3); }
 #campo-busca label { display: block; margin-bottom: var(--space-2); }
 #busca {
   padding-left: var(--space-10);
-  background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%235F6B7E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") var(--space-4) center no-repeat;
+  background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%235F6B7F' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0'/%3E%3C/svg%3E") var(--space-4) center no-repeat;
 }
 #contagem { color: var(--text-tertiary); font-family: var(--font-heading); font-size: var(--text-sm); font-weight: var(--fw-semibold); }
 #contagem:empty { display: none; }

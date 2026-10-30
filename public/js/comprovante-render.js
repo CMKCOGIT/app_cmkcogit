@@ -43,7 +43,7 @@ const Comprovante = (function () {
     return `
       <article data-comprovante>
         <header data-comp-topo>
-          <img src="/assets/images/logo-white.png" alt="CMK COGIT" width="168" height="38">
+          <img src="/assets/images/logo-white.png" alt="CMKCOGIT" width="168" height="38">
           <div>
             <small>Comprovante de pedido</small>
             <strong>${esc(c.codigo)}</strong>
@@ -72,7 +72,7 @@ const Comprovante = (function () {
             </tfoot>
           </table>
           <footer data-comp-rodape>
-            <p>CMK COGIT · cmkcogit.com.br${c.aprovado_por ? ' · Aprovado por ' + esc(c.aprovado_por) : ''}</p>
+            <p>CMKCOGIT · cmkcogit.com.br${c.aprovado_por ? ' · Aprovado por ' + esc(c.aprovado_por) : ''}</p>
             <p><small>Comprovante de pedido. Não é nota fiscal. O valor final é o que vale para o pagamento.</small></p>
           </footer>
         </div>

@@ -61,7 +61,7 @@
 
   function renderResumo(p) {
     document.getElementById('titulo').textContent = p.nome;
-    document.title = p.nome + ' | CMK COGIT';
+    document.title = p.nome + ' | CMKCOGIT';
     const atrasado = p.previsao_entrega && p.status_projeto !== 'concluido' && new Date(p.previsao_entrega + 'T23:59:59') < new Date();
     document.getElementById('resumo-projeto').innerHTML = `
       <p>Progresso: ${barraProgresso(progressoProjeto(p))}</p>

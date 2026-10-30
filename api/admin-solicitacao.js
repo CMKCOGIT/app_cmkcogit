@@ -136,7 +136,7 @@ async function cancelar(res, db, { s, admin, cliente, corpo }) {
     mensagem: mensagem || 'Fale com a equipe se quiser montar outra solução.', metadados: { solicitacao_id: s.id }
   });
   const whatsapp = mensagem
-    ? urlWhatsApp(cliente.telefone, `Olá${cliente.nome ? ', ' + String(cliente.nome).split(' ')[0] : ''}! Aqui é da CMK COGIT, sobre o seu pedido ${s.codigo}.\n\n${mensagem}`)
+    ? urlWhatsApp(cliente.telefone, `Olá${cliente.nome ? ', ' + String(cliente.nome).split(' ')[0] : ''}! Aqui é da CMKCOGIT, sobre o seu pedido ${s.codigo}.\n\n${mensagem}`)
     : null;
   return json(res, 200, { ok: true, solicitacao: nova, whatsapp_url: whatsapp });
 }

@@ -451,7 +451,7 @@ function montarMenu(perfil) {
   if (atual === 'projeto.html') atual = admin ? 'admin-clientes.html' : 'projetos.html';
 
   nav.innerHTML = `
-    <strong>CMK COGIT</strong> · <span>${admin ? 'Painel de gestão' : 'Plataforma do cliente'}</span>
+    <strong>CMKCOGIT</strong> · <span>${admin ? 'Painel de gestão' : 'Plataforma do cliente'}</span>
     ${sinoHtml()}
     <ul>
       ${itens.map((i) => `<li><a href="${i.href}"${i.href === atual ? ' aria-current="page"' : ''}>${i.texto}</a></li>`).join('')}
