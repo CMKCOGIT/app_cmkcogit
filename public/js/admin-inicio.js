@@ -39,9 +39,9 @@
 
   if (periodo.tipo === 'personalizado') { inpInicio.value = periodo.inicio || ''; inpFim.value = periodo.fim || ''; }
   marcarBotoes();
-  let emValidacao = [];
+  let emValidacao = 0;
   // em paralelo com o painel (não em sequência): o KPI "Em validação" espera os dois
-  const validacao = carregarValidacao().then((lista) => { emValidacao = lista; });
+  const validacao = carregarValidacao().then((total) => { emValidacao = total; });
   await carregar();
   revelar();
 
@@ -165,7 +165,7 @@
     ul.innerHTML = [
       { rotulo: 'Faturamento', valor: d.faturamento, formato: 'brl', icone: 'valor', destaque: true, variacao: vFat, nota: vFat ? 'vs. período anterior' : (Number(d.faturamento) ? 'sem vendas no período anterior' : 'nenhuma venda no período') },
       { rotulo: 'Vendas', valor: vendas, icone: 'aprovar', variacao: vVen, nota: vVen ? 'vs. período anterior' : 'pagamentos confirmados' },
-      { rotulo: 'Em validação', valor: emValidacao.length, icone: 'em-validacao', href: 'admin.html?filtro=em_validacao', nota: 'solicitações para revisar', alerta: emValidacao.length ? 'atencao' : '' },
+      { rotulo: 'Em validação', valor: emValidacao, icone: 'em-validacao', href: 'admin.html?filtro=em_validacao', nota: 'solicitações para revisar', alerta: emValidacao ? 'atencao' : '' },
       { rotulo: 'Pagamentos pendentes', valor: pend.valor, formato: 'brl', icone: 'recibo', href: 'admin.html?filtro=aguardando_pagamento', nota: `${Number(pend.quantidade)} ${Number(pend.quantidade) === 1 ? 'cobrança aguardando' : 'cobranças aguardando'}` },
       { rotulo: 'Ticket médio', valor: ticket, formato: 'brl', icone: 'pagamentos', nota: 'faturamento ÷ vendas' }
     ].map(kpiHtml).join('') + (conversao == null ? '' : kpiHtml({ rotulo: 'Conversão', valor: conversao, formato: 'pct', icone: 'subiu', nota: `${Number(sol.pagas)} de ${Number(sol.criadas)} solicitações pagas` }));
@@ -328,17 +328,18 @@
   // Lista lateral: solicitações esperando validação (mais antigas primeiro)
   async function carregarValidacao() {
     const ul = document.getElementById('lista-validacao');
-    const { data, error } = await db.from('solicitacoes')
-      .select('id, codigo, created_at, valor_calculado, tipo_preco, cliente:profiles!solicitacoes_cliente_id_fkey(nome)')
-      .eq('status', 'em_validacao').order('created_at', { ascending: true }).limit(20);
-    if (error) { ul.innerHTML = '<li><p class="widget-vazio">Não foi possível carregar.</p></li>'; return []; }
-    const lista = (data || []).filter((s) => s.codigo);
-    ul.innerHTML = lista.length ? lista.slice(0, 5).map((s) => `
+    // total real no banco (o KPI) + as 5 mais antigas (a lista)
+    const { data, error, count } = await db.from('solicitacoes')
+      .select('id, codigo, created_at, valor_calculado, tipo_preco, cliente:profiles!solicitacoes_cliente_id_fkey(nome)', { count: 'exact' })
+      .eq('status', 'em_validacao').order('created_at', { ascending: true }).limit(5);
+    if (error) { ul.innerHTML = '<li><p class="widget-vazio">Não foi possível carregar.</p></li>'; return 0; }
+    const lista = data || [];
+    ul.innerHTML = lista.length ? lista.map((s) => `
       <li><a class="widget-item" href="admin.html?filtro=em_validacao&busca=${encodeURIComponent(s.codigo)}">${icone('em-validacao')}
         <span><strong>${esc(s.codigo)} · ${esc((s.cliente && s.cliente.nome) || 'Cliente')}</strong><small>Enviada ${esc(tempoRelativo(s.created_at))}</small></span>
         <span class="widget-valor">${s.tipo_preco === 'from' ? '<small>a partir de</small>' : ''}${brl(s.valor_calculado)}</span></a></li>`).join('')
       : '<li><p class="widget-vazio">Nenhuma solicitação esperando validação.</p></li>';
-    return lista;
+    return typeof count === 'number' ? count : lista.length;
   }
 
   // ---------------- exportar CSV (vendas confirmadas do período) ----------------

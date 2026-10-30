@@ -27,6 +27,7 @@
   const titulo = document.getElementById('modal-sol-titulo');
   const subtitulo = document.getElementById('modal-sol-sub');
 
+  const LIMITE_LISTA = 100;
   let solicitacoes = [];
   let catalogo = null;
   let M = null; // estado do modal aberto
@@ -54,7 +55,7 @@
       .from('solicitacoes')
       .select('*, cliente:profiles!solicitacoes_cliente_id_fkey(nome, email, telefone), pagamentos(id, status, valor, metodo, pago_em, mp_ultimo_status)')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(LIMITE_LISTA);
     if (filtro.value !== 'todas') q = q.eq('status', filtro.value);
     const { data, error } = await q;
     lista.removeAttribute('aria-busy');
@@ -74,8 +75,10 @@
     const limite = dias ? Date.now() - dias * 86400000 : 0;
     const visiveis = solicitacoes.filter((s) => (!limite || new Date(s.created_at).getTime() >= limite)
       && (!q || [s.codigo, s.cliente && s.cliente.nome, s.cliente && s.cliente.email].some((t) => normal(t).includes(q))));
+    const limiteAtingido = solicitacoes.length >= LIMITE_LISTA;
     document.getElementById('contagem').textContent = solicitacoes.length
-      ? `${visiveis.length} de ${solicitacoes.length} ${solicitacoes.length === 1 ? 'solicitação' : 'solicitações'} neste status` : '';
+      ? `${visiveis.length} de ${solicitacoes.length} ${solicitacoes.length === 1 ? 'solicitação' : 'solicitações'} neste status`
+        + (limiteAtingido ? ` (mostrando só as ${LIMITE_LISTA} mais recentes deste status)` : '') : '';
     if (!visiveis.length) {
       lista.innerHTML = `<p data-vazio>${solicitacoes.length ? 'Nada encontrado com essa busca ou período.' : 'Nenhuma solicitação neste filtro.'}</p>`;
       return;

@@ -124,6 +124,10 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.
 
+**Tem dado falso ou de teste?** Rode `sql/auditar_dados.sql` (também só leitura): aponta notificações de exemplo do
+`sql/14`, pagamentos "pagos" sem confirmação do Mercado Pago, solicitações/projetos "pagos" sem cobrança paga, contas
+de teste, cobranças esquecidas e o que mais estiver inconsistente, cada um com o que fazer.
+
 Se mudar um preço no site (`js/data.js`), mude também em `sql/02_catalogo.sql` e rode de novo:
 **quem decide o valor cobrado é o banco**, não o navegador.
 
