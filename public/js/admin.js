@@ -39,9 +39,9 @@
 
   function pagamentosHtml(pags) {
     if (!pags || !pags.length) return '';
-    return '<p><strong>Cobranças:</strong></p><ul>' + pags.map((p) =>
+    return `<details data-cobrancas><summary>Cobranças (${pags.length})</summary><ul>` + pags.map((p) =>
       `<li>${brl(p.valor)} — ${esc(rotulo('pagamento', p.status))}${p.metodo ? ' (' + esc(rotulo('metodo', p.metodo)) + ')' : ''}${p.pago_em ? ' em ' + fmtDataHora(p.pago_em) : ''}${p.status === 'pendente' && p.mp_ultimo_status ? ' · última tentativa MP: ' + esc(rotulo('mp', p.mp_ultimo_status)) : ''}</li>`
-    ).join('') + '</ul>';
+    ).join('') + '</ul></details>';
   }
 
   function render(solicitacoes) {
@@ -53,31 +53,39 @@
       const c = s.cliente || {};
       const fone = String(c.telefone || '').replace(/\D/g, '');
       const zap = fone
-        ? `<a href="https://wa.me/55${esc(fone)}?text=${encodeURIComponent('Olá ' + (c.nome || '') + '! Aqui é da CMK COGIT, sobre sua solicitação ' + s.codigo + '.')}" target="_blank" rel="noopener noreferrer">Chamar no WhatsApp</a>`
+        ? `<a href="https://wa.me/55${esc(fone)}?text=${encodeURIComponent('Olá ' + (c.nome || '') + '! Aqui é da CMK COGIT, sobre sua solicitação ' + s.codigo + '.')}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
         : '';
-      const podeDefinir = s.status === 'em_validacao' || s.status === 'aguardando_pagamento';
+      const podeDefinir = solicitacaoEditavel(s);
       const valorSugerido = s.valor_final != null ? s.valor_final : (Number(s.valor_calculado) > 0 ? s.valor_calculado : '');
       const decisao = podeDefinir ? `
-        <fieldset>
+        <fieldset data-decisao>
           <legend>${s.status === 'em_validacao' ? 'Validar e liberar pagamento' : 'Ajustar valor ou cancelar'}</legend>
-          <p><label>Valor final (R$)
-            <input type="number" min="1" step="0.01" data-valor="${esc(s.id)}" value="${esc(valorSugerido)}"></label></p>
-          <p><label>Mensagem ao cliente (opcional)<br>
-            <textarea rows="2" cols="60" maxlength="500" data-obs="${esc(s.id)}"></textarea></label></p>
-          <button type="button" data-aprovar="${esc(s.id)}">${s.status === 'em_validacao' ? 'Aprovar e liberar pagamento' : 'Salvar novo valor'}</button>
-          <button type="button" data-cancelar="${esc(s.id)}">Cancelar solicitação</button>
+          <p><label for="valor-${esc(s.id)}">Valor final (R$)</label>
+            <input type="number" id="valor-${esc(s.id)}" min="1" step="0.01" data-valor="${esc(s.id)}" value="${esc(valorSugerido)}"></p>
+          <p><label for="obs-${esc(s.id)}">Mensagem ao cliente (opcional)</label>
+            <input type="text" id="obs-${esc(s.id)}" maxlength="500" data-obs="${esc(s.id)}" placeholder="Ex.: valor com as integrações confirmadas"></p>
+          <p data-botoes>
+            <button type="button" data-aprovar="${esc(s.id)}">${s.status === 'em_validacao' ? 'Aprovar e liberar' : 'Salvar novo valor'}</button>
+            <button type="button" data-cancelar="${esc(s.id)}">Cancelar solicitação</button>
+          </p>
         </fieldset>` : '';
 
       return `
-        <article>
-          <h2>${esc(s.codigo)} — ${esc(rotulo('solicitacao', s.status))}</h2>
-          <p>${s.estruturado ? 'Preço fechado' : 'Sob medida'} · Origem: ${s.origem === 'diagnostico' ? 'diagnóstico da home' : 'Monte sua solução'} ·
-             Estimativa do sistema: ${s.tipo_preco === 'from' ? 'a partir de ' : ''}${brl(s.valor_calculado)} ·
-             Valor liberado: ${s.valor_final != null ? brl(s.valor_final) : '—'} · Criada em ${fmtDataHora(s.created_at)}</p>
-          <ul>${itensHtml(s.resumo)}</ul>
-          <p><strong>Cliente:</strong> ${esc(c.nome || '-')} · ${esc(c.email || '-')} · ${esc(c.telefone || 'sem telefone')} ${zap}</p>
-          ${s.notas ? `<p><strong>Contexto informado:</strong> ${esc(s.notas)}</p>` : ''}
-          ${s.observacao_admin ? `<p><strong>Mensagem enviada:</strong> ${esc(s.observacao_admin)}</p>` : ''}
+        <article data-solicitacao="${esc(s.id)}">
+          <header>
+            <h2>${esc(s.codigo)}</h2>
+            <span data-etiqueta="${ETIQUETA_STATUS[s.status] || 'neutro'}">${esc(rotulo('solicitacao', s.status))}</span>
+            <span data-etiqueta="neutro">${s.estruturado ? 'Preço fechado' : 'Sob medida'}</span>
+            <span data-valores>
+              <small>Estimativa</small> <strong>${s.tipo_preco === 'from' ? 'a partir de ' : ''}${brl(s.valor_calculado)}</strong>
+              <small>· Liberado</small> <strong>${s.valor_final != null ? brl(s.valor_final) : '—'}</strong>
+            </span>
+          </header>
+          <p data-cliente-sol><strong>${esc(c.nome || '-')}</strong> · ${esc(c.email || '-')}${c.telefone ? ' · ' + esc(formatarTelefone(c.telefone)) : ''}${zap ? ' · ' + zap : ''}
+            <small>· ${s.origem === 'diagnostico' ? 'Diagnóstico da home' : 'Monte sua solução'} · ${fmtDataHora(s.created_at)}</small></p>
+          ${itensEditaveisHtml(s)}
+          ${s.notas ? `<details data-contexto><summary>Contexto informado pelo cliente</summary><p>${esc(s.notas)}</p></details>` : ''}
+          ${s.observacao_admin ? `<p data-msg-enviada><small>Mensagem enviada:</small> ${esc(s.observacao_admin)}</p>` : ''}
           ${pagamentosHtml(s.pagamentos)}
           ${decisao}
         </article>
@@ -86,6 +94,11 @@
 
     lista.querySelectorAll('[data-aprovar]').forEach((b) => b.addEventListener('click', () => decidir(b, 'aprovar')));
     lista.querySelectorAll('[data-cancelar]').forEach((b) => b.addEventListener('click', () => decidir(b, 'cancelar')));
+    ligarRemoverItens(lista, async (r) => {
+      // o status pode ter mudado (ex.: virou preço fechado): segue a solicitação no filtro
+      if (filtro.value !== 'todas' && filtro.value !== r.solicitacao.status) filtro.value = r.solicitacao.status;
+      await carregar();
+    });
   }
 
   async function decidir(btn, acao) {
@@ -129,3 +142,6 @@
       </tr>`).join('') : '<tr><td colspan="6">Nenhum aviso ainda.</td></tr>';
   }
 })();
+
+// Cor da etiqueta de status (texto sempre junto)
+const ETIQUETA_STATUS = { em_validacao: 'atencao', aguardando_pagamento: 'info', paga: 'ok', cancelada: 'neutro' };

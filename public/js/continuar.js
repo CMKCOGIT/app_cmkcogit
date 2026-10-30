@@ -90,7 +90,7 @@
            ${s.estruturado ? 'Preço fechado' : 'Sob medida / sob validação'} ·
            ${s.origem === 'diagnostico' ? 'Diagnóstico da página inicial' : 'Monte sua solução'} ·
            ${fmtData(s.created_at)}</p>
-        <ul>${itensHtml(s.resumo)}</ul>
+        ${itensEditaveisHtml(s)}
         <p>Investimento inicial: <strong>${esc(valorSolicitacao(s))}</strong></p>
         ${s.notas ? `<p><small>Seu contexto: ${esc(s.notas)}</small></p>` : ''}
         ${s.observacao_admin ? `<p>Mensagem da equipe: ${esc(s.observacao_admin)}</p>` : ''}
@@ -124,6 +124,11 @@
       avisar('Solicitação cancelada.');
       await carregar();
     }));
+
+    ligarRemoverItens(lista, async (r) => {
+      await carregar();
+      document.getElementById('sol-' + r.solicitacao.id)?.scrollIntoView({ block: 'start' });
+    });
 
     if (destaque) document.getElementById('sol-' + destaque)?.scrollIntoView({ block: 'start' });
   }
