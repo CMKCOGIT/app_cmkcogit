@@ -103,7 +103,7 @@
   }
 
   function esqueleto() {
-    document.getElementById('kpis').innerHTML = '<li class="kpi" data-esqueleto></li>'.repeat(6);
+    document.getElementById('kpis').innerHTML = '<li class="kpi" data-esqueleto data-destaque></li>' + '<li class="kpi" data-esqueleto></li>'.repeat(5);
     document.getElementById('kpis-projetos').innerHTML = '<li class="kpi" data-esqueleto></li>'.repeat(4);
     ['grafico-faturamento', 'barras-solucoes', 'top-clientes', 'lista-atividades'].forEach((id) => {
       const el = document.getElementById(id);

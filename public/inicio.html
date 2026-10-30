@@ -13,12 +13,15 @@
   <link rel="manifest" href="/site.webmanifest">
   <link rel="preload" href="/assets/fonts/cogit-font-5.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/cogit-font-6.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/cogit-font-3.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/cogit-font-4.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/plataforma.css">
 </head>
 <body class="app">
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
+  <header id="barra-topo"></header>
   <main id="conteudo">
     <header class="pagina-cabecalho" id="cabecalho-inicio">
       <div>
@@ -34,7 +37,7 @@
     <section class="faixa-kpis" aria-labelledby="titulo-resumo">
       <h2 id="titulo-resumo" class="so-leitor-tela">Resumo</h2>
       <ul id="resumo" class="kpis" data-livre aria-busy="true">
-        <li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li>
+        <li class="kpi" data-esqueleto data-destaque></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li>
       </ul>
     </section>
 

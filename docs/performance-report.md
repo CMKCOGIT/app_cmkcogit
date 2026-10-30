@@ -53,3 +53,46 @@ Todas as metas do briefing foram atingidas no site: Performance ≥ 90, Acessibi
 - CSS não usado por página: o bundle único (~199 KB sem compressão) carrega estilos de todas as páginas. Com gzip fica em torno de 34 KB; dividir por página só compensa se o site crescer.
 - `components.js` e `configurator.js` são carregados em todas as páginas, inclusive onde não há componente para montar.
 - O aviso de cookies continua sendo candidato a LCP na primeira visita em páginas com hero muito curto; hoje ele é menor que o texto do hero em todas as páginas medidas.
+
+---
+
+# Parte 2 — Reestruturação da plataforma (branch `redesign/plataforma`)
+
+## Método
+
+- Lighthouse 13.6.0, mobile padrão (4G simulado, CPU 4×), servidor local sem compressão.
+- As telas logadas precisam de sessão: as duas versões foram servidas com o mesmo Supabase simulado (mesmos dados de teste, sem rede) no lugar da biblioteca do CDN. Antes = commit `362a49e` (fim do redesign visual); depois = esta branch.
+- SEO 50 em todas é intencional: área logada com `noindex`.
+
+## Resultado
+
+| Tela | Perf. antes | Perf. depois | CLS antes | CLS depois | A11y antes → depois |
+|---|---|---|---|---|---|
+| Início (cliente) | 97 | 95 | 0 | 0,007 | 100 → 100 |
+| Minhas solicitações | 73 | **95** | 0,929 | **0** | 100 → 100 |
+| Pagamentos | 73 | **96** | 0,929 | **0** | 100 → 100 |
+| Meus projetos | 96 | 96 | 0,074 | **0** | 100 → 100 |
+| Meu perfil | 96 | 96 | 0,074 | **0** | 100 → 100 |
+| Início (admin) | 97 | 95 | 0 | **0** | 100 → 100 |
+| Solicitações (admin) | 76 | **96** | 0,627 | **0** | 100 → 100 |
+| Clientes (admin) | 72 | **95** | 0,281 | **0,01** | 95 → **100** |
+
+LCP ficou entre 2,3 e 2,4 s em todas as telas (antes 1,8–3,9 s). Metas atingidas em todas: Performance ≥ 90, Acessibilidade ≥ 95, CLS < 0,1, LCP < 2,5 s.
+
+O Início do cliente e o do admin caíram 2 pontos: a tela agora carrega mais conteúdo no primeiro quadro (KPIs, próximo passo, painel lateral) e pré-carrega mais dois pesos de fonte; a diferença está dentro da variação entre rodadas.
+
+## O que segurou o layout (CLS)
+
+| Causa | Correção |
+|---|---|
+| Menu (antes) e barra superior (agora) montados pelo JS empurravam a página inteira | `<header id="barra-topo">` vazio já no HTML; o JS só preenche. Reservar com margem não funcionou (colapsava com o `body`) |
+| Listas e KPIs chegavam depois e mudavam de altura | Esqueletos com a altura real (primeiro KPI já com o formato de destaque; cards de projeto e solicitação com altura mínima) |
+| Contadores de filtro e "x de y" entravam depois | Contador e linha de contagem já existem no HTML |
+| Títulos e menus em Inter 600/700 trocavam de fonte no meio do carregamento | Preload desses dois pesos (23 KB cada) nas telas logadas |
+
+## Verificação
+
+- Varredura automática: 12 telas × 9 larguras (360, 390, 768, 1024, 1280, 1440, 1536, 1920 e 2560 px) × cliente e admin. Nenhuma rolagem horizontal, nenhum erro de console, conteúdo centralizado (sem sobra vazia só à direita).
+- Fluxo do modal de validação (remover itens, adicionar do catálogo e personalizado, valor, resumo, aprovar, WhatsApp, comprovante) executado de ponta a ponta: sem regressão.
+- Teclado: busca global (Ctrl+K e "/", setas, Enter, Esc devolve o foco), abas do perfil (setas, Home/End), gavetas e folha "Mais" com foco preso e Esc.
+- `npm test`: 39/39.

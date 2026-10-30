@@ -13,12 +13,15 @@
   <link rel="manifest" href="/site.webmanifest">
   <link rel="preload" href="/assets/fonts/cogit-font-5.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/cogit-font-6.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/cogit-font-3.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/cogit-font-4.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/plataforma.css">
 </head>
 <body class="app">
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
+  <header id="barra-topo"></header>
   <main id="conteudo">
     <header class="pagina-cabecalho" id="cabecalho-painel">
       <div>
@@ -50,7 +53,7 @@
 
     <section class="faixa-kpis" aria-labelledby="titulo-vendas">
       <h2 id="titulo-vendas" class="so-leitor-tela">Vendas no período</h2>
-      <ul id="kpis" class="kpis" data-livre aria-live="polite"></ul>
+      <ul id="kpis" class="kpis" data-livre aria-live="polite"><li class="kpi" data-esqueleto data-destaque></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li></ul>
     </section>
 
     <div class="pagina-grade">
@@ -70,7 +73,7 @@
 
         <section aria-labelledby="titulo-projetos">
           <div class="secao-topo"><h2 id="titulo-projetos">Projetos</h2><a href="admin-clientes.html">Ver clientes</a></div>
-          <ul id="kpis-projetos" class="kpis kpis-compactos" data-livre></ul>
+          <ul id="kpis-projetos" class="kpis kpis-compactos" data-livre><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li></ul>
         </section>
 
         <div id="grade-painel">

@@ -13,12 +13,15 @@
   <link rel="manifest" href="/site.webmanifest">
   <link rel="preload" href="/assets/fonts/cogit-font-5.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/cogit-font-6.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/cogit-font-3.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/cogit-font-4.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/plataforma.css">
 </head>
 <body class="app">
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
   <nav id="menu" aria-label="Menu principal"></nav>
+  <header id="barra-topo"></header>
   <main id="conteudo">
     <header class="pagina-cabecalho">
       <div>
@@ -40,11 +43,11 @@
             <label class="so-leitor-tela" for="busca">Buscar por código ou item</label>
             <input type="search" id="busca" maxlength="80" placeholder="Buscar por código ou item (ex.: SOL-00013, Landing Page)" autocomplete="off"></p>
           <div class="filtro-pilulas" id="filtro-status" role="group" aria-label="Filtrar por status">
-            <button type="button" data-status="todas" aria-pressed="true">Todas</button>
-            <button type="button" data-status="em_validacao" aria-pressed="false">Em validação</button>
-            <button type="button" data-status="aguardando_pagamento" aria-pressed="false">A pagar</button>
-            <button type="button" data-status="paga" aria-pressed="false">Pagas</button>
-            <button type="button" data-status="cancelada" aria-pressed="false">Canceladas</button>
+            <button type="button" data-status="todas" aria-pressed="true">Todas <span class="menu-contador" aria-hidden="true">0</span></button>
+            <button type="button" data-status="em_validacao" aria-pressed="false">Em validação <span class="menu-contador" aria-hidden="true">0</span></button>
+            <button type="button" data-status="aguardando_pagamento" aria-pressed="false">A pagar <span class="menu-contador" aria-hidden="true">0</span></button>
+            <button type="button" data-status="paga" aria-pressed="false">Pagas <span class="menu-contador" aria-hidden="true">0</span></button>
+            <button type="button" data-status="cancelada" aria-pressed="false">Canceladas <span class="menu-contador" aria-hidden="true">0</span></button>
           </div>
         </form>
         <p id="contagem" class="contagem" aria-live="polite"></p>

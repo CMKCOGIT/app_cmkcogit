@@ -150,7 +150,7 @@
   // ---------------- lista ----------------
   function render() {
     document.querySelectorAll('[data-filtro]').forEach((b) => b.setAttribute('aria-pressed', String(filtros[b.dataset.grupo] === b.dataset.filtro)));
-    document.querySelectorAll('[data-visao]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.visao === visao)));
+    document.querySelectorAll('#modo-visao [data-visao]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.visao === visao)));
     lista.dataset.visao = visao;
 
     const itens = visiveis();

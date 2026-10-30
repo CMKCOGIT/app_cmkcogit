@@ -485,6 +485,7 @@ progress + strong { margin-left: var(--space-2); font-family: var(--font-heading
 @view-transition { navigation: auto; }
 
 body.app {
+  --topo-h: 76px;
   --menu-w: 264px;
   --menu-inset: 14px;
   --pagina-max: 1600px;
@@ -680,6 +681,7 @@ html.menu-recolhido body.app { --menu-w: 84px; }
   gap: var(--space-3);
   max-width: var(--pagina-max);
   margin-inline: auto;
+  height: var(--topo-h);
   padding: var(--space-4) var(--pagina-pad) var(--space-3);
   background: linear-gradient(var(--bg-page) 70%, rgba(244, 245, 248, 0));
   view-transition-name: barra-topo;
@@ -884,13 +886,14 @@ body.app > main {
 /* ---- Menu inferior (celular) ---- */
 #menu-inferior, #folha-mais:not([open]) { display: none; }
 @media (max-width: 767.98px) {
-  body.app { padding-left: 0; }
+  body.app { --topo-h: 70px; padding-left: 0; }
   #menu { display: none; }
   body.app > main { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
   #barra-topo { gap: var(--space-2); padding-top: var(--space-3); }
   .topo-marca { display: block; flex: none; width: 40px; height: 40px; margin-right: auto; border-radius: 12px; background: var(--color-navy-900) url(../assets/images/cmk-symbol.png) center / 26px no-repeat; }
   #btn-busca { flex: none; width: 46px; margin: 0; padding: 0; justify-content: center; }
-  #btn-busca > span, #btn-busca > kbd, .usuario-nome, #btn-usuario > .i { display: none; }
+  #btn-busca > span, #btn-busca > kbd, .usuario-nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  #btn-usuario > .i { display: none; }
   #btn-usuario { padding: 3px; }
   #barra-topo #painel-sino { position: fixed; top: 68px; right: 12px; left: 12px; width: auto; }
 
@@ -1554,6 +1557,11 @@ input[type=file]::file-selector-button {
 .kpi[data-alerta=perigo] .kpi-valor { color: var(--danger); }
 .kpi[data-alerta=atencao] .kpi-icone { background: var(--warning-bg); color: var(--warning); }
 .kpi[data-esqueleto] { min-height: 132px; }
+.kpis-compactos .kpi[data-esqueleto] { min-height: 104px; }
+#proximo-passo:has(> [data-esqueleto-linha]) { min-height: 150px; }
+#lista-admin > article[data-esqueleto] { min-height: 230px; }
+.lista-cards.grade-cards > article[data-esqueleto] { min-height: 380px; }
+.barra-periodo > small { min-height: 1.5em; }
 
 /* ---- Próximo passo ---- */
 #secao-proximo-passo {
@@ -1675,8 +1683,8 @@ a.widget-item:hover { border-color: rgba(74, 61, 219, 0.32); background: var(--l
 @keyframes brilho { to { background-position: -200% 0; } }
 .lista-cards > p[data-vazio] { padding: var(--space-10) var(--space-6); border: 1px dashed var(--border-strong); border-radius: var(--radius-xl); background: var(--surface); color: var(--text-secondary); text-align: center; }
 .lista-cards > p[data-vazio]::before { content: ''; display: block; width: 36px; height: 36px; margin: 0 auto var(--space-3); background: var(--color-neutral-400); -webkit-mask: var(--bi-vazio) center / contain no-repeat; mask: var(--bi-vazio) center / contain no-repeat; }
-.contagem { margin: 0; color: var(--text-tertiary); font-size: var(--text-sm); }
-.contagem:empty { display: none; }
+.contagem { min-height: 1.5em; margin: 0; color: var(--text-tertiary); font-size: var(--text-sm); }
+.contagem:empty::before { content: '\00a0'; } /* reserva a linha antes de contar (sem salto) */
 
 .sol-card {
   display: grid;
@@ -1932,6 +1940,7 @@ html.anima [data-revelar] { transition: opacity var(--dur-slow) var(--ease-out),
   .kpi-icone { width: 32px; height: 32px; border-radius: 10px; }
   .kpi-icone > .i { width: 16px; height: 16px; }
   .kpi-rotulo { font-size: var(--text-xs); }
+  .kpi[data-esqueleto] { min-height: 112px; }
   .passo { grid-template-columns: 1fr; }
   .passo .pagina-acoes > a { flex: 1 1 100%; }
   .evento { grid-template-columns: 36px minmax(0, 1fr); }
@@ -2608,7 +2617,6 @@ details[open] > summary { margin-bottom: var(--space-3); }
 
 /* ---- Clientes: barra de busca/filtros (barra-ferramentas) ---- */
 #contagem { color: var(--text-tertiary); font-family: var(--font-heading); font-size: var(--text-sm); font-weight: var(--fw-semibold); }
-#contagem:empty { display: none; }
 
 /* ---- Clientes: cards ---- */
 #lista-clientes[data-visao=cards] { grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); align-items: start; }

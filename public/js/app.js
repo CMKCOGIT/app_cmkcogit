@@ -502,7 +502,7 @@ function itensMenu(perfil) {
       { href: 'admin.html', texto: 'Solicitações', curto: 'Solicitações', icone: 'solicitacoes', contador: 'menu-cont-validacao' },
       { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' }
     ] }],
-    fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', icone: 'aprovar' },
+    fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },
     inferior: [INICIO_ADMIN, 'admin.html', 'fab', 'admin-clientes.html'],
     ajuda
   } : {
@@ -518,7 +518,7 @@ function itensMenu(perfil) {
         { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade', curto: 'Funcionalidades', icone: 'adquirir' }
       ] }
     ],
-    fab: { href: urlSite('monte-sua-solucao.html'), texto: 'Montar nova solução', curto: 'Nova', icone: 'adicionar', externo: true },
+    fab: { href: urlSite('monte-sua-solucao.html'), texto: 'Montar nova solução', curto: 'Nova', complemento: ' solução (abre o site)', icone: 'adicionar', externo: true },
     inferior: ['inicio.html', 'continuar.html', 'fab', 'pagamentos.html'],
     ajuda
   };
@@ -561,16 +561,16 @@ function montarMenu(perfil) {
     <button type="button" id="btn-recolher" aria-pressed="${tablet ? 'false' : menuRecolhido()}" title="${tablet ? 'Expandir menu' : 'Recolher menu'}">${icone('recolher')}<span data-rotulo>${tablet ? 'Expandir menu' : 'Recolher menu'}</span></button>`;
 
   // ---- barra superior ----
-  document.getElementById('barra-topo')?.remove();
-  const topo = document.createElement('header');
-  topo.id = 'barra-topo';
+  // a barra já existe vazia no HTML (espaço reservado, sem salto de layout)
+  let topo = document.getElementById('barra-topo');
+  if (!topo) { topo = document.createElement('header'); topo.id = 'barra-topo'; main.before(topo); }
   topo.innerHTML = `
     <a class="topo-marca" href="${paginaInicial(perfil)}" aria-label="CMKCOGIT, ir para o início"></a>
     <button type="button" id="btn-busca" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">
       ${icone('buscar')}<span>Buscar</span><kbd>Ctrl K</kbd></button>
     ${sinoHtml()}
     <div id="usuario">
-      <button type="button" id="btn-usuario" aria-expanded="false" aria-controls="menu-usuario" aria-label="Conta: ${esc(perfil?.nome || 'Meu perfil')}">
+      <button type="button" id="btn-usuario" aria-expanded="false" aria-controls="menu-usuario">
         <span class="avatar" aria-hidden="true">${esc(iniciais(perfil?.nome || perfil?.email))}</span>
         <span class="usuario-nome">${esc(perfil?.nome || 'Meu perfil')}<small>${admin ? 'Administrador' : 'Cliente'}</small></span>
         ${icone('abrir-menu')}
@@ -582,7 +582,6 @@ function montarMenu(perfil) {
         <button type="button" data-sair>${icone('sair')} Sair</button>
       </div>
     </div>`;
-  main.before(topo);
 
   // ---- menu inferior (celular) + folha "Mais" ----
   document.getElementById('menu-inferior')?.remove();
@@ -593,7 +592,7 @@ function montarMenu(perfil) {
   inferior.setAttribute('aria-label', 'Navegação rápida');
   inferior.innerHTML = `<span class="inferior-indicador" aria-hidden="true"></span><ul>
     ${m.inferior.map((h) => (h === 'fab'
-      ? `<li class="inferior-fab"><a href="${esc(m.fab.href)}"${externo(m.fab)} aria-label="${esc(m.fab.texto)}">${icone(m.fab.icone)}<span>${esc(m.fab.curto)}</span></a></li>`
+      ? `<li class="inferior-fab"><a href="${esc(m.fab.href)}"${externo(m.fab)} title="${esc(m.fab.texto)}">${icone(m.fab.icone)}<span>${esc(m.fab.curto)}<span class="so-leitor-tela">${esc(m.fab.complemento)}</span></span></a></li>`
       : `<li><a href="${esc(h)}"${corrente(h)}>${icone(porHref[h].icone)}<span>${esc(porHref[h].curto)}</span></a></li>`)).join('')}
     <li><button type="button" id="btn-mais" aria-haspopup="dialog" aria-controls="folha-mais"${m.inferior.includes(atual) ? '' : ' aria-current="page"'}>${icone('mais')}<span>Mais</span></button></li>
   </ul>`;
