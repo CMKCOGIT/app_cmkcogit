@@ -14,50 +14,43 @@
 --     antigo (não dá para alterar lá)
 -- =====================================================================
 
-begin;
+-- Um bloco só (tudo ou nada; funciona no SQL Editor do Supabase).
+do $$
+declare
+  r        record;
+  v_ultimo int;
+  v_novo   text;
+begin
+  -- 1) formato das próximas
+  alter table public.solicitacoes alter column codigo
+    set default ('PLN-' || to_char(now() at time zone 'America/Sao_Paulo', 'YYYY') || '-'
+                 || lpad(nextval('public.seq_solicitacao')::text, 4, '0'));
 
--- 1) formato das próximas
-alter table public.solicitacoes alter column codigo
-  set default ('PLN-' || to_char(now() at time zone 'America/Sao_Paulo', 'YYYY') || '-'
-               || lpad(nextval('public.seq_solicitacao')::text, 4, '0'));
+  -- 2) renumerar as que ainda estão no formato antigo (depois das que já são PLN)
+  select coalesce(max(substring(codigo from '(\d+)$')::int), 0) into v_ultimo
+    from public.solicitacoes where codigo like 'PLN-%';
 
--- 2) renumerar as que ainda estão no formato antigo (depois das que já são PLN)
-create temporary table _codigo on commit drop as
-with base as (
-  select coalesce(max(substring(codigo from '(\d+)$')::int), 0) as ultimo
-    from public.solicitacoes where codigo like 'PLN-%'
-)
-select s.id, s.codigo as antigo,
-       'PLN-' || to_char(s.created_at at time zone 'America/Sao_Paulo', 'YYYY') || '-'
-       || lpad((base.ultimo + row_number() over (order by s.created_at, s.codigo))::text, 4, '0') as novo
-  from public.solicitacoes s, base
- where s.codigo like 'SOL-%';
+  for r in select id, codigo as antigo, created_at from public.solicitacoes
+            where codigo like 'SOL-%' order by created_at, codigo loop
+    v_ultimo := v_ultimo + 1;
+    v_novo := 'PLN-' || to_char(r.created_at at time zone 'America/Sao_Paulo', 'YYYY') || '-' || lpad(v_ultimo::text, 4, '0');
 
--- 3) trocar o código onde ele foi copiado
-update public.projetos p set nome = replace(p.nome, c.antigo, c.novo)
-  from _codigo c where p.nome like '%' || c.antigo || '%';
+    -- 3) trocar o código onde ele foi copiado
+    update public.projetos    set nome      = replace(nome, r.antigo, v_novo)      where nome like '%' || r.antigo || '%';
+    update public.pagamentos  set descricao = replace(descricao, r.antigo, v_novo) where descricao like '%' || r.antigo || '%';
+    update public.notificacoes set titulo   = replace(titulo, r.antigo, v_novo)    where titulo like '%' || r.antigo || '%';
+    update public.notificacoes set mensagem = replace(mensagem, r.antigo, v_novo)  where mensagem like '%' || r.antigo || '%';
+    update public.solicitacoes
+       set codigo = v_novo,
+           comprovante = case when comprovante is null then null
+                              else replace(comprovante::text, r.antigo, v_novo)::jsonb end
+     where id = r.id;
+  end loop;
 
-update public.pagamentos p set descricao = replace(p.descricao, c.antigo, c.novo)
-  from _codigo c where p.descricao like '%' || c.antigo || '%';
-
-update public.notificacoes n set titulo = replace(n.titulo, c.antigo, c.novo)
-  from _codigo c where n.titulo like '%' || c.antigo || '%';
-
-update public.notificacoes n set mensagem = replace(n.mensagem, c.antigo, c.novo)
-  from _codigo c where n.mensagem like '%' || c.antigo || '%';
-
-update public.solicitacoes s
-   set codigo = c.novo,
-       comprovante = case when s.comprovante is null then null
-                          else replace(s.comprovante::text, c.antigo, c.novo)::jsonb end
-  from _codigo c where s.id = c.id;
-
--- 4) a próxima continua a numeração (PLN-AAAA-0001 se não sobrou nenhuma)
-select setval('public.seq_solicitacao', greatest(x.ultimo, 1), x.ultimo > 0)
-  from (select coalesce(max(substring(codigo from '(\d+)$')::int), 0) as ultimo
-          from public.solicitacoes where codigo like 'PLN-%') x;
-
-commit;
+  -- 4) a próxima continua a numeração (PLN-AAAA-0001 se não sobrou nenhuma)
+  perform setval('public.seq_solicitacao', greatest(v_ultimo, 1), v_ultimo > 0);
+  raise notice 'Pronto. Última numeração usada: %', v_ultimo;
+end $$;
 
 -- conferência
 select codigo, status, created_at::date from public.solicitacoes order by created_at;
