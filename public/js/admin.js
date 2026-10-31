@@ -170,7 +170,7 @@
       etapa: 'editar',
       editavel: solicitacaoEditavel(s),
       itens: {
-        servicos: (sel.servicos || []).map((x) => ({ id: x.id, modelo: x.modelo || null })),
+        servicos: (sel.servicos || []).map((x) => ({ id: x.id, modelo: x.modelo || null, plano: x.plano || null })),
         complementos: (sel.complementos || []).map((x) => ({ id: x.id, qtd: Number(x.qtd) || 1 })),
         personalizados: (sel.personalizados || []).map((x) => ({ id: x.id, nome: x.nome, descricao: x.descricao || '', valor: Number(x.valor) }))
       },

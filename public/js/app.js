@@ -382,7 +382,8 @@ function limparPendente() {
 }
 function resumoPendenteHtml(cfg) {
   const itens = (cfg.servicos || []).map((s) => {
-    const formato = s.modelo === 'sob-medida' ? ' — sob medida' : s.modelo === 'modelos-prontos' ? ' — modelo pronto' : '';
+    const plano = { vitalicio: ', plano vitalício', mensal: ', plano mensal', anual: ', plano anual' }[s.plano] || '';
+    const formato = s.modelo === 'sob-medida' ? ' — sob medida' : s.modelo === 'modelos-prontos' ? ' — modelo pronto' + plano : '';
     return '<li>' + esc(s.nome || s.id) + formato + '</li>';
   });
   (cfg.complementos || []).forEach((c) => itens.push('<li>+ ' + esc(c.nome || c.id) + '</li>'));

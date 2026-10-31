@@ -81,3 +81,26 @@ test('sanitização: versão, ref, limites e texto', () => {
   assert.equal(ok.cfg.diagnostico.objetivo.length, 120);
   assert.equal(ok.cfg.servicos[0].modelo, null);
 });
+
+test('modelo pronto: plano mensal cobra R$ 30 e anual R$ 324 (10% de desconto), com preço fechado', () => {
+  const m = calc([{ id: 'landing-page', modelo: 'modelos-prontos', plano: 'mensal' }]);
+  assert.equal(m.valor, 30);
+  assert.equal(m.estruturado, true);
+  assert.equal(m.resumo.itens[0].plano, 'mensal');
+  assert.match(m.resumo.itens[0].nome, /plano mensal/);
+  const a = calc([{ id: 'portfolio', modelo: 'modelos-prontos', plano: 'anual' }]);
+  assert.equal(a.valor, 324);
+  assert.match(a.resumo.itens[0].nome, /plano anual/);
+});
+
+test('modelo pronto vitalício (ou sem plano, links antigos) mantém o preço do catálogo', () => {
+  assert.equal(calc([{ id: 'landing-page', modelo: 'modelos-prontos', plano: 'vitalicio' }]).valor, 500);
+  assert.equal(calc([{ id: 'landing-page', modelo: 'modelos-prontos' }]).valor, 500);
+});
+
+test('plano só vale para modelo pronto: no sob medida ou com valor inventado é ignorado', () => {
+  const s = calc([{ id: 'landing-page', modelo: 'sob-medida', plano: 'mensal' }]);
+  assert.equal(s.valor, 700);
+  assert.equal(s.estruturado, false);
+  assert.equal(calc([{ id: 'landing-page', modelo: 'modelos-prontos', plano: 'gratis' }]).valor, 500);
+});
