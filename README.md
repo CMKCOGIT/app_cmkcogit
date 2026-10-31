@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17` e `18` (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18` e `19` (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -125,6 +125,15 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    função `salvar_documento` (Meu perfil) ou ao concluir o cadastro, que passa a exigir o documento. Contas antigas
    continuam entrando, mas o `/api/checkout` só abre o pagamento depois do documento informado (manda para
    "Meu perfil") e envia CPF/CNPJ ao Mercado Pago. Na tela ele aparece mascarado (`***.456.789-**`).
+14. Rode `19_assinaturas.sql` para os **planos mensal e anual** do modelo pronto. Quando a cobrança de um pedido com
+   plano mensal/anual é paga, nasce uma assinatura com o próximo vencimento. Todo dia a rotina `/api/renovacoes`
+   (cron da Vercel em `vercel.json`) cria a cobrança da renovação 7 dias antes do vencimento, em **Pagamentos**,
+   avisa no sino e manda e-mail. Pagou, o vencimento avança um período; o cliente pode **cancelar a renovação**
+   em Pagamentos (o site fica no ar até o fim do período pago). Renovação automática no cartão só se o cliente
+   pedir (`assinaturas.renovacao_automatica`; a cobrança recorrente no cartão pelo Mercado Pago ainda não está ligada).
+   Na Vercel, configure `CRON_SECRET` (qualquer texto longo e aleatório) e, para os e-mails, `RESEND_API_KEY` e
+   `EMAIL_FROM` (ex.: `CMKCOGIT <cobranca@cmkcogit.com.br>`, com o domínio verificado no [Resend](https://resend.com)).
+   Sem o Resend, a cobrança e o aviso no sino continuam funcionando, só sem e-mail.
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.

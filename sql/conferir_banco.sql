@@ -81,7 +81,12 @@ with item(arquivo, o_que, nome) as (values
   ('15_validacao_comprovante', 'índice', 'uq_solicitacoes_comprovante_token'),
   ('18_cpf_cnpj', 'coluna', 'profiles.documento'),
   ('18_cpf_cnpj', 'função', 'documento_valido'),
-  ('18_cpf_cnpj', 'função', 'salvar_documento')
+  ('18_cpf_cnpj', 'função', 'salvar_documento'),
+  ('19_assinaturas', 'tabela', 'assinaturas'),
+  ('19_assinaturas', 'coluna', 'pagamentos.assinatura_id'),
+  ('19_assinaturas', 'função', 'gerar_renovacoes'),
+  ('19_assinaturas', 'função', 'cancelar_assinatura'),
+  ('19_assinaturas', 'gatilho', 'trg_assinatura_ao_pagar')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

@@ -35,6 +35,7 @@
   document.querySelectorAll('#filtro-status > button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.status === filtroStatus)));
 
   await carregar();
+  carregarPlanos();
 
   if (ref && UUID.test(ref)) {
     avisar('Confirmando seu pagamento com o Mercado Pago...');
@@ -55,6 +56,40 @@
     lista = data || [];
     renderResumo();
     renderTabela();
+  }
+
+  // Planos mensal/anual (sql/19). Sem a tabela no banco, a seção só não aparece.
+  async function carregarPlanos() {
+    const secao = document.getElementById('secao-planos');
+    const ul = document.getElementById('lista-planos');
+    const { data, error } = await db.from('assinaturas')
+      .select('id, nome, plano, valor, status, proximo_vencimento, renovacao_automatica')
+      .order('created_at', { ascending: false });
+    if (error || !data || !data.length) { secao.hidden = true; return; }
+    const situacao = { ativa: 'Ativo', atrasada: 'Renovação em atraso', cancelada: 'Cancelado' };
+    ul.innerHTML = data.map((a) => {
+      const periodo = a.plano === 'anual' ? '/ano' : '/mês';
+      const quando = a.status === 'cancelada'
+        ? 'No ar até ' + fmtData(a.proximo_vencimento)
+        : (a.renovacao_automatica ? 'Renova automaticamente no cartão em ' : 'Próximo vencimento: ') + fmtData(a.proximo_vencimento);
+      return `<li data-status-plano="${esc(a.status)}">
+        <span><strong>${esc(a.nome)}</strong><small>${esc(situacao[a.status] || a.status)} · ${esc(quando)}</small></span>
+        <span class="num">${brl(a.valor)}<small>${periodo}</small></span>
+        ${a.status === 'cancelada' ? '' : `<button type="button" data-cancelar-plano="${esc(a.id)}" data-cancelar>Cancelar renovação</button>`}
+      </li>`;
+    }).join('');
+    secao.hidden = false;
+    ul.querySelectorAll('[data-cancelar-plano]').forEach((btn) => btn.addEventListener('click', async () => {
+      const a = data.find((x) => x.id === btn.dataset.cancelarPlano);
+      if (!window.confirm(`Cancelar a renovação de "${a.nome}"?\n\nO site continua no ar até ${fmtData(a.proximo_vencimento)} e a cobrança de renovação em aberto é cancelada.`)) return;
+      ocupado(btn, true, 'Cancelando...');
+      const { error: e } = await db.rpc('cancelar_assinatura', { p_assinatura_id: a.id });
+      ocupado(btn, false);
+      if (e) return mostrarErro('Não foi possível cancelar: ' + e.message);
+      toast('Renovação cancelada. O site fica no ar até ' + fmtData(a.proximo_vencimento) + '.');
+      await carregar();
+      carregarPlanos();
+    }));
   }
 
   function renderResumo() {

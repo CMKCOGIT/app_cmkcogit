@@ -16,7 +16,7 @@
   <link rel="preload" href="/assets/fonts/cogit-font-3.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/cogit-font-4.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=b56da26efd">
-  <link rel="stylesheet" href="/css/plataforma.css?v=81cda6ec3c">
+  <link rel="stylesheet" href="/css/plataforma.css?v=b7fb0ede71">
 </head>
 <body class="app">
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
@@ -42,6 +42,12 @@
 
     <div class="pagina-grade" data-larga>
       <div class="coluna-principal">
+        <section aria-labelledby="titulo-planos" id="secao-planos" hidden>
+          <div class="secao-topo"><h2 id="titulo-planos">Seus planos</h2></div>
+          <p class="nota">Planos mensal e anual do modelo pronto. A renovação aparece aqui em Cobranças alguns dias antes do vencimento e avisamos por e-mail. Renovação automática só no cartão, se você pedir à equipe.</p>
+          <ul id="lista-planos" class="lista-planos" data-livre></ul>
+        </section>
+
         <section aria-labelledby="titulo-cobrancas">
           <div class="secao-topo secao-topo-filtros">
             <h2 id="titulo-cobrancas">Cobranças</h2>
@@ -99,6 +105,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/config.js"></script>
   <script src="js/app.js?v=41529c9ba5"></script>
-  <script src="js/pagamentos.js?v=9aff3d6101"></script>
+  <script src="js/pagamentos.js?v=7840218634"></script>
 </body>
 </html>
