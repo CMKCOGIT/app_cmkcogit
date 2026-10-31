@@ -43,7 +43,7 @@ test('gera renovação, avisa no sino e manda e-mail quando o Resend está confi
   const r = resp();
   await handler({ method: 'GET', headers: { authorization: 'Bearer segredo-cron' } }, r);
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 1 });
+  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 1, cartao: { registradas: 0, voltaram_manual: 0 } });
   assert.ok(chamadas.some((c) => c.url === '/rest/v1/notificacoes' && c.corpo.link === 'pagamentos.html'));
   const email = chamadas.find((c) => c.url === '/emails');
   assert.deepEqual(email.corpo.to, ['ana@ex.com']);
@@ -54,7 +54,7 @@ test('sem Resend configurado: cobrança e aviso continuam, e-mail não é enviad
   simular();
   const r = resp();
   await handler({ method: 'GET', headers: { authorization: 'Bearer segredo-cron' } }, r);
-  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 0 });
+  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 0, cartao: { registradas: 0, voltaram_manual: 0 } });
   assert.equal((await enviarEmail({ para: 'a@b.com', assunto: 'x', texto: 'y' })).motivo, 'sem_configuracao');
 });
 

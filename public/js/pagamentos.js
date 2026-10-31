@@ -21,7 +21,7 @@
   const retorno = q.get('mp');
   const ref = q.get('external_reference');
   const paymentId = q.get('payment_id') || q.get('collection_id');
-  if (retorno) history.replaceState(null, '', window.location.pathname);
+  if (retorno || q.get('renovacao')) history.replaceState(null, '', window.location.pathname);
 
   let filtroStatus = ['pendente', 'pago'].includes(q.get('filtro')) ? q.get('filtro') : 'todas';
   let periodo = 0;
@@ -36,6 +36,8 @@
 
   await carregar();
   carregarPlanos();
+  const renovacao = q.get('renovacao');
+  if (renovacao && UUID.test(renovacao)) confirmarCartao(renovacao);
 
   if (ref && UUID.test(ref)) {
     avisar('Confirmando seu pagamento com o Mercado Pago...');
@@ -58,12 +60,13 @@
     renderTabela();
   }
 
-  // Planos mensal/anual (sql/19). Sem a tabela no banco, a seção só não aparece.
+  // Planos mensal/anual (sql/19 e 20). Sem a tabela no banco, a seção só não aparece.
+  // Renovação: por cobrança (e-mail + Pagamentos) ou, se o cliente ativar, automática no cartão.
   async function carregarPlanos() {
     const secao = document.getElementById('secao-planos');
     const ul = document.getElementById('lista-planos');
     const { data, error } = await db.from('assinaturas')
-      .select('id, nome, plano, valor, status, proximo_vencimento, renovacao_automatica')
+      .select('id, nome, plano, valor, status, proximo_vencimento, renovacao_automatica, mp_status')
       .order('created_at', { ascending: false });
     if (error || !data || !data.length) { secao.hidden = true; return; }
     const situacao = { ativa: 'Ativo', atrasada: 'Renovação em atraso', cancelada: 'Cancelado' };
@@ -71,25 +74,56 @@
       const periodo = a.plano === 'anual' ? '/ano' : '/mês';
       const quando = a.status === 'cancelada'
         ? 'No ar até ' + fmtData(a.proximo_vencimento)
-        : (a.renovacao_automatica ? 'Renova automaticamente no cartão em ' : 'Próximo vencimento: ') + fmtData(a.proximo_vencimento);
+        : a.renovacao_automatica ? 'Renova automaticamente no cartão em ' + fmtData(a.proximo_vencimento)
+        : 'Próximo vencimento: ' + fmtData(a.proximo_vencimento) + ' · cobrança por e-mail e aqui em Pagamentos';
+      const acoes = a.status === 'cancelada' ? '' : (a.renovacao_automatica
+        ? `<button type="button" data-plano-acao="desligar_cartao" data-plano="${esc(a.id)}">Desligar renovação automática</button>`
+        : `<button type="button" data-plano-acao="ativar_cartao" data-plano="${esc(a.id)}">${icone('pagamentos')} Renovar automaticamente no cartão</button>`)
+        + `<button type="button" data-plano-acao="cancelar" data-plano="${esc(a.id)}" data-cancelar>Cancelar plano</button>`;
       return `<li data-status-plano="${esc(a.status)}">
         <span><strong>${esc(a.nome)}</strong><small>${esc(situacao[a.status] || a.status)} · ${esc(quando)}</small></span>
         <span class="num">${brl(a.valor)}<small>${periodo}</small></span>
-        ${a.status === 'cancelada' ? '' : `<button type="button" data-cancelar-plano="${esc(a.id)}" data-cancelar>Cancelar renovação</button>`}
+        <span class="acoes-plano">${acoes}</span>
       </li>`;
     }).join('');
     secao.hidden = false;
-    ul.querySelectorAll('[data-cancelar-plano]').forEach((btn) => btn.addEventListener('click', async () => {
-      const a = data.find((x) => x.id === btn.dataset.cancelarPlano);
-      if (!window.confirm(`Cancelar a renovação de "${a.nome}"?\n\nO site continua no ar até ${fmtData(a.proximo_vencimento)} e a cobrança de renovação em aberto é cancelada.`)) return;
-      ocupado(btn, true, 'Cancelando...');
-      const { error: e } = await db.rpc('cancelar_assinatura', { p_assinatura_id: a.id });
+    ul.querySelectorAll('[data-plano-acao]').forEach((btn) => btn.addEventListener('click', async () => {
+      const a = data.find((x) => x.id === btn.dataset.plano);
+      const acao = btn.dataset.planoAcao;
+      if (acao === 'cancelar' && !window.confirm(`Cancelar o plano "${a.nome}"?\n\nO site continua no ar até ${fmtData(a.proximo_vencimento)}. A renovação em aberto e a renovação automática (se houver) são canceladas.`)) return;
+      if (acao === 'desligar_cartao' && !window.confirm('Desligar a renovação automática no cartão?\n\nAs próximas renovações chegam por e-mail e aparecem aqui em Pagamentos.')) return;
+      ocupado(btn, true, acao === 'ativar_cartao' ? 'Abrindo o Mercado Pago...' : 'Salvando...');
+      try {
+        const r = await api('assinatura', { assinatura_id: a.id, acao });
+        if (acao === 'ativar_cartao') {
+          if (!urlMercadoPagoValida(r.url)) throw new Error('Não foi possível abrir o Mercado Pago.');
+          window.location.href = r.url; // o cliente cadastra o cartão lá e volta para cá
+          return;
+        }
+        toast(acao === 'cancelar' ? 'Plano cancelado. O site fica no ar até ' + fmtData(a.proximo_vencimento) + '.' : 'Renovação automática desligada.');
+      } catch (e) {
+        mostrarErro(e.message);
+      }
       ocupado(btn, false);
-      if (e) return mostrarErro('Não foi possível cancelar: ' + e.message);
-      toast('Renovação cancelada. O site fica no ar até ' + fmtData(a.proximo_vencimento) + '.');
       await carregar();
       carregarPlanos();
     }));
+  }
+
+  // volta do cadastro do cartão no Mercado Pago: ?renovacao=<id da assinatura>
+  async function confirmarCartao(id) {
+    avisar('Confirmando a renovação automática com o Mercado Pago...');
+    try {
+      const r = await api('assinatura', { assinatura_id: id, acao: 'verificar_cartao' });
+      avisar(r.renovacao_automatica
+        ? 'Pronto! A renovação agora é automática no cartão.'
+        : 'O cartão ainda não foi confirmado pelo Mercado Pago. Se você concluiu o cadastro, aguarde alguns minutos e atualize a página.');
+    } catch (e) {
+      avisar('');
+      mostrarErro(e.message);
+    }
+    await carregar();
+    carregarPlanos();
   }
 
   function renderResumo() {

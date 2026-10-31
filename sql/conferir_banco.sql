@@ -86,7 +86,10 @@ with item(arquivo, o_que, nome) as (values
   ('19_assinaturas', 'coluna', 'pagamentos.assinatura_id'),
   ('19_assinaturas', 'função', 'gerar_renovacoes'),
   ('19_assinaturas', 'função', 'cancelar_assinatura'),
-  ('19_assinaturas', 'gatilho', 'trg_assinatura_ao_pagar')
+  ('19_assinaturas', 'gatilho', 'trg_assinatura_ao_pagar'),
+  ('20_renovacao_cartao', 'coluna', 'assinaturas.mp_preapproval_id'),
+  ('20_renovacao_cartao', 'função', 'registrar_cobrancas_cartao'),
+  ('20_renovacao_cartao', 'função', 'atualizar_renovacao_cartao')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

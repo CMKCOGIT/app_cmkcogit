@@ -3355,9 +3355,11 @@ ul[data-itens-modal] > li[data-vazio]::before,
 .lista-planos > li > span:first-child { display: grid; gap: 2px; min-width: 0; }
 .lista-planos small { color: var(--color-text-muted); font-size: 0.8125rem; }
 .lista-planos .num { font-weight: 700; white-space: nowrap; }
+.lista-planos .acoes-plano { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 .lista-planos [data-status-plano="atrasada"] small { color: var(--color-warning); }
 .lista-planos [data-status-plano="cancelada"] { opacity: 0.75; }
 @media (max-width: 640px) {
   .lista-planos > li { grid-template-columns: 1fr auto; }
-  .lista-planos > li > button { grid-column: 1 / -1; }
+  .lista-planos > li > .acoes-plano { grid-column: 1 / -1; justify-content: stretch; }
+  .lista-planos .acoes-plano > button { flex: 1 1 100%; }
 }

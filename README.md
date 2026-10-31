@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18` e `19` (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19` e `20` (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -130,10 +130,18 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    (cron da Vercel em `vercel.json`) cria a cobrança da renovação 7 dias antes do vencimento, em **Pagamentos**,
    avisa no sino e manda e-mail. Pagou, o vencimento avança um período; o cliente pode **cancelar a renovação**
    em Pagamentos (o site fica no ar até o fim do período pago). Renovação automática no cartão só se o cliente
-   pedir (`assinaturas.renovacao_automatica`; a cobrança recorrente no cartão pelo Mercado Pago ainda não está ligada).
+   pedir (veja o item 15).
    Na Vercel, configure `CRON_SECRET` (qualquer texto longo e aleatório) e, para os e-mails, `RESEND_API_KEY` e
    `EMAIL_FROM` (ex.: `CMKCOGIT <cobranca@cmkcogit.com.br>`, com o domínio verificado no [Resend](https://resend.com)).
    Sem o Resend, a cobrança e o aviso no sino continuam funcionando, só sem e-mail.
+15. Rode `20_renovacao_cartao.sql` para a **renovação automática no cartão** (opcional para o cliente). Em
+   Pagamentos → Seus planos, "Renovar automaticamente no cartão" cria uma assinatura no Mercado Pago
+   (`POST /preapproval`, rota `/api/assinatura`) e leva o cliente para cadastrar o cartão; na volta a plataforma
+   confere e liga a renovação automática (a cobrança manual pendente é cancelada). A rotina diária consulta cada
+   assinatura no Mercado Pago e registra como paga cada cobrança nova do cartão (o vencimento avança). Se a
+   assinatura for cancelada lá, ou o cartão não for cobrado em até 5 dias do vencimento, volta para a cobrança por
+   e-mail + Pagamentos e o cliente é avisado. Cancelar o plano também cancela no Mercado Pago. Teste com a conta de
+   teste do Mercado Pago antes de divulgar.
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.
