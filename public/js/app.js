@@ -18,7 +18,7 @@ const CFG = window.COGIT_CONFIG || {};
       '. No computador: confira o arquivo <code>.env.local</code> na MESMA pasta do <code>package.json</code> e reinicie o ' +
       '<code>npm run dev</code>. Na Vercel: Settings → Environment Variables e faça um novo deploy.';
   } else if (!window.supabase) {
-    problema = 'A biblioteca do Supabase (cdn.jsdelivr.net) não carregou. Verifique a internet ou desative o bloqueador de anúncios para este site.';
+    problema = 'A biblioteca do Supabase não carregou. Recarregue a página; se continuar, verifique a internet.';
   }
   if (!problema) return;
   const mostrar = () => document.body.insertAdjacentHTML('afterbegin',

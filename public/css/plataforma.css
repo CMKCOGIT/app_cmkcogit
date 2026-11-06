@@ -532,7 +532,7 @@ html.menu-recolhido body.app { --menu-w: 84px; }
   width: 160px;
   height: 36px;
   margin: 0 var(--space-3) var(--space-1);
-  background: url(../assets/images/logo-white.png) left center / contain no-repeat;
+  background: url(../assets/marca/cogit-logo-papel.svg) left center / contain no-repeat;
 }
 #menu > strong { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 #menu > span {
@@ -648,7 +648,7 @@ html.menu-recolhido body.app { --menu-w: 84px; }
    Os rótulos continuam para leitores de tela. */
 @media (min-width: 1024px) {
   html.menu-recolhido #menu { padding-inline: var(--space-3); }
-  html.menu-recolhido #menu::before { width: 100%; height: 36px; margin: 0 0 var(--space-3); background-image: url(../assets/images/cmk-symbol.png); background-position: center; }
+  html.menu-recolhido #menu::before { width: 100%; height: 36px; margin: 0 0 var(--space-3); background-image: url(../assets/marca/cogit-icone-papel.svg); background-position: center; }
   html.menu-recolhido #menu > span, html.menu-recolhido #menu .menu-grupo, html.menu-recolhido .menu-destaque p { display: none; }
   html.menu-recolhido #menu [data-rotulo], html.menu-recolhido .menu-destaque a > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   html.menu-recolhido #menu > ul a, html.menu-recolhido #btn-sair, html.menu-recolhido #btn-recolher { justify-content: center; padding-inline: 0; }
@@ -660,7 +660,7 @@ html.menu-recolhido body.app { --menu-w: 84px; }
 @media (min-width: 768px) and (max-width: 1023.98px) {
   body.app { --menu-w: 84px; }
   html:not(.menu-aberto) #menu { padding-inline: var(--space-3); }
-  html:not(.menu-aberto) #menu::before { width: 100%; height: 36px; margin: 0 0 var(--space-3); background-image: url(../assets/images/cmk-symbol.png); background-position: center; }
+  html:not(.menu-aberto) #menu::before { width: 100%; height: 36px; margin: 0 0 var(--space-3); background-image: url(../assets/marca/cogit-icone-papel.svg); background-position: center; }
   html:not(.menu-aberto) #menu > span, html:not(.menu-aberto) #menu .menu-grupo, html:not(.menu-aberto) .menu-destaque p { display: none; }
   html:not(.menu-aberto) #menu [data-rotulo], html:not(.menu-aberto) .menu-destaque a > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   html:not(.menu-aberto) #menu > ul a, html:not(.menu-aberto) #btn-sair, html:not(.menu-aberto) #btn-recolher { justify-content: center; padding-inline: 0; }
@@ -891,7 +891,7 @@ body.app > main {
   #menu { display: none; }
   body.app > main { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
   #barra-topo { gap: var(--space-2); padding-top: var(--space-3); }
-  .topo-marca { display: block; flex: none; width: 40px; height: 40px; margin-right: auto; border-radius: 2px; background: var(--color-navy-900) url(../assets/images/cmk-symbol.png) center / 26px no-repeat; }
+  .topo-marca { display: block; flex: none; width: 40px; height: 40px; margin-right: auto; border-radius: 2px; background: var(--color-navy-900) url(../assets/marca/cogit-icone-papel.svg) center / 26px no-repeat; }
   #btn-busca { flex: none; width: 46px; margin: 0; padding: 0; justify-content: center; }
   #btn-busca > span, #btn-busca > kbd, .usuario-nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   #btn-usuario > .i { display: none; }
@@ -1976,7 +1976,7 @@ body.acesso::before {
   width: 200px;
   height: 45px;
   margin-bottom: var(--space-8);
-  background: url(../assets/images/logo-white.png) center / contain no-repeat;
+  background: url(../assets/marca/cogit-logo-papel.svg) center / contain no-repeat;
 }
 body.acesso > main {
   width: 100%;

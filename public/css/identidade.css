@@ -89,4 +89,110 @@ body.acesso > main { border: 1px solid var(--color-border); }
 
 /* fundos que eram degradê ou imagem num elemento comum (a regra do item 1 apaga background-image) */
 .avatar, .inferior-fab > a > .i, .passo-icone { background-color: var(--color-brand-600) !important; color: #F3F3F1 !important; }
-.topo-marca { background: var(--color-navy-900) url(../assets/images/cmk-symbol.png) center / 24px no-repeat !important; border-radius: 2px !important; }
+.topo-marca { background: var(--color-navy-900) url(../assets/marca/cogit-icone-papel.svg) center / 24px no-repeat !important; border-radius: 2px !important; }
+
+/* =====================================================================
+   8. Telas de acesso em tela cheia (como as seções do site)
+   Computador: metade grafite (marca) + metade papel (formulário).
+   Celular: faixa grafite com a logo no topo e o formulário na tela toda.
+   ===================================================================== */
+body.acesso {
+  display: grid !important; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: stretch;
+  min-height: 100vh; min-height: 100dvh; padding: 0 !important; margin: 0;
+  background: var(--color-neutral-100) !important;
+}
+/* coluna da marca (telas sem painel próprio: concluir cadastro, nova senha, 404) */
+body.acesso::before {
+  content: '' !important; grid-column: 1; grid-row: 1 / span 3; display: block !important;
+  width: auto !important; height: auto !important; min-height: 100dvh; margin: 0 !important;
+  background: var(--color-navy-900) url(../assets/marca/cogit-logo-papel.svg) clamp(32px, 4.2vw, 72px) clamp(32px, 4.5vw, 56px) / 150px auto no-repeat !important;
+}
+body.acesso::after {
+  content: 'Tecnologia que sai do papel.'; grid-column: 1; grid-row: 1 / span 3; align-self: center;
+  padding: 0 clamp(32px, 4.2vw, 72px); max-width: 11ch; box-sizing: content-box;
+  font: 500 clamp(44px, 5vw, 84px)/.95 var(--font-display); letter-spacing: -.035em; color: #F3F3F1; pointer-events: none;
+}
+body.acesso > main {
+  grid-column: 2; grid-row: 1 / span 3; align-self: center; justify-self: center;
+  width: min(460px, calc(100% - 48px)) !important; max-width: none !important; margin: 48px 0 !important;
+  padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important;
+}
+body.acesso > main > h1 { font-size: clamp(32px, 2.6vw, 44px) !important; margin-bottom: 8px !important; }
+body.acesso > footer, body.acesso > nav { grid-column: 2; }
+
+/* Login / cadastro: o painel da marca ocupa a metade esquerda; o formulário ativo fica à direita */
+body.acesso.login { display: block !important; }
+body.acesso.login::after { content: none !important; }
+body.acesso.login::before {
+  position: absolute; z-index: 3; top: clamp(32px, 4.5vw, 56px); left: clamp(32px, 4.2vw, 72px);
+  width: 150px !important; height: 42px !important; min-height: 0; background: url(../assets/marca/cogit-logo-papel.svg) left center / contain no-repeat !important;
+}
+body.acesso.login > main { width: 100% !important; max-width: none !important; margin: 0 !important; min-height: 100dvh; }
+body.acesso.login .auth-card {
+  display: grid !important; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) !important; grid-template-rows: auto 1fr !important;
+  min-height: 100dvh !important; border: 0 !important; border-radius: 0 !important; background: var(--color-neutral-100) !important; overflow: visible !important;
+}
+body.acesso.login .auth-painel {
+  position: relative !important; left: auto !important; top: auto !important; bottom: auto !important; width: auto !important;
+  grid-column: 1 !important; grid-row: 1 / span 2 !important; transform: none !important; transition: none !important;
+  display: flex !important; flex-direction: column; justify-content: space-between; gap: 40px;
+  padding: calc(clamp(32px, 4.5vw, 56px) + 90px) clamp(32px, 4.2vw, 72px) clamp(32px, 4.5vw, 56px) !important;
+  background: var(--color-navy-900) !important; color: #F3F3F1;
+}
+.auth-marca { display: grid; gap: 22px; }
+.auth-marca .auth-rotulo { display: inline-flex; align-items: center; gap: 12px; font: 500 12px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: #A9B6CF; }
+.auth-marca .auth-rotulo::before { content: ''; width: 28px; height: 1px; background: currentColor; }
+.auth-titulo { margin: 0; font: 500 clamp(44px, 5vw, 84px)/.95 var(--font-display); letter-spacing: -.035em; color: #F3F3F1; max-width: 11ch; }
+.auth-titulo em { font-style: normal; color: #8EA6D8; }
+.auth-lista { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; border-top: 1px solid var(--color-navy-600); padding-top: 22px; max-width: 40ch; }
+.auth-lista li { position: relative; padding-left: 20px; color: rgba(243, 243, 241, .82); font-size: 15px; line-height: 1.45; }
+.auth-lista li::before { content: ''; position: absolute; left: 0; top: .65em; width: 9px; height: 1.5px; background: #8EA6D8; }
+/* a alternância (Ainda não tem conta? / Já é cliente?) vira um rodapé discreto do painel */
+body.acesso.login .auth-painel-conteudo {
+  position: static !important; align-items: flex-start !important; text-align: left !important; gap: 10px !important;
+  padding-top: 22px; border-top: 1px solid var(--color-navy-600); transform: none !important;
+}
+body.acesso.login .auth-painel-conteudo h2 { font-size: 22px !important; color: #F3F3F1 !important; margin: 0 !important; }
+body.acesso.login .auth-painel-conteudo p { color: rgba(243, 243, 241, .75) !important; font-size: 14px; max-width: 42ch; }
+body.acesso.login .auth-painel-conteudo .auth-rotulo { display: none; }
+body.acesso.login .auth-card[data-modo=login] .auth-painel-conteudo[data-para=cadastro],
+body.acesso.login .auth-card[data-modo=cadastro] .auth-painel-conteudo[data-para=login] { display: none !important; }
+body.acesso.login .auth-painel #ir-cadastro, body.acesso.login .auth-painel #ir-login { background: transparent !important; color: #F3F3F1 !important; border: 1px solid rgba(243, 243, 241, .5) !important; }
+body.acesso.login .auth-painel #ir-cadastro:hover, body.acesso.login .auth-painel #ir-login:hover { background: #F3F3F1 !important; color: var(--color-navy-900) !important; }
+body.acesso.login .auth-painel #pendente { border: 1px solid var(--color-navy-600) !important; background: var(--color-navy-800) !important; border-radius: 2px !important; }
+/* formulários: só o ativo, na metade direita, com uma transição curta */
+body.acesso.login .auth-card #mensagem { grid-column: 2 !important; grid-row: 1 !important; justify-self: center; width: min(440px, calc(100% - 48px)); margin: 40px 0 0 !important; }
+body.acesso.login .auth-form {
+  grid-column: 2 !important; grid-row: 2 !important; align-self: center; justify-self: center;
+  width: min(440px, calc(100% - 48px)); padding: 48px 0 !important; transform: none !important;
+}
+body.acesso.login .auth-card[data-modo=login] #form-cadastro,
+body.acesso.login .auth-card[data-modo=cadastro] #form-login { display: none !important; }
+body.acesso.login .auth-card[data-modo] .auth-form { animation: acesso-entra .38s var(--ease-out) both; }
+@keyframes acesso-entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+body.acesso.login .auth-form h2 { font-size: clamp(32px, 2.6vw, 44px) !important; }
+body.acesso .auth-form input:not([type=checkbox]), body.acesso > main input:not([type=checkbox]) { background: #FFFFFF !important; border: 1px solid var(--color-border) !important; min-height: 48px; }
+body.acesso .auth-form input:not([type=checkbox]):focus, body.acesso > main input:not([type=checkbox]):focus { border-color: var(--color-navy-900) !important; }
+body.acesso .auth-form > button[type=submit], body.acesso > main button[type=submit] { min-height: 52px; font-size: 16px !important; }
+body.acesso .btn-google { min-height: 52px; background: #FFFFFF !important; border: 1px solid var(--color-border) !important; }
+
+/* Celular e tablet em pé: faixa grafite com a logo e o formulário em tela cheia */
+@media (max-width: 899.98px) {
+  body.acesso { display: block !important; }
+  body.acesso::before { min-height: 0; height: 72px !important; background-position: 20px center !important; background-size: 120px auto !important; }
+  body.acesso::after { content: none !important; }
+  body.acesso > main { width: auto !important; margin: 32px 20px 48px !important; }
+  body.acesso.login::before { position: absolute; top: 0; left: 0; width: 100% !important; height: 72px !important; background: url(../assets/marca/cogit-logo-papel.svg) 20px center / 120px auto no-repeat !important; }
+  body.acesso.login .auth-card { display: flex !important; flex-direction: column; min-height: 100dvh !important; }
+  body.acesso.login .auth-painel { order: -1; padding: 92px 20px 24px !important; gap: 18px; justify-content: flex-start; }
+  body.acesso.login .auth-marca { gap: 12px; }
+  body.acesso.login .auth-titulo { font-size: clamp(34px, 10vw, 46px); }
+  body.acesso.login .auth-lista { display: none; }
+  body.acesso.login .auth-painel-conteudo { flex-direction: row !important; flex-wrap: wrap; align-items: center !important; justify-content: space-between; gap: 10px 16px !important; padding-top: 16px; }
+  body.acesso.login .auth-painel-conteudo p { display: none; }
+  body.acesso.login .auth-painel-conteudo h2 { font-size: 18px !important; }
+  body.acesso.login .auth-card #mensagem, body.acesso.login .auth-form { width: auto; margin-left: 20px !important; margin-right: 20px !important; justify-self: stretch; }
+  body.acesso.login .auth-form { padding: 28px 0 40px !important; }
+}
+@media (prefers-reduced-motion: reduce) { body.acesso.login .auth-card[data-modo] .auth-form { animation: none; } }
+body.acesso.login .auth-painel-conteudo { margin: 0 !important; padding-left: 0 !important; padding-right: 0 !important; width: 100% !important; max-width: 46ch; justify-self: stretch; align-self: auto !important; }

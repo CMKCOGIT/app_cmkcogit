@@ -44,7 +44,7 @@ const Comprovante = (function () {
     return `
       <article data-comprovante>
         <header data-comp-topo>
-          <img src="/assets/images/logo-white.png" alt="CMKCOGIT" width="168" height="38">
+          <img src="/assets/marca/cogit-logo-papel.svg" alt="CMKCOGIT" width="168" height="47">
           <div>
             <small>Comprovante de pedido</small>
             <strong>${esc(c.codigo)}</strong>

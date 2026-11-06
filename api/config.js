@@ -13,7 +13,8 @@ export default function handler(req, res) {
   };
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  // CDN da Vercel guarda por 1 h (não roda a função a cada página); trocar variável exige deploy, que limpa o cache
-  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
+  // CDN da Vercel guarda por 1 dia e serve a cópia antiga enquanto renova (sem partida a frio para quem visita);
+  // trocar variável exige deploy, que limpa o cache
+  res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=86400, stale-while-revalidate=604800');
   res.end('window.COGIT_CONFIG = Object.freeze(' + JSON.stringify(config) + ');\n');
 }
