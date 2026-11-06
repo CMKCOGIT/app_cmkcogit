@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /config.js
+
+Sitemap: https://app.cmkcogit.com.br/sitemap.xml

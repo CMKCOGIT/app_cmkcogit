@@ -1,14 +1,36 @@
 {
-  "name": "CMKCOGIT",
+  "id": "/",
+  "name": "Plataforma do cliente CMKCOGIT",
   "short_name": "CMKCOGIT",
-  "description": "Plataforma do cliente e painel de gestão CMKCOGIT.",
+  "description": "Área do cliente CMKCOGIT: solicitações, projetos, pagamentos e comprovantes em um só lugar.",
   "lang": "pt-BR",
   "start_url": "/inicio.html",
   "display": "browser",
   "background_color": "#F3F3F1",
   "theme_color": "#121314",
   "icons": [
-    { "src": "/assets/marca/cogit-icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/assets/marca/cogit-icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/assets/marca/cogit-icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/marca/cogit-icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/marca/cogit-icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "scope": "/",
+  "categories": [
+    "business",
+    "productivity"
   ]
 }
