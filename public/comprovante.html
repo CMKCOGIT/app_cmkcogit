@@ -34,7 +34,7 @@
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
   <link rel="stylesheet" href="/css/plataforma.css?v=9ff5ffbb38">
-  <link rel="stylesheet" href="/css/identidade.css?v=f449f17667">
+  <link rel="stylesheet" href="/css/identidade.css?v=ce518d0afc">
   <style>@view-transition { navigation: none; }</style>
 </head>
 <body class="comprovante">
@@ -43,7 +43,7 @@
       <button type="button" id="btn-pdf"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#pdf"></use></svg> Baixar PDF</button>
       <a id="btn-pagar" href="/continuar.html" hidden><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#pagamentos"></use></svg> Pagar agora</a>
     </p>
-    <div id="area-comprovante" aria-live="polite"><p data-carregando-comp>Carregando comprovante...</p></div>
+    <div id="area-comprovante" aria-live="polite"><div class="cogit-carregando" role="status"><svg viewBox="0 0 1010 1000" aria-hidden="true" focusable="false"><path class="arco" d="M815.5 781.5A438 438 0 1 1 815.5 218.5"/><g class="mk"><path d="M230 750V250L450 470L670 250V750H590V431.8L450 571.8L310 431.8V750Z"/><path d="M670 469.1L889.1 250H990.9L740.9 500L990.9 750H889.1L690 550.9L670 570.9Z"/></g></svg><span>Carregando comprovante...</span></div></div>
   </main>
   <script src="js/comprovante-render.js?v=d05864c895"></script>
   <script src="js/comprovante.js?v=57c24e3ed4"></script>

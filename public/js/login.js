@@ -173,13 +173,14 @@
     const senha = document.getElementById('login-senha').value;
     if (!email || !senha) return mensagem('Preencha e-mail e senha.', true);
     const botao = formLogin.querySelector('button[type=submit]');
-    botao.disabled = true;
+    ocupado(botao, true);
     mensagem('Entrando...');
     const { error } = await db.auth.signInWithPassword({ email, password: senha });
     if (error) {
-      botao.disabled = false;
+      ocupado(botao, false);
       return mensagem(traduzirErro(error.message), true);
     }
+    telaCarregando('Entrando na plataforma...');
     window.location.href = proximaPagina();
   });
 
@@ -198,19 +199,19 @@
     if (!document.getElementById('cad-aceite').checked) return mensagem('Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.', true);
 
     const botao = formCadastro.querySelector('button[type=submit]');
-    botao.disabled = true;
+    ocupado(botao, true);
     mensagem('Criando conta...');
 
     const { data, error } = await db.auth.signUp({
       email,
       password: senha,
       options: {
-        data: { nome, telefone: fone, aceite_termos_em: new Date().toISOString() }, // o SQL usa nome/telefone para criar o perfil
+        data: { nome, telefone: fone, aceite_termos_em: new Date().toISOString(), aceite_navegador: navigator.userAgent.slice(0, 400) }, // o SQL usa nome/telefone para criar o perfil
         emailRedirectTo: window.location.origin + '/' + proximaPagina()
       }
     });
     if (error) {
-      botao.disabled = false;
+      ocupado(botao, false);
       return mensagem(traduzirErro(error.message), true);
     }
     if (!data.session) {
@@ -219,6 +220,7 @@
       return mensagem('Conta criada! Enviamos um link de confirmação para ' + email +
         '. Abra o link NESTE MESMO navegador para continuar de onde parou' + (pendente ? ' — sua solução fica guardada aqui.' : '.'));
     }
+    telaCarregando('Preparando sua conta...');
     window.location.href = proximaPagina();
   });
 

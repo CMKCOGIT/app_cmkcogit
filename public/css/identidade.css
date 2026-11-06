@@ -212,3 +212,55 @@ body.acesso.login .auth-painel-conteudo { margin: 0 !important; padding-left: 0 
   .auth-voltar { position: absolute; top: 15px; right: 16px; font-size: 13px; min-height: 42px; border-bottom: 0; padding: 0 6px; }
   .auth-voltar span { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(243, 243, 241, .45); }
 }
+
+/* =====================================================================
+   9. Carregamento
+   - Marca: o C do ícone se desenha em volta do MK (guia de movimento)
+   - Botões: indicador pequeno antes do texto enquanto a ação roda
+   - Esqueletos: tabelas, listas e sino; conteúdo novo entra com um fade curto
+   ===================================================================== */
+.cogit-carregando { display: grid; justify-items: center; align-content: center; gap: 14px; padding: 40px 16px; color: var(--color-text-muted); font: 500 14px/1.4 var(--font-body, inherit); text-align: center; }
+.cogit-carregando svg { width: 56px; height: 56px; overflow: visible; }
+.cogit-carregando .mk { fill: var(--color-navy-900); }
+.cogit-carregando .arco { fill: none; stroke: var(--color-brand-600); stroke-width: 84; stroke-linecap: butt; stroke-dasharray: 2140; stroke-dashoffset: 2140; animation: cogit-c 1.4s cubic-bezier(.65, 0, .35, 1) infinite; }
+@keyframes cogit-c { 0% { stroke-dashoffset: 2140; } 50% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -2140; } }
+/* só aparece se demorar: carregamento rápido não pisca */
+.cogit-carregando { animation: cogit-surgir .3s ease-out .15s both; }
+@keyframes cogit-surgir { from { opacity: 0; } to { opacity: 1; } }
+#tela-carregando { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(243, 243, 241, .94); }
+#tela-carregando .cogit-carregando { padding: 0; }
+body.acesso > main > .cogit-carregando { min-height: 50vh; }
+.comprovante #area-comprovante > .cogit-carregando { min-height: 60vh; }
+
+/* botão ocupado (ocupado() em app.js) */
+button[aria-busy="true"], a[aria-busy="true"] { cursor: progress; }
+button[aria-busy="true"]::before {
+  content: '' !important; display: inline-block !important; flex: 0 0 auto; width: 1em; height: 1em; margin-right: .5em; vertical-align: -.15em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; background: none !important; -webkit-mask: none !important; mask: none !important;
+  animation: cogit-girar .7s linear infinite;
+}
+@keyframes cogit-girar { to { transform: rotate(360deg); } }
+
+/* esqueletos que faltavam */
+tr[data-esqueleto-tabela] > td { padding-top: 14px; padding-bottom: 6px; }
+tr[data-esqueleto-tabela] [data-esqueleto-linha]:nth-of-type(2) { width: 86%; }
+tr[data-esqueleto-tabela] [data-esqueleto-linha]:nth-of-type(3) { width: 64%; }
+ol > li[data-esqueleto-linha]:nth-child(2), ul > li[data-esqueleto-linha]:nth-child(2) { width: 78%; }
+ul > li[data-esqueleto-linha]:nth-child(3) { width: 58%; }
+#sino-lista > li[data-esqueleto-linha] { margin: 12px 16px; padding: 0 !important; height: 1.25rem; }
+#sino-lista > li[data-esqueleto-linha]::before { display: none; }
+li[data-esqueleto-linha]::marker { content: ''; }
+.aceite-termos [data-esqueleto-linha] { display: block; width: min(420px, 100%); }
+.aceite-termos[data-estado="aceito"] strong { color: var(--color-success); }
+
+/* conteúdo que substitui o esqueleto entra suave */
+.lista-cards > article:not([data-esqueleto]), .kpis > .kpi:not([data-esqueleto]), .lista-widget > li, .linha-tempo > li, tbody > tr:not([data-esqueleto-tabela]) { animation: cogit-entrar .28s ease-out both; }
+@keyframes cogit-entrar { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cogit-carregando .arco { animation: none; stroke-dashoffset: 0; }
+  .cogit-carregando svg { animation: cogit-pulsar 1.6s ease-in-out infinite; }
+  button[aria-busy="true"]::before { animation-duration: 1.6s; }
+  .lista-cards > article, .kpis > .kpi, .lista-widget > li, .linha-tempo > li, tbody > tr { animation: none !important; }
+}
+@keyframes cogit-pulsar { 50% { opacity: .45; } }

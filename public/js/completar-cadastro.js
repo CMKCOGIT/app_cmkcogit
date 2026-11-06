@@ -16,6 +16,7 @@
   const rascunho = document.getElementById('rascunho');
 
   function mensagem(texto, erro) {
+    document.getElementById('carregando-cadastro')?.remove();
     msg.textContent = texto || '';
     msg.setAttribute('role', erro ? 'alert' : 'status');
   }
@@ -133,7 +134,7 @@
       return;
     }
     const botao = form.querySelector('button[type=submit]');
-    botao.disabled = true;
+    ocupado(botao, true);
     mensagem('Salvando seu cadastro...');
     clearTimeout(timer);
 
@@ -144,7 +145,7 @@
       p_documento: jaTemDoc ? null : campoDoc.value.replace(/\D/g, '')
     });
     if (error) {
-      botao.disabled = false;
+      ocupado(botao, false);
       const texto = traduzirErro(error.message);
       if (texto === null || !(await getSessao())) {
         mensagem('Sua sessão expirou. Entre novamente — o que já foi salvo continua na sua conta.', true);
@@ -158,11 +159,11 @@
     try {
       perfil = await getPerfil();
     } catch (err) {
-      botao.disabled = false;
+      ocupado(botao, false);
       return mensagem(err.message, true);
     }
     if (!cadastroConcluido(perfil)) {
-      botao.disabled = false;
+      ocupado(botao, false);
       return mensagem('Não foi possível confirmar seu cadastro. Tente novamente.', true);
     }
     mensagem('Cadastro concluído! Abrindo a plataforma...');
@@ -171,6 +172,7 @@
 
   mostrarPendencias();
   mensagem('');
+  document.getElementById('carregando-cadastro')?.remove();
   form.hidden = false;
   (!nomeValido() ? campoNome : !docValido() ? campoDoc : jaAceitou ? campoFone : campoAceite).focus();
 })();

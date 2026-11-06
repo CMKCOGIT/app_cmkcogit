@@ -973,7 +973,7 @@ function sinoHtml() {
           <h2 id="painel-sino-titulo">Notificações</h2>
           <button type="button" id="sino-marcar-todas" hidden>Marcar todas como lidas</button>
         </header>
-        <ul id="sino-lista" aria-live="polite"><li data-carregando>Carregando...</li></ul>
+        <ul id="sino-lista" aria-live="polite"><li data-esqueleto-linha></li><li data-esqueleto-linha></li><li data-esqueleto-linha></li></ul>
       </section>
     </div>`;
 }
@@ -1114,7 +1114,24 @@ function toast(texto, tipo = 'ok') {
   setTimeout(() => el.remove(), tipo === 'erro' ? 8000 : 4500);
 }
 
-// Botão em andamento: desabilita (evita clique duplo) e troca o texto
+// Carregamento da marca: o C do ícone se desenha em volta do MK (mesmo desenho do guia de movimento)
+const SVG_CARREGANDO = '<svg viewBox="0 0 1010 1000" aria-hidden="true" focusable="false"><path class="arco" d="M815.5 781.5A438 438 0 1 1 815.5 218.5"/><g class="mk"><path d="M230 750V250L450 470L670 250V750H590V431.8L450 571.8L310 431.8V750Z"/><path d="M670 469.1L889.1 250H990.9L740.9 500L990.9 750H889.1L690 550.9L670 570.9Z"/></g></svg>';
+function carregandoCogit(texto) {
+  return `<div class="cogit-carregando" role="status">${SVG_CARREGANDO}<span>${esc(texto || 'Carregando...')}</span></div>`;
+}
+// Tela inteira (ex.: depois de entrar, enquanto a próxima página abre)
+function telaCarregando(texto) {
+  let el = document.getElementById('tela-carregando');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'tela-carregando';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = carregandoCogit(texto);
+  return el;
+}
+
+// Botão em andamento: desabilita (evita clique duplo), mostra o indicador e troca o texto
 const CONTEUDO_BOTAO = new WeakMap();
 function ocupado(botao, sim, textoCarregando) {
   if (!botao) return;

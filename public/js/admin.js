@@ -307,12 +307,12 @@
           ${editavel ? '<button type="button" data-usar-sugerido>Usar sugerido</button>' : ''}</p>
         <p>
           <label for="valor-final">Valor final (R$)${editavel ? ' <abbr title="obrigatório para aprovar">*</abbr>' : ''}</label>
-          <input type="number" id="valor-final" min="0.01" max="1000000" step="0.01" inputmode="decimal" value="${esc(M.valorFinal)}"${editavel ? '' : ' disabled'} aria-describedby="ajuda-valor">
+          <input type="number" id="valor-final" placeholder="Ex.: 1890" min="0.01" max="1000000" step="0.01" inputmode="decimal" value="${esc(M.valorFinal)}"${editavel ? '' : ' disabled'} aria-describedby="ajuda-valor">
           <small id="ajuda-valor">${M.valorEditado ? 'Valor definido por você (não acompanha mais o sugerido).' : 'Acompanha o valor sugerido até você editar.'}</small>
         </p>
         <p>
           <label for="mensagem-cliente">Mensagem ao cliente (opcional)</label>
-          <textarea id="mensagem-cliente" rows="3" maxlength="1000"${editavel ? '' : ' disabled'} aria-describedby="ajuda-msg">${esc(M.mensagem)}</textarea>
+          <textarea id="mensagem-cliente" placeholder="Mensagem opcional para o cliente sobre o orçamento" rows="3" maxlength="1000"${editavel ? '' : ' disabled'} aria-describedby="ajuda-msg">${esc(M.mensagem)}</textarea>
           <small id="ajuda-msg">Aparece em destaque no comprovante e no WhatsApp.</small>
         </p>
       </section>`;
@@ -384,7 +384,7 @@
           <form id="form-personalizado" novalidate>
             <p><label for="pers-nome">Nome do item</label><input type="text" id="pers-nome" maxlength="120" required placeholder="Ex.: Página extra de serviços"></p>
             <p><label for="pers-desc">Descrição curta (opcional)</label><input type="text" id="pers-desc" maxlength="300" placeholder="Ex.: layout igual à home, até 6 blocos"></p>
-            <p><label for="pers-valor">Valor (R$)</label><input type="number" id="pers-valor" min="0.01" max="1000000" step="0.01" inputmode="decimal" required></p>
+            <p><label for="pers-valor">Valor (R$)</label><input type="number" id="pers-valor" placeholder="Ex.: 350" min="0.01" max="1000000" step="0.01" inputmode="decimal" required></p>
             <p><button type="submit">Adicionar item personalizado</button></p>
           </form>` : `
           <p><label for="busca-catalogo">Buscar no catálogo</label>
@@ -471,7 +471,7 @@
         <p><label for="motivo-cancelamento">Motivo (opcional, fica só para a equipe)</label>
           <textarea id="motivo-cancelamento" rows="2" maxlength="500" placeholder="Ex.: cliente desistiu; escopo fora do que atendemos"></textarea></p>
         <p><label for="mensagem-cancelamento">Mensagem ao cliente (opcional)</label>
-          <textarea id="mensagem-cancelamento" rows="3" maxlength="1000">${esc(M.mensagem)}</textarea></p>
+          <textarea id="mensagem-cancelamento" placeholder="Explique ao cliente o motivo do cancelamento" rows="3" maxlength="1000">${esc(M.mensagem)}</textarea></p>
         <p data-opcao-whats id="linha-whats-cancelar"${M.mensagem.trim() ? '' : ' hidden'}>
           <input type="checkbox" id="whats-cancelar" checked>
           <label for="whats-cancelar">Avisar o cliente pelo WhatsApp com esta mensagem</label>

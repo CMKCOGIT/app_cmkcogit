@@ -20,10 +20,10 @@
     if (senha.length < 8) { msg.textContent = 'A senha precisa ter pelo menos 8 caracteres.'; return; }
     if (senha !== document.getElementById('nova-senha2').value) { msg.textContent = 'As senhas não conferem.'; return; }
     const botao = form.querySelector('button');
-    botao.disabled = true;
+    ocupado(botao, true);
     const { error } = await db.auth.updateUser({ password: senha });
     if (error) {
-      botao.disabled = false;
+      ocupado(botao, false);
       msg.textContent = 'Não foi possível salvar: ' + error.message;
       return;
     }

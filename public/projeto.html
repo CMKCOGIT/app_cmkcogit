@@ -34,7 +34,7 @@
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
   <link rel="stylesheet" href="/css/plataforma.css?v=9ff5ffbb38">
-  <link rel="stylesheet" href="/css/identidade.css?v=f449f17667">
+  <link rel="stylesheet" href="/css/identidade.css?v=ce518d0afc">
 </head>
 <body class="app">
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
@@ -58,21 +58,21 @@
       <div class="coluna-principal">
     <section>
       <h2>Etapas</h2>
-      <ol id="lista-etapas"></ol>
+      <ol id="lista-etapas"><li data-esqueleto-linha></li><li data-esqueleto-linha></li></ol>
     </section>
 
     <section>
       <h2 id="titulo-pendencias">Aguardando sua decisão</h2>
-      <ul id="lista-pendencias"></ul>
+      <ul id="lista-pendencias"><li data-esqueleto-linha></li><li data-esqueleto-linha></li></ul>
     </section>
 
     <section id="repositorio">
       <h2>Repositório do projeto</h2>
       <p>O código e as entregas da CMKCOGIT ficam aqui, junto com os documentos que você manda para a equipe (logo, textos, fotos, acessos, contratos...).</p>
       <h3>Enviados pela CMKCOGIT</h3>
-      <ul id="lista-arquivos-equipe"></ul>
+      <ul id="lista-arquivos-equipe"><li data-esqueleto-linha></li><li data-esqueleto-linha></li></ul>
       <h3 id="titulo-arquivos-cliente">Enviados por você</h3>
-      <ul id="lista-arquivos-cliente"></ul>
+      <ul id="lista-arquivos-cliente"><li data-esqueleto-linha></li><li data-esqueleto-linha></li></ul>
       <form id="form-upload">
         <h3 id="titulo-upload">Enviar arquivos para a equipe</h3>
         <p><label for="up-arquivo">Arquivos (até 50 MB cada)</label><br><input type="file" id="up-arquivo" multiple required></p>
@@ -114,16 +114,16 @@
 
       <form id="form-pendencia">
         <h3>Nova pendência para o cliente</h3>
-        <p><label for="pend-titulo">Título</label><br><input type="text" id="pend-titulo" maxlength="160" required></p>
-        <p><label for="pend-descricao">Descrição</label><br><textarea id="pend-descricao" rows="2" cols="60" maxlength="1000"></textarea></p>
+        <p><label for="pend-titulo">Título</label><br><input type="text" id="pend-titulo" placeholder="Ex.: Enviar os textos da página Sobre" maxlength="160" required></p>
+        <p><label for="pend-descricao">Descrição</label><br><textarea id="pend-descricao" placeholder="Detalhe o que o cliente precisa enviar ou aprovar" rows="2" cols="60" maxlength="1000"></textarea></p>
         <p><label for="pend-prazo">Prazo</label><br><input type="date" id="pend-prazo"></p>
         <button type="submit">Adicionar pendência</button>
       </form>
 
       <form id="form-arquivo">
         <h3>Novo arquivo (link)</h3>
-        <p><label for="arq-nome">Nome</label><br><input type="text" id="arq-nome" maxlength="160" required></p>
-        <p><label for="arq-url">Link (https://...)</label><br><input type="url" id="arq-url" maxlength="500" required></p>
+        <p><label for="arq-nome">Nome</label><br><input type="text" id="arq-nome" placeholder="Ex.: Layout aprovado (Figma)" maxlength="160" required></p>
+        <p><label for="arq-url">Link (https://...)</label><br><input type="url" id="arq-url" placeholder="https://" maxlength="500" required></p>
         <button type="submit">Adicionar arquivo</button>
       </form>
     </section>
@@ -133,7 +133,7 @@
 
   <script src="js/vendor/supabase-2.45.4.min.js"></script>
   <script src="/config.js"></script>
-  <script src="js/app.js?v=5719fbb0a7"></script>
+  <script src="js/app.js?v=f2d79145f0"></script>
   <script src="js/projeto.js?v=d0b721da44"></script>
 </body>
 </html>

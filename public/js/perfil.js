@@ -32,6 +32,32 @@
   if (ehAdmin(perfil)) document.getElementById('perfil-rotulo').textContent = 'Painel de gestão';
   ligarAbas();
   carregarNotificacoes();
+  mostrarAceite();
+
+  // Registro do aceite (tabela aceites_termos; sem ela, cai na data guardada no perfil)
+  async function mostrarAceite() {
+    const alvo = document.getElementById('aceite-termos');
+    document.getElementById('perfil-link-termos').href = urlSite('termos-de-uso.html');
+    document.getElementById('perfil-link-privacidade').href = urlSite('privacidade.html');
+    let registro = null;
+    try {
+      const { data, error } = await db.from('aceites_termos').select('aceito_em, versao, origem')
+        .eq('user_id', perfil.id).order('aceito_em', { ascending: false }).limit(1).maybeSingle();
+      if (!error) registro = data;
+    } catch (_) { /* segue com o perfil */ }
+    const quando = (registro && registro.aceito_em) || perfil.aceite_termos_em;
+    alvo.replaceChildren();
+    if (!quando) {
+      alvo.dataset.estado = 'pendente';
+      alvo.textContent = 'Ainda não há aceite registrado. Ele é pedido ao concluir o cadastro.';
+      return;
+    }
+    alvo.dataset.estado = 'aceito';
+    const forte = document.createElement('strong');
+    forte.textContent = 'Você aceitou os Termos de Uso e a Política de Privacidade';
+    const versao = registro && /^termos-(\d{4})-(\d{2})/.exec(registro.versao || '');
+    alvo.append(forte, ' em ' + fmtDataHora(quando) + (versao ? ` (versão de ${versao[2]}/${versao[1]}).` : '.'));
+  }
 
   function preencherCartao() {
     document.getElementById('perfil-avatar').textContent = iniciais(perfil.nome || perfil.email);

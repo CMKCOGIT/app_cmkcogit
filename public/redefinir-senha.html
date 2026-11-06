@@ -34,7 +34,7 @@
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
   <link rel="stylesheet" href="/css/plataforma.css?v=9ff5ffbb38">
-  <link rel="stylesheet" href="/css/identidade.css?v=f449f17667">
+  <link rel="stylesheet" href="/css/identidade.css?v=ce518d0afc">
   <style>@view-transition { navigation: none; }</style>
 </head>
 <body class="acesso">
@@ -44,11 +44,11 @@
     <form id="form-senha" hidden novalidate>
       <p>
         <label for="nova-senha">Nova senha (mínimo 8 caracteres)</label><br>
-        <input type="password" id="nova-senha" autocomplete="new-password" required minlength="8">
+        <input type="password" id="nova-senha" placeholder="Crie uma senha com 8+ caracteres" autocomplete="new-password" required minlength="8">
       </p>
       <p>
         <label for="nova-senha2">Repita a nova senha</label><br>
-        <input type="password" id="nova-senha2" autocomplete="new-password" required minlength="8">
+        <input type="password" id="nova-senha2" placeholder="Digite a nova senha de novo" autocomplete="new-password" required minlength="8">
       </p>
       <button type="submit">Salvar nova senha</button>
     </form>
@@ -57,7 +57,7 @@
 
   <script src="js/vendor/supabase-2.45.4.min.js"></script>
   <script src="/config.js"></script>
-  <script src="js/app.js?v=5719fbb0a7"></script>
-  <script src="js/redefinir-senha.js?v=29f620982b"></script>
+  <script src="js/app.js?v=f2d79145f0"></script>
+  <script src="js/redefinir-senha.js?v=6d0bef26ed"></script>
 </body>
 </html>
