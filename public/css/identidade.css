@@ -196,3 +196,19 @@ body.acesso .btn-google { min-height: 52px; background: #FFFFFF !important; bord
 }
 @media (prefers-reduced-motion: reduce) { body.acesso.login .auth-card[data-modo] .auth-form { animation: none; } }
 body.acesso.login .auth-painel-conteudo { margin: 0 !important; padding-left: 0 !important; padding-right: 0 !important; width: 100% !important; max-width: 46ch; justify-self: stretch; align-self: auto !important; }
+
+/* "Voltar para o site": no topo do painel grafite, na mesma linha da logo */
+.auth-voltar {
+  position: absolute; z-index: 4; top: clamp(32px, 4.5vw, 56px); right: clamp(32px, 4.2vw, 72px);
+  display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 2px;
+  color: #F3F3F1 !important; font: 700 14px/1 var(--font-body); text-decoration: none;
+  border-bottom: 1px solid rgba(243, 243, 241, .45);
+}
+.auth-voltar:hover { border-bottom-color: #F3F3F1; }
+.auth-voltar svg { transition: transform .25s var(--ease-out); }
+.auth-voltar:hover svg { transform: translateX(-3px); }
+.auth-voltar:focus-visible { outline: 2px solid #8EA6D8 !important; outline-offset: 4px !important; }
+@media (max-width: 899.98px) {
+  .auth-voltar { position: absolute; top: 15px; right: 16px; font-size: 13px; min-height: 42px; border-bottom: 0; padding: 0 6px; }
+  .auth-voltar span { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(243, 243, 241, .45); }
+}

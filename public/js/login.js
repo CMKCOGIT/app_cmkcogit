@@ -5,6 +5,9 @@
   const formLogin = document.getElementById('form-login');
   const formCadastro = document.getElementById('form-cadastro');
   const msg = document.getElementById('mensagem');
+  // volta para a página do site onde a pessoa estava (ou a inicial do site)
+  const voltar = document.getElementById('voltar-site');
+  if (voltar) voltar.href = voltarParaSite();
   const card = document.getElementById('auth-card');
   const blocosPainel = card.querySelectorAll('.auth-painel-conteudo');
   const movimentoReduzido = window.matchMedia('(prefers-reduced-motion: reduce)');

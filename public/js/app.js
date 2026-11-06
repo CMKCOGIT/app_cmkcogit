@@ -317,6 +317,37 @@ function paginaInicial(perfil) {
 function urlSite(caminho) {
   return (CFG.siteUrl || 'https://www.cmkcogit.com.br') + '/' + String(caminho || '').replace(/^\/+/, '');
 }
+// "Voltar para o site": o site manda ?volta=<página onde a pessoa estava> ao abrir a plataforma.
+// Só vale endereço do próprio site (evita redirecionar para fora); fica nesta aba até ela fechar.
+const CHAVE_VOLTA = 'cogit_volta_site';
+function origensDoSite() {
+  const base = new URL(CFG.siteUrl || 'https://www.cmkcogit.com.br');
+  const host = base.hostname.replace(/^www\./, '');
+  return new Set([base.origin, 'https://' + host, 'https://www.' + host, 'http://localhost:4173', 'http://127.0.0.1:4173']);
+}
+function enderecoDoSite(valor) {
+  try {
+    const u = new URL(valor);
+    return origensDoSite().has(u.origin) && /^https?:$/.test(u.protocol) ? u.origin + u.pathname + u.search + u.hash : null;
+  } catch (_) { return null; }
+}
+(function capturarVolta() {
+  const params = new URLSearchParams(window.location.search);
+  const pedido = enderecoDoSite(params.get('volta') || '');
+  if (pedido) {
+    try { sessionStorage.setItem(CHAVE_VOLTA, pedido); } catch (_) {}
+    params.delete('volta');
+    const limpa = window.location.pathname + (params.toString() ? '?' + params : '') + window.location.hash;
+    history.replaceState(history.state, '', limpa); // o endereço da plataforma fica limpo
+  }
+})();
+function voltarParaSite() {
+  let guardado = null;
+  try { guardado = enderecoDoSite(sessionStorage.getItem(CHAVE_VOLTA) || ''); } catch (_) {}
+  // sem o parâmetro: quem veio do site (o navegador só informa o domínio) volta para a página inicial dele
+  const veioDoSite = document.referrer && enderecoDoSite(document.referrer);
+  return guardado || veioDoSite || urlSite('');
+}
 function linkWhatsApp(mensagem) {
   return 'https://wa.me/' + (CFG.whatsapp || '5517981568889') + '?text=' + encodeURIComponent(mensagem);
 }
