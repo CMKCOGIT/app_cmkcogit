@@ -62,6 +62,57 @@
 
   // Alterna com a animação dos painéis. Cliques durante a troca são ignorados,
   // então o card nunca fica entre dois estados. Os dados digitados ficam nos campos.
+  // Tela "Confirme seu e-mail" (depois do cadastro por e-mail)
+  const telaEnviado = document.getElementById('auth-enviado');
+  const statusEnviado = document.getElementById('enviado-status');
+  const botaoReenviarCadastro = document.getElementById('btn-reenviar-cadastro');
+  let emailEnviado = null;
+  let contagem = null;
+  function esperarReenvio(segundos) {
+    clearInterval(contagem);
+    let resta = segundos;
+    const passo = () => {
+      botaoReenviarCadastro.disabled = resta > 0;
+      botaoReenviarCadastro.textContent = resta > 0 ? `Reenviar em ${resta}s` : 'Reenviar e-mail';
+      if (resta-- <= 0) clearInterval(contagem);
+    };
+    passo();
+    contagem = setInterval(passo, 1000);
+  }
+  function mostrarEnviado(email) {
+    emailEnviado = email;
+    mensagem('');
+    document.getElementById('enviado-email').textContent = email;
+    document.getElementById('enviado-passo-navegador').innerHTML = 'Abra o link <b>neste mesmo navegador</b>' +
+      (pendente ? ': a solução que você montou no site continua salva aqui.' : ' para continuar de onde parou.');
+    statusEnviado.textContent = '';
+    card.dataset.enviado = '';
+    telaEnviado.hidden = false;
+    esperarReenvio(60); // o Supabase só aceita outro envio depois de ~1 minuto
+    document.getElementById('enviado-titulo').focus({ preventScroll: true });
+  }
+  botaoReenviarCadastro?.addEventListener('click', async () => {
+    if (!emailEnviado) return;
+    ocupado(botaoReenviarCadastro, true, 'Reenviando...');
+    const { error } = await db.auth.resend({ type: 'signup', email: emailEnviado, options: { emailRedirectTo: window.location.origin + '/' + proximaPagina() } });
+    ocupado(botaoReenviarCadastro, false);
+    if (error) {
+      statusEnviado.dataset.erro = '';
+      statusEnviado.textContent = traduzirErro(error.message);
+      esperarReenvio(30);
+      return;
+    }
+    delete statusEnviado.dataset.erro;
+    statusEnviado.textContent = 'Pronto! Enviamos um novo link. Pode levar alguns minutos.';
+    esperarReenvio(60);
+  });
+  document.getElementById('btn-enviado-voltar')?.addEventListener('click', () => {
+    clearInterval(contagem);
+    delete card.dataset.enviado;
+    telaEnviado.hidden = true;
+    document.getElementById('cad-email').focus();
+  });
+
   function mostrar(qual) {
     if (qual === modo || trocando) return;
     mensagem('');
@@ -247,11 +298,9 @@
       return mensagem('Este e-mail já tem conta. Use "Entrar" (ou "Continuar com Google", se criou a conta pelo Google). Esqueceu a senha? Use "Esqueci minha senha".', true);
     }
     if (!data.session) {
-      // confirmação de e-mail ligada no Supabase
-      formCadastro.hidden = true;
-      mensagem('Conta criada! Enviamos um link de confirmação para ' + email +
-        '. Abra o link NESTE MESMO navegador para continuar de onde parou' + (pendente ? ' — sua solução fica guardada aqui.' : '.') + ' Não chegou em alguns minutos? Confira o spam ou reenvie.');
-      mostrarReenviar(email);
+      // confirmação de e-mail ligada no Supabase: troca o formulário pela tela "Confirme seu e-mail"
+      ocupado(botao, false);
+      mostrarEnviado(email);
       return;
     }
     telaCarregando('Preparando sua conta...');

@@ -272,3 +272,29 @@ li[data-esqueleto-linha]::marker { content: ''; }
 .auth-reenviar { margin: -4px 0 12px; }
 .auth-reenviar button { min-height: 40px; padding: 0 14px; background: transparent !important; border: 1px solid var(--color-navy-900) !important; color: var(--color-navy-900) !important; font-weight: 700; }
 .auth-reenviar button:hover:not(:disabled) { background: var(--color-navy-900) !important; color: #F3F3F1 !important; }
+
+/* Tela "Confirme seu e-mail" depois do cadastro: ocupa o lugar do formulário */
+body.acesso.login .auth-card[data-enviado] #form-login, body.acesso.login .auth-card[data-enviado] #form-cadastro { display: none !important; }
+body.acesso.login .auth-card[data-enviado] #auth-enviado { display: grid !important; align-content: center; visibility: visible !important; opacity: 1 !important; transform: none !important; }
+.auth-enviado { gap: 0; }
+.auth-enviado[hidden] { display: none !important; }
+.auth-enviado-icone { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 24px; background: var(--color-navy-900); color: #F3F3F1; border-radius: 2px; }
+.auth-enviado h2 { margin: 0 0 10px !important; outline: none; }
+.auth-enviado .auth-subtitulo { margin: 0 0 24px; line-height: 1.6; }
+.auth-enviado .auth-subtitulo strong { color: var(--color-navy-900); font-size: 17px; word-break: break-all; }
+.auth-enviado-passos { list-style: none; counter-reset: passo; display: grid; gap: 14px; margin: 0 0 24px; padding: 20px 0; border-block: 1px solid var(--color-border); }
+.auth-enviado-passos li { counter-increment: passo; display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; color: var(--color-text-muted); font-size: 15px; line-height: 1.5; }
+.auth-enviado-passos li::before { content: counter(passo); display: grid; place-items: center; width: 28px; height: 28px; background: var(--color-brand-50); color: var(--color-brand-600); font-weight: 700; font-size: 13px; border-radius: 2px; }
+.auth-enviado-passos b { color: var(--color-navy-900); font-weight: 700; }
+.auth-enviado-status { margin: 0 0 12px; font-size: 14px; color: var(--color-success); }
+.auth-enviado-status:empty { display: none; }
+.auth-enviado-status[data-erro] { color: var(--color-danger); }
+.auth-enviado-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.auth-enviado-acoes #btn-reenviar-cadastro { min-height: 52px; padding: 0 24px; background: var(--color-brand-600) !important; border: 1px solid var(--color-brand-600) !important; color: #FFFFFF !important; font-weight: 700; }
+.auth-enviado-acoes #btn-reenviar-cadastro:hover:not(:disabled) { background: var(--color-brand-700) !important; }
+.auth-enviado-acoes #btn-reenviar-cadastro:disabled { background: var(--color-neutral-200) !important; border-color: var(--color-neutral-200) !important; color: var(--color-text-muted) !important; cursor: default; }
+.auth-enviado-acoes .auth-link { min-height: 44px; padding: 0; background: none !important; border: 0 !important; color: var(--color-navy-900) !important; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.auth-enviado-nota { margin: 24px 0 0; font-size: 13px; line-height: 1.55; color: var(--color-text-subtle); }
+.auth-enviado-nota b { color: var(--color-text-muted); }
+/* reenviar no formulário de entrar (e-mail ainda não confirmado) */
+#form-login .auth-reenviar { margin: 12px 0 0; }

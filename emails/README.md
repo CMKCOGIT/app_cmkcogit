@@ -11,5 +11,5 @@ Cole o HTML de cada arquivo no modelo correspondente, com o assunto sugerido:
 | Email address changed (notificações de segurança) | `email-alterado.html` | O e-mail da sua conta CMKCOGIT foi alterado |
 
 - `{{ .ConfirmationURL }}` e `{{ .Email }}` são preenchidos pelo Supabase.
-- A logo vem de `https://app.cmkcogit.com.br/assets/marca/cogit-logo-email.png` (PNG: SVG não aparece no Gmail/Outlook).
+- A logo vem de `https://app.cmkcogit.com.br/assets/marca/cogit-logo-email-escuro.png`: PNG com o fundo grafite dentro da própria imagem, para aparecer também no modo escuro do celular (o app de e-mail recolore o fundo do topo, mas não mexe na imagem). SVG não aparece no Gmail/Outlook.
 - Tudo com tabelas e estilos inline, que é o que os clientes de e-mail aceitam.
