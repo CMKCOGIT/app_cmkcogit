@@ -29,7 +29,8 @@ const Comprovante = (function () {
       itens: [
         ...(r.itens || []).map((i) => ({ nome: i.nome, detalhe: i.personalizado ? i.descricao || 'Item personalizado' : formato(i.modelo), preco: i.preco, tipo_preco: i.tipo_preco, equipe: i.adicionado === 'equipe' })),
         ...(r.complementos || []).map((c) => ({ nome: c.nome, detalhe: 'Complemento' + (c.quantidade > 1 ? ' × ' + c.quantidade : ''), preco: c.preco == null ? null : c.preco * (c.quantidade || 1), tipo_preco: c.tipo_preco, equipe: c.adicionado === 'equipe' })),
-        ...(r.mensais || []).map((m) => ({ nome: m.nome, detalhe: 'Mensalidade (começa após os 3 meses grátis, fora do valor inicial)', preco: m.preco, tipo_preco: 'mensal', equipe: m.adicionado === 'equipe' }))
+        ...(r.mensais || []).map((m) => ({ nome: m.nome, detalhe: (m.cobranca === 'solicitação' ? 'Suporte por solicitação' : 'Suporte mensal') + ' (começa após o 1º mês grátis, fora do valor inicial)', preco: m.preco, tipo_preco: m.cobranca === 'solicitação' ? 'from' : 'mensal', equipe: m.adicionado === 'equipe' })),
+        ...(r.desconto ? [{ nome: 'Desconto da combinação ' + r.desconto.nome + ' (' + r.desconto.percentual + '%)', detalhe: 'Pacote de serviços', preco: -r.desconto.valor, tipo_preco: 'fixed', equipe: false }] : [])
       ],
       estimativa: r.total != null ? Number(r.total) : null,
       valor_final: Number(valorFinal),

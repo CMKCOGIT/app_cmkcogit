@@ -86,12 +86,12 @@ test('cliente tira a Landing Page e fica só com o Portfólio: novo preço e cob
 
   const r = await remover('tok-ana', { solicitacao_id: s.id, tipo: 'servico', id: 'landing-page' });
   assert.equal(r.status, 200);
-  assert.equal(r.json.solicitacao.valor_final, 600);
+  assert.equal(r.json.solicitacao.valor_final, 500);
   assert.equal(s.status, 'aguardando_pagamento');
   assert.deepEqual(s.selecao.servicos.map((x) => x.id), ['portfolio']);
   assert.equal(s.resumo.itens.length, 1);
   assert.equal(s.resumo.removidos[0].por, 'cliente');
-  assert.equal(banco.pagamentos[0].valor, 600);
+  assert.equal(banco.pagamentos[0].valor, 500);
   assert.equal(banco.pagamentos[0].link_pagamento, null); // link antigo (R$ 1.100) descartado
   assert.deepEqual(banco.notificacoes.map((n) => n.usuario_id), [ADM]); // a equipe é avisada
 });
@@ -111,12 +111,12 @@ test('admin tira um item: sob medida volta para validação, cobrança pendente 
 });
 
 test('complemento que dependia da solução removida sai junto', async () => {
-  const s = criarSolicitacao([{ id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'consultoria' }], [{ id: 'integracao-externa', qtd: 1 }]);
+  const s = criarSolicitacao([{ id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'identidade-essencial' }], [{ id: 'integracao-externa', qtd: 1 }]);
   const r = await remover('tok-ana', { solicitacao_id: s.id, tipo: 'servico', id: 'landing-page' });
   assert.equal(r.status, 200);
   assert.deepEqual(s.selecao.complementos, []);
   assert.equal(r.json.removidos_junto.length, 1);
-  assert.equal(s.valor_final, 350);
+  assert.equal(s.valor_final, 500);
 });
 
 test('recusas: última solução, outra pessoa, já paga, item inexistente, edição simultânea', async () => {

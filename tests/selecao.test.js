@@ -15,7 +15,7 @@ function calc(servicos, complementos = [], extra = {}) {
 
 test('modelo pronto tem preço fechado e vai direto para pagamento', () => {
   const r = calc([{ id: 'landing-page', modelo: 'modelos-prontos' }]);
-  assert.equal(r.valor, 500);
+  assert.equal(r.valor, 600);
   assert.equal(r.tipo_preco, 'fixed');
   assert.equal(r.estruturado, true);
 });
@@ -27,27 +27,42 @@ test('sob medida usa o preço "a partir de" e passa pela validação', () => {
   assert.equal(r.estruturado, false);
 });
 
-test('mesmos totais do site: identidade + landing + automação = 1990 "a partir de"', () => {
+test('combinação Conversão (identidade + landing pronta + automação): 1.990 com 10% = 1.790 "a partir de", igual ao site', () => {
   const r = calc([{ id: 'identidade-essencial' }, { id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'automacao' }]);
-  assert.equal(r.valor, 1990);
+  assert.equal(r.valor, 1790);
   assert.equal(r.tipo_preco, 'from');
+  assert.deepEqual([r.resumo.desconto.id, r.resumo.desconto.base, r.resumo.desconto.valor], ['conversao', 1990, 200]);
+});
+
+test('combinações Presença Essencial (1.080) e Operação Conectada (3.580); sem desconto se faltar serviço ou se for sob medida', () => {
+  const p = calc([{ id: 'identidade-essencial' }, { id: 'site-institucional', modelo: 'modelos-prontos' }]);
+  assert.equal(p.valor, 1080); assert.equal(p.tipo_preco, 'fixed'); assert.equal(p.estruturado, true);
+  assert.equal(calc([{ id: 'sistema' }, { id: 'integracao' }]).valor, 3580);
+  const falta = calc([{ id: 'sistema' }]);
+  assert.equal(falta.valor, 2990); assert.equal(falta.resumo.desconto, undefined);
+  const sob = calc([{ id: 'identidade-essencial' }, { id: 'site-institucional', modelo: 'sob-medida' }]);
+  assert.equal(sob.valor, 1400); assert.equal(sob.resumo.desconto, undefined);
 });
 
 test('complemento soma e torna "a partir de"', () => {
   const r = calc([{ id: 'landing-page', modelo: 'sob-medida' }], [{ id: 'automacao-extra', qtd: 1 }]);
   assert.equal(r.valor, 1690);
+  assert.equal(calc([{ id: 'portfolio', modelo: 'sob-medida' }]).valor, 700);
   assert.equal(r.estruturado, false);
 });
 
-test('mensalidade fica fora do valor inicial', () => {
+test('suporte fica fora do valor inicial: essencial por solicitação, contínuo por mês', () => {
   const r = calc([{ id: 'site-institucional', modelo: 'modelos-prontos' }, { id: 'manutencao' }]);
   assert.equal(r.valor, 700);
   assert.equal(r.estruturado, true);
-  assert.equal(r.resumo.mensais[0].id, 'manutencao');
+  assert.deepEqual([r.resumo.mensais[0].id, r.resumo.mensais[0].preco, r.resumo.mensais[0].cobranca], ['manutencao', 150, 'solicitação']);
+  assert.equal(calc([{ id: 'suporte' }]).resumo.mensais[0].cobranca, 'mês');
 });
 
-test('consultoria (preço fixo) é paga direto; diagnóstico é gratuito e vai para validação', () => {
-  assert.equal(calc([{ id: 'consultoria' }]).estruturado, true);
+test('serviços que saíram do catálogo (consultoria, identidade completa, evolução) são recusados; diagnóstico é gratuito', () => {
+  for (const id of ['consultoria', 'identidade-completa', 'evolucao']) {
+    assert.equal(calcular(sanitizarCfg({ v: 1, ref: REF, servicos: [{ id }] }).cfg, catalogo).ok, false, id);
+  }
   const d = calc([{ id: 'diagnostico' }]);
   assert.equal(d.tipo_preco, 'free');
   assert.equal(d.estruturado, false);
@@ -55,7 +70,7 @@ test('consultoria (preço fixo) é paga direto; diagnóstico é gratuito e vai p
 
 test('preço enviado pelo navegador é ignorado', () => {
   const r = calc([{ id: 'landing-page', modelo: 'modelos-prontos', preco: 1, price: 1 }], [], { total: 1, valor: 1 });
-  assert.equal(r.valor, 500);
+  assert.equal(r.valor, 600);
 });
 
 test('recusa: formato não escolhido, complemento incompatível, id desconhecido, dois planos mensais', () => {
@@ -82,25 +97,11 @@ test('sanitização: versão, ref, limites e texto', () => {
   assert.equal(ok.cfg.servicos[0].modelo, null);
 });
 
-test('modelo pronto: plano mensal cobra R$ 30 e anual R$ 324 (10% de desconto), com preço fechado', () => {
-  const m = calc([{ id: 'landing-page', modelo: 'modelos-prontos', plano: 'mensal' }]);
-  assert.equal(m.valor, 30);
-  assert.equal(m.estruturado, true);
-  assert.equal(m.resumo.itens[0].plano, 'mensal');
-  assert.match(m.resumo.itens[0].nome, /plano mensal/);
-  const a = calc([{ id: 'portfolio', modelo: 'modelos-prontos', plano: 'anual' }]);
-  assert.equal(a.valor, 324);
-  assert.match(a.resumo.itens[0].nome, /plano anual/);
-});
-
-test('modelo pronto vitalício (ou sem plano, links antigos) mantém o preço do catálogo', () => {
-  assert.equal(calc([{ id: 'landing-page', modelo: 'modelos-prontos', plano: 'vitalicio' }]).valor, 500);
-  assert.equal(calc([{ id: 'landing-page', modelo: 'modelos-prontos' }]).valor, 500);
-});
-
-test('plano só vale para modelo pronto: no sob medida ou com valor inventado é ignorado', () => {
-  const s = calc([{ id: 'landing-page', modelo: 'sob-medida', plano: 'mensal' }]);
-  assert.equal(s.valor, 700);
-  assert.equal(s.estruturado, false);
-  assert.equal(calc([{ id: 'landing-page', modelo: 'modelos-prontos', plano: 'gratis' }]).valor, 500);
+test('planos mensal/anual não existem mais: links antigos com plano pagam o preço único do catálogo', () => {
+  for (const plano of ['mensal', 'anual', 'vitalicio', undefined]) {
+    const r = calc([{ id: 'landing-page', modelo: 'modelos-prontos', plano }]);
+    assert.equal(r.valor, 600, String(plano));
+    assert.equal(r.resumo.itens[0].plano, undefined);
+    assert.doesNotMatch(r.resumo.itens[0].nome, /plano/);
+  }
 });

@@ -172,9 +172,9 @@
         <span data-item-preco>${esc(valor)}</span></li>`;
     const itens = [
       ...(r.itens || []).map((i) => linha('servico', i, i.personalizado ? i.descricao || 'personalizado' : formato(i.modelo) || 'solução', preco(i.preco, i.tipo_preco))),
-      ...(r.mensais || []).map((m) => linha('servico', m, 'mensalidade após 3 meses grátis', m.preco != null ? brl(m.preco) + '/mês' : 'mensal')),
+      ...(r.mensais || []).map((m) => linha('servico', m, 'suporte: começa após o 1º mês grátis', m.preco == null ? 'suporte' : m.cobranca === 'solicitação' ? 'a partir de ' + brl(m.preco) + ' por solicitação' : brl(m.preco) + '/mês')),
       ...(r.complementos || []).map((c) => linha('complemento', c, (c.quantidade > 1 ? '× ' + Number(c.quantidade) + ' · ' : '') + 'complemento', preco(c.preco, c.tipo_preco)))
-    ].join('');
+    ].join('') + (r.desconto ? `<li data-item-tipo="desconto"><label><span data-item-nome>Desconto da combinação ${esc(r.desconto.nome)}</span><small>${Number(r.desconto.percentual)}% no pacote</small></label><span data-item-preco>− ${esc(brl(r.desconto.valor))}</span></li>` : '');
     const removidos = (r.removidos || []).slice(-5).map((x) =>
       `<li>${esc(x.nome)} <small>tirado pel${x.por === 'equipe' ? 'a equipe' : 'o cliente'} em ${fmtData(x.em)}${x.motivo ? ' (' + esc(x.motivo) + ')' : ''}</small></li>`).join('');
     return `<ul class="itens-sel" data-livre>${itens}</ul>

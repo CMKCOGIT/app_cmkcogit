@@ -90,15 +90,15 @@ test('simular: remover e adicionar (catálogo + personalizado) recalcula sem gra
   const s = criar([{ id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'portfolio', modelo: 'sob-medida' }]);
   const antes = JSON.stringify(s);
   const itens = {
-    servicos: [{ id: 'portfolio', modelo: 'sob-medida' }, { id: 'consultoria', modelo: null }],
+    servicos: [{ id: 'portfolio', modelo: 'sob-medida' }, { id: 'identidade-essencial', modelo: null }],
     complementos: [],
     personalizados: [{ id: 'custom-abc12345', nome: 'Página extra', descricao: 'Serviços', valor: 250 }]
   };
   const r = await admin({ acao: 'simular', solicitacao_id: s.id, itens });
   assert.equal(r.status, 200);
-  assert.equal(r.json.valor, 800 + 350 + 250);
-  const consultoria = r.json.resumo.itens.find((i) => i.id === 'consultoria');
-  assert.equal(consultoria.adicionado, 'equipe');
+  assert.equal(r.json.valor, 700 + 500 + 250);
+  const identidade = r.json.resumo.itens.find((i) => i.id === 'identidade-essencial');
+  assert.equal(identidade.adicionado, 'equipe');
   assert.equal(r.json.resumo.itens.find((i) => i.id === 'portfolio').adicionado, undefined);
   assert.equal(r.json.resumo.itens.find((i) => i.personalizado).adicionado, 'equipe');
   assert.equal(JSON.stringify(s), antes); // nada gravado
@@ -165,7 +165,7 @@ test('salvar: sob medida fica em validação; preço fechado libera com o valor 
   const r2 = await admin({ acao: 'salvar', solicitacao_id: s.id, itens: { servicos: [{ id: 'landing-page', modelo: 'modelos-prontos' }], complementos: [], personalizados: [] } });
   assert.equal(r2.status, 200);
   assert.equal(s.status, 'aguardando_pagamento');
-  assert.equal(s.valor_final, 500);
+  assert.equal(s.valor_final, 600);
 });
 
 test('cancelar: motivo, quem/quando, cobrança cancelada e WhatsApp só com mensagem', async () => {
@@ -188,9 +188,9 @@ test('cancelar: motivo, quem/quando, cobrança cancelada e WhatsApp só com mens
 test('cliente tira um item personalizado que a equipe adicionou', async () => {
   const s = criar([{ id: 'portfolio', modelo: 'modelos-prontos' }]);
   await admin({ acao: 'salvar', solicitacao_id: s.id, itens: { servicos: s.selecao.servicos, complementos: [], personalizados: [{ id: 'custom-zz99zz99', nome: 'Página extra', valor: 250 }] } });
-  assert.equal(s.valor_final, 850);
+  assert.equal(s.valor_final, 750);
   const r = await chamar('solicitacao-itens', { token: 'tok-ana', corpo: { solicitacao_id: s.id, tipo: 'servico', id: 'custom-zz99zz99' } });
   assert.equal(r.status, 200);
-  assert.equal(s.valor_final, 600);
+  assert.equal(s.valor_final, 500);
   assert.equal(s.selecao.personalizados.length, 0);
 });

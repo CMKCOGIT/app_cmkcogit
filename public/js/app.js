@@ -227,7 +227,8 @@ function itensHtml(resumo) {
   return [
     ...(r.itens || []).map((i) => `<li>${esc(i.nome)}${formato(i.modelo)} <small>(${preco(i.preco, i.tipo_preco)})</small></li>`),
     ...(r.complementos || []).map((c) => `<li>+ ${esc(c.nome)}${c.quantidade > 1 ? ' × ' + Number(c.quantidade) : ''} <small>(${preco(c.preco, c.tipo_preco)})</small></li>`),
-    ...(r.mensais || []).map((m) => `<li>${esc(m.nome)} <small>(mensalidade${m.preco != null ? ' de ' + brl(m.preco) : ''}, começa depois dos 3 meses grátis)</small></li>`)
+    ...(r.mensais || []).map((m) => `<li>${esc(m.nome)} <small>(${m.cobranca === 'solicitação' ? 'por solicitação, a partir de' : 'mensalidade de'} ${m.preco != null ? brl(m.preco) : ''}, começa depois do 1º mês grátis)</small></li>`),
+    ...(r.desconto ? [`<li>Desconto da combinação ${esc(r.desconto.nome)} <small>(${Number(r.desconto.percentual)}%: − ${brl(r.desconto.valor)})</small></li>`] : [])
   ].join('');
 }
 
@@ -382,8 +383,7 @@ function limparPendente() {
 }
 function resumoPendenteHtml(cfg) {
   const itens = (cfg.servicos || []).map((s) => {
-    const plano = { vitalicio: ', plano vitalício', mensal: ', plano mensal', anual: ', plano anual' }[s.plano] || '';
-    const formato = s.modelo === 'sob-medida' ? ' — sob medida' : s.modelo === 'modelos-prontos' ? ' — modelo pronto' + plano : '';
+    const formato = s.modelo === 'sob-medida' ? ' — sob medida' : s.modelo === 'modelos-prontos' ? ' — modelo pronto' : '';
     return '<li>' + esc(s.nome || s.id) + formato + '</li>';
   });
   (cfg.complementos || []).forEach((c) => itens.push('<li>+ ' + esc(c.nome || c.id) + '</li>'));

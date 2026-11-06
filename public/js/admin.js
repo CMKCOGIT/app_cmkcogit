@@ -263,7 +263,7 @@
         detalhe: i.personalizado ? i.descricao || 'item personalizado' : formato(i.modelo), preco: preco(i.preco, i.tipo_preco),
         equipe: i.adicionado === 'equipe', personalizado: Boolean(i.personalizado)
       })),
-      ...(r.mensais || []).map((m) => ({ chave: 'servico:' + m.id, nome: m.nome, detalhe: 'mensalidade após 3 meses grátis', preco: m.preco != null ? brl(m.preco) + '/mês' : 'mensal', equipe: m.adicionado === 'equipe' })),
+      ...(r.mensais || []).map((m) => ({ chave: 'servico:' + m.id, nome: m.nome, detalhe: m.cobranca === 'solicitação' ? 'suporte por solicitação, após o 1º mês grátis' : 'suporte mensal, após o 1º mês grátis', preco: m.preco == null ? 'suporte' : m.cobranca === 'solicitação' ? 'a partir de ' + brl(m.preco) : brl(m.preco) + '/mês', equipe: m.adicionado === 'equipe' })),
       ...(r.complementos || []).map((c) => ({ chave: 'complemento:' + c.id, nome: c.nome, detalhe: 'complemento' + (c.quantidade > 1 ? ' × ' + c.quantidade : ''), preco: preco(c.preco, c.tipo_preco), equipe: c.adicionado === 'equipe', complemento: true }))
     ];
   }

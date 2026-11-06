@@ -200,7 +200,7 @@ test('modelo pronto: salva com preço do servidor, recarregar não duplica, paga
   assert.equal(r1.status, 201);
   assert.equal(r1.json.solicitacao.estruturado, true);
   assert.equal(r1.json.solicitacao.status, 'aguardando_pagamento');
-  assert.equal(banco.solicitacoes[0].valor_final, 500);
+  assert.equal(banco.solicitacoes[0].valor_final, 600);
 
   const r2 = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
   assert.equal(r2.status, 200);
@@ -216,7 +216,7 @@ test('modelo pronto: salva com preço do servidor, recarregar não duplica, paga
   assert.match(c1.json.url, /^https:\/\/www\.mercadopago\.com\.br\//);
   const pref = mp.prefs[0];
   assert.deepEqual(pref.payer.identification, { type: 'CPF', number: '52998224725' });
-  assert.equal(pref.items[0].unit_price, 500);
+  assert.equal(pref.items[0].unit_price, 600);
   assert.equal(pref.external_reference, c1.json.pagamento_id);
   assert.equal(pref.auto_return, 'approved');
   assert.equal(pref.notification_url, 'https://app.cmkcogit.com.br/api/mp-webhook?source_news=webhooks');
@@ -227,7 +227,7 @@ test('modelo pronto: salva com preço do servidor, recarregar não duplica, paga
   assert.equal(banco.pagamentos.length, 1);
   assert.equal(mp.prefs.length, 1);
 
-  const pago = mpPagou(c1.json.pagamento_id, 500);
+  const pago = mpPagou(c1.json.pagamento_id, 600);
   const v = await chamar('verificar-pagamento', { token: 'tok-ana', corpo: { pagamento_id: c1.json.pagamento_id, payment_id: String(pago.id) } });
   assert.equal(v.status, 200);
   assert.equal(v.json.status, 'pago');
@@ -266,7 +266,7 @@ test('sob medida: fica em validação e não abre pagamento até o admin liberar
 test('webhook: assinatura inválida é recusada; válida confirma; repetido não duplica', async () => {
   const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'webhookref1234567890') } });
   const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
-  const pago = mpPagou(c.json.pagamento_id, 600, 'approved', 777);
+  const pago = mpPagou(c.json.pagamento_id, 500, 'approved', 777);
 
   const url = '/api/mp-webhook?data.id=777&type=payment';
   const corpo = { type: 'payment', data: { id: '777' } };
@@ -291,9 +291,9 @@ test('webhook: assinatura inválida é recusada; válida confirma; repetido não
 });
 
 test('verificar: tentativa recusada mantém pendente; outro cliente não consulta', async () => {
-  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'consultoria' }], 'recusadoref123456789') } });
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'identidade-essencial' }], 'recusadoref123456789') } });
   const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
-  mpPagou(c.json.pagamento_id, 350, 'rejected');
+  mpPagou(c.json.pagamento_id, 500, 'rejected');
   const v = await chamar('verificar-pagamento', { token: 'tok-ana', corpo: { pagamento_id: c.json.pagamento_id } });
   assert.equal(v.json.status, 'pendente');
   assert.equal(v.json.mp_status, 'rejected');

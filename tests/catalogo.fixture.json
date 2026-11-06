@@ -21,7 +21,7 @@
   "mensal": false,
   "presenca_digital": false,
   "complementos_permitidos": [],
-  "ativo": true
+  "ativo": false
  },
  {
   "id": "identidade-essencial",
@@ -45,14 +45,14 @@
   "mensal": false,
   "presenca_digital": false,
   "complementos_permitidos": [],
-  "ativo": true
+  "ativo": false
  },
  {
   "id": "landing-page",
   "tipo": "servico",
   "nome": "Landing Page",
-  "preco": 500.0,
-  "preco_sob_medida": 700.0,
+  "preco": 600.0,
+  "preco_sob_medida": 800.0,
   "tipo_preco": "fixed",
   "mensal": false,
   "presenca_digital": true,
@@ -66,8 +66,8 @@
   "id": "portfolio",
   "tipo": "servico",
   "nome": "Portfólio Digital",
-  "preco": 600.0,
-  "preco_sob_medida": 800.0,
+  "preco": 500.0,
+  "preco_sob_medida": 700.0,
   "tipo_preco": "fixed",
   "mensal": false,
   "presenca_digital": true,
@@ -96,7 +96,7 @@
   "id": "loja-virtual",
   "tipo": "servico",
   "nome": "E-commerce / Loja Virtual",
-  "preco": 2990.0,
+  "preco": 6000.0,
   "preco_sob_medida": null,
   "tipo_preco": "from",
   "mensal": false,
@@ -125,7 +125,7 @@
  {
   "id": "sistema",
   "tipo": "servico",
-  "nome": "Sistemas de Gestão e CRM",
+  "nome": "Sistemas de Gestão",
   "preco": 2990.0,
   "preco_sob_medida": null,
   "tipo_preco": "from",
@@ -156,7 +156,7 @@
   "id": "automacao",
   "tipo": "servico",
   "nome": "Automação de Processos Administrativos",
-  "preco": 990.0,
+  "preco": 890.0,
   "preco_sob_medida": null,
   "tipo_preco": "from",
   "mensal": false,
@@ -181,10 +181,10 @@
  {
   "id": "manutencao",
   "tipo": "servico",
-  "nome": "Manutenção Essencial",
-  "preco": 149.0,
+  "nome": "Suporte Técnico Essencial",
+  "preco": 150.0,
   "preco_sob_medida": null,
-  "tipo_preco": "fixed",
+  "tipo_preco": "from",
   "mensal": true,
   "presenca_digital": false,
   "complementos_permitidos": [],
@@ -194,7 +194,7 @@
   "id": "suporte",
   "tipo": "servico",
   "nome": "Suporte Técnico Contínuo",
-  "preco": 299.0,
+  "preco": 150.0,
   "preco_sob_medida": null,
   "tipo_preco": "fixed",
   "mensal": true,
@@ -212,13 +212,13 @@
   "mensal": true,
   "presenca_digital": false,
   "complementos_permitidos": [],
-  "ativo": true
+  "ativo": false
  },
  {
   "id": "automacao-extra",
   "tipo": "complemento",
   "nome": "Automação de Processos Administrativos",
-  "preco": 990.0,
+  "preco": 890.0,
   "preco_sob_medida": null,
   "tipo_preco": "from",
   "mensal": false,
