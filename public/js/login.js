@@ -22,7 +22,26 @@
   function mensagem(texto, erro) {
     msg.textContent = texto || '';
     msg.setAttribute('role', erro ? 'alert' : 'status');
+    mostrarReenviar(null);
   }
+
+  // Reenviar o e-mail de confirmação do cadastro (não chegou, caiu no spam, expirou)
+  const caixaReenviar = document.getElementById('reenviar');
+  const botaoReenviar = document.getElementById('btn-reenviar');
+  let emailReenviar = null;
+  function mostrarReenviar(email) {
+    emailReenviar = email;
+    if (caixaReenviar) caixaReenviar.hidden = !email;
+  }
+  botaoReenviar?.addEventListener('click', async () => {
+    const email = emailReenviar;
+    if (!email) return;
+    ocupado(botaoReenviar, true, 'Reenviando...');
+    const { error } = await db.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin + '/' + proximaPagina() } });
+    ocupado(botaoReenviar, false);
+    if (error) { mensagem(traduzirErro(error.message), true); mostrarReenviar(email); return; }
+    mensagem('Enviamos um novo link de confirmação para ' + email + '. Confira também a caixa de spam.');
+  });
 
   // Só o formulário (e o bloco do painel) do modo atual aceita clique e teclado.
   function aplicarModo(qual) {
@@ -79,7 +98,10 @@
     try { modoAntes = sessionStorage.getItem(CHAVE_MODO_GOOGLE); } catch (_) {}
     if (modoAntes === 'cadastro' || modoAntes === 'login') definirModoSemAnimacao(modoAntes);
     history.replaceState(null, '', window.location.pathname);
-    mensagem(traduzirErroGoogle(ERRO_RETORNO_AUTH), true);
+    const linkDoEmail = ERRO_RETORNO_AUTH.detalhe === 'otp_expired' || /email link|otp/i.test(ERRO_RETORNO_AUTH.descricao);
+    mensagem(linkDoEmail
+      ? 'O link do e-mail expirou ou já foi usado. Se a conta já foi confirmada, é só entrar. Se não, entre com e-mail e senha para pedir um novo link.'
+      : traduzirErroGoogle(ERRO_RETORNO_AUTH), true);
   }
   try { sessionStorage.removeItem(CHAVE_MODO_GOOGLE); } catch (_) {}
 
@@ -98,6 +120,8 @@
     if (t.includes('password should be at least') || t.includes('weak')) return 'Escolha uma senha mais forte (mínimo 8 caracteres).';
     if (t.includes('rate limit') || t.includes('too many')) return 'Muitas tentativas. Aguarde um pouco e tente de novo.';
     if (t.includes('invalid email') || t.includes('unable to validate email')) return 'E-mail inválido.';
+    if (t.includes('for security purposes') || t.includes('only request this after')) return 'Por segurança, aguarde alguns segundos antes de pedir outro e-mail.';
+    if (t.includes('error sending') || t.includes('smtp')) return 'Não conseguimos enviar o e-mail agora. Tente de novo em instantes ou fale com a gente pelo WhatsApp.';
     return m || 'Não foi possível concluir agora.';
   }
 
@@ -178,7 +202,9 @@
     const { error } = await db.auth.signInWithPassword({ email, password: senha });
     if (error) {
       ocupado(botao, false);
-      return mensagem(traduzirErro(error.message), true);
+      mensagem(traduzirErro(error.message), true);
+      if (String(error.message).toLowerCase().includes('email not confirmed')) mostrarReenviar(email);
+      return;
     }
     telaCarregando('Entrando na plataforma...');
     window.location.href = proximaPagina();
@@ -214,11 +240,19 @@
       ocupado(botao, false);
       return mensagem(traduzirErro(error.message), true);
     }
+    // Com a confirmação ligada, o Supabase não diz que o e-mail já existe (por segurança):
+    // devolve um usuário sem identidades. Aí a conta já existe (por e-mail ou pelo Google).
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      ocupado(botao, false);
+      return mensagem('Este e-mail já tem conta. Use "Entrar" (ou "Continuar com Google", se criou a conta pelo Google). Esqueceu a senha? Use "Esqueci minha senha".', true);
+    }
     if (!data.session) {
       // confirmação de e-mail ligada no Supabase
       formCadastro.hidden = true;
-      return mensagem('Conta criada! Enviamos um link de confirmação para ' + email +
-        '. Abra o link NESTE MESMO navegador para continuar de onde parou' + (pendente ? ' — sua solução fica guardada aqui.' : '.'));
+      mensagem('Conta criada! Enviamos um link de confirmação para ' + email +
+        '. Abra o link NESTE MESMO navegador para continuar de onde parou' + (pendente ? ' — sua solução fica guardada aqui.' : '.') + ' Não chegou em alguns minutos? Confira o spam ou reenvie.');
+      mostrarReenviar(email);
+      return;
     }
     telaCarregando('Preparando sua conta...');
     window.location.href = proximaPagina();

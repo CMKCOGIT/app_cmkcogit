@@ -267,3 +267,8 @@ li[data-esqueleto-linha]::marker { content: ''; }
 
 /* Google: enquanto abre, o indicador do botão ocupa o lugar do ícone (sem dois giros) */
 .btn-google[aria-busy="true"] .google-icone { display: none; animation: none; }
+
+/* Login: reenviar o e-mail de confirmação */
+.auth-reenviar { margin: -4px 0 12px; }
+.auth-reenviar button { min-height: 40px; padding: 0 14px; background: transparent !important; border: 1px solid var(--color-navy-900) !important; color: var(--color-navy-900) !important; font-weight: 700; }
+.auth-reenviar button:hover:not(:disabled) { background: var(--color-navy-900) !important; color: #F3F3F1 !important; }

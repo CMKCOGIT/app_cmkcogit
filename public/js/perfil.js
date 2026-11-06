@@ -155,17 +155,33 @@
     const email = document.getElementById('novo-email').value.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return mostrarErro('Informe um e-mail válido.');
     if (email === String(perfil.email || '').toLowerCase()) return mostrarErro('Esse já é o seu e-mail atual.');
-    const botao = e.target.querySelector('button');
-    botao.disabled = true;
+    const botao = e.target.querySelector('button[type=submit]');
+    ocupado(botao, true);
     const { data, error } = await db.auth.updateUser({ email }, { emailRedirectTo: window.location.origin + '/perfil.html' });
-    botao.disabled = false;
-    if (error) return mostrarErro('Não foi possível trocar o e-mail: ' + error.message);
+    ocupado(botao, false);
+    if (error) {
+      const t = String(error.message).toLowerCase();
+      return mostrarErro(t.includes('already') ? 'Esse e-mail já é usado por outra conta.'
+        : t.includes('for security purposes') || t.includes('rate') ? 'Por segurança, aguarde um pouco antes de pedir outra troca.'
+        : 'Não foi possível trocar o e-mail: ' + error.message);
+    }
     e.target.reset();
     if (data && data.user) mostrarEmail(data.user);
     avisar('Enviamos um link de confirmação para ' + email + '. Confira também o e-mail atual: por segurança, a troca pode pedir confirmação nos dois.');
   });
 
-  // senha: confere a atual antes de trocar
+  // senha: confere a atual antes de trocar. Conta criada só pelo Google não tem senha:
+  // aí o formulário vira "Criar senha" (para entrar também com e-mail e senha).
+  const provedores = (sessao.user.app_metadata && sessao.user.app_metadata.providers) || [];
+  const temSenha = provedores.includes('email') || !provedores.length;
+  if (!temSenha) {
+    const campoAtual = document.getElementById('senha-atual');
+    campoAtual.required = false;
+    campoAtual.closest('p').hidden = true;
+    document.getElementById('titulo-senha').textContent = 'Criar senha';
+    document.querySelector('#form-senha button[type=submit]').textContent = 'Criar senha';
+    document.getElementById('form-senha').insertAdjacentHTML('beforebegin', '<p class="nota">Você entra com o Google. Se quiser, crie uma senha para entrar também com e-mail e senha.</p>');
+  }
   document.getElementById('form-senha').addEventListener('submit', async (e) => {
     e.preventDefault();
     limpar();
@@ -173,19 +189,27 @@
     const nova = document.getElementById('senha-nova').value;
     if (nova.length < 8) return mostrarErro('A nova senha precisa ter pelo menos 8 caracteres.');
     if (nova !== document.getElementById('senha-nova2').value) return mostrarErro('As senhas novas não conferem.');
-    if (nova === atual) return mostrarErro('A nova senha precisa ser diferente da atual.');
-    const botao = e.target.querySelector('button');
-    botao.disabled = true;
-    const conferir = await db.auth.signInWithPassword({ email: sessao.user.email, password: atual });
-    if (conferir.error) {
-      botao.disabled = false;
-      return mostrarErro('Senha atual incorreta.');
+    if (temSenha && nova === atual) return mostrarErro('A nova senha precisa ser diferente da atual.');
+    const botao = e.target.querySelector('button[type=submit]');
+    ocupado(botao, true);
+    if (temSenha) {
+      const conferir = await db.auth.signInWithPassword({ email: sessao.user.email, password: atual });
+      if (conferir.error) {
+        ocupado(botao, false);
+        return mostrarErro('Senha atual incorreta.');
+      }
     }
     const { error } = await db.auth.updateUser({ password: nova });
-    botao.disabled = false;
-    if (error) return mostrarErro('Não foi possível alterar a senha: ' + error.message);
+    ocupado(botao, false);
+    if (error) {
+      const t = String(error.message).toLowerCase();
+      return mostrarErro(t.includes('reauthenticat') || t.includes('recent')
+        ? 'Por segurança, saia e entre de novo na conta e tente outra vez.'
+        : t.includes('different') ? 'A nova senha precisa ser diferente da atual.'
+        : 'Não foi possível alterar a senha: ' + error.message);
+    }
     e.target.reset();
-    toast('Senha alterada.');
+    toast(temSenha ? 'Senha alterada. Enviamos um aviso para o seu e-mail.' : 'Senha criada. Agora você também pode entrar com e-mail e senha.');
   });
 
   document.getElementById('sair-todos').addEventListener('click', async () => {

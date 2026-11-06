@@ -468,7 +468,8 @@ async function protegerPagina() {
   const sessao = await getSessao();
   if (!sessao) {
     limparPerfilCache();
-    window.location.replace('login.html');
+    // link do e-mail vencido: leva o motivo para o login explicar
+    window.location.replace('login.html' + (ERRO_RETORNO_AUTH ? (window.location.hash || window.location.search) : ''));
     return null;
   }
   // Troca de tela rápida: com o perfil desta aba em memória, a página já monta e

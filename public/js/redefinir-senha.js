@@ -8,11 +8,17 @@
     form.hidden = false;
   }
 
+  // Link vencido ou já usado: o Supabase volta com #error=...&error_code=otp_expired
+  if (ERRO_RETORNO_AUTH) {
+    history.replaceState(null, '', window.location.pathname);
+    msg.innerHTML = 'Este link expirou ou já foi usado. <a href="login.html">Peça um novo em "Esqueci minha senha"</a>.';
+    return;
+  }
   db.auth.onAuthStateChange((evento) => {
     if (evento === 'PASSWORD_RECOVERY') liberar();
   });
   if (await getSessao()) liberar();
-  else setTimeout(() => { if (form.hidden) msg.textContent = 'Link inválido ou expirado. Peça um novo em "Esqueci minha senha".'; }, 4000);
+  else setTimeout(() => { if (form.hidden) msg.innerHTML = 'Link inválido ou expirado. <a href="login.html">Peça um novo em "Esqueci minha senha"</a>.'; }, 4000);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -24,7 +30,11 @@
     const { error } = await db.auth.updateUser({ password: senha });
     if (error) {
       ocupado(botao, false);
-      msg.textContent = 'Não foi possível salvar: ' + error.message;
+      const t = String(error.message).toLowerCase();
+      msg.textContent = t.includes('different from the old') || t.includes('same')
+        ? 'A nova senha precisa ser diferente da anterior.'
+        : t.includes('session') || t.includes('jwt') ? 'O link expirou. Peça um novo em "Esqueci minha senha".'
+        : 'Não foi possível salvar: ' + error.message;
       return;
     }
     msg.textContent = 'Senha alterada! Redirecionando...';
