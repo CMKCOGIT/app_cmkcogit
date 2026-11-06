@@ -7,6 +7,8 @@ Cole o HTML de cada arquivo no modelo correspondente, com o assunto sugerido:
 | Confirm signup | `confirmar-cadastro.html` | Confirme seu cadastro na CMKCOGIT |
 | Reset password | `redefinir-senha.html` | Redefina sua senha da CMKCOGIT |
 | Password changed (notificações de segurança) | `senha-alterada.html` | Sua senha da CMKCOGIT foi alterada |
+| Change email address | `confirmar-troca-email.html` | Confirme seu novo e-mail na CMKCOGIT |
+| Email address changed (notificações de segurança) | `email-alterado.html` | O e-mail da sua conta CMKCOGIT foi alterado |
 
 - `{{ .ConfirmationURL }}` e `{{ .Email }}` são preenchidos pelo Supabase.
 - A logo vem de `https://app.cmkcogit.com.br/assets/marca/cogit-logo-email.png` (PNG: SVG não aparece no Gmail/Outlook).

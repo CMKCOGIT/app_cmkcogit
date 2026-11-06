@@ -63,7 +63,7 @@ button[type=submit], .botao-primario, a.botao-primario, [data-primario] {
 button[type=submit]:hover:not(:disabled), .botao-primario:hover, a.botao-primario:hover, [data-primario]:hover:not(:disabled) {
   background: var(--color-brand-700) !important; border-color: var(--color-brand-700) !important;
 }
-button:hover:not(:disabled):not([type=submit]) { border-color: var(--color-navy-900); color: var(--color-navy-900); }
+button:hover:not(:disabled):not([type=submit]) { border-color: var(--color-navy-900); } /* só a borda: botão escuro (primário, aba ativa) mantém o texto claro */
 input:focus, select:focus, textarea:focus { border-color: var(--color-navy-900) !important; }
 .avatar, [data-avatar], .botao-icone { border-radius: 50% !important; }
 
@@ -264,3 +264,6 @@ li[data-esqueleto-linha]::marker { content: ''; }
   .lista-cards > article, .kpis > .kpi, .lista-widget > li, .linha-tempo > li, tbody > tr { animation: none !important; }
 }
 @keyframes cogit-pulsar { 50% { opacity: .45; } }
+
+/* Google: enquanto abre, o indicador do botão ocupa o lugar do ícone (sem dois giros) */
+.btn-google[aria-busy="true"] .google-icone { display: none; animation: none; }
