@@ -1,0 +1,92 @@
+/* =====================================================================
+   identidade.css — identidade 2026 da COGIT ("Estrutura aparente"), igual ao site.
+   Carregado por último em todas as páginas: complementa tokens.css (cores, fontes, raios)
+   onde plataforma.css usava degradês, brilhos e pesos que não existem na identidade nova.
+   Regras: superfícies chapadas, fios de 1 px, cantos retos (2 px), sem sombra decorativa,
+   títulos em Clash Display 500, texto e interface em Satoshi, marinho como cor da marca.
+   ===================================================================== */
+
+/* ── 1. Sem degradês: tudo vira cor chapada ─────────────────────────── */
+body :where(*:not(img):not(svg):not(svg *):not(progress):not(.anel):not([data-esqueleto]):not([style*="background-image"])) { background-image: none !important; }
+/* esqueletos de carregamento continuam com o brilho (são estado, não decoração) */
+[data-esqueleto]::after, [data-esqueleto-linha]::after, [data-carregando]:empty::after { opacity: .6; }
+progress::-webkit-progress-value { background: var(--color-brand-600) !important; border-radius: 0 !important; }
+progress::-moz-progress-bar { background: var(--color-brand-600) !important; border-radius: 0 !important; }
+progress { border-radius: 0 !important; }
+
+/* superfícies que eram degradê */
+#menu { background-color: var(--color-navy-900) !important; border-right: 1px solid var(--color-navy-600); }
+.menu-destaque { background-color: var(--color-brand-600) !important; border: 0 !important; }
+#barra-topo { background-color: var(--color-neutral-100) !important; border-bottom: 1px solid var(--color-border); }
+#painel-admin { background-color: var(--color-neutral-0) !important; border-color: var(--color-border) !important; }
+#oferta, #mais-vendido, .auth-painel { background-color: var(--color-brand-600) !important; color: #F3F3F1; }
+.kpi[data-destaque] { background-color: var(--color-navy-900) !important; }
+#secao-proximo-passo { background: var(--color-neutral-0) !important; border-top: 2px solid var(--color-brand-600) !important; }
+body.acesso { background: var(--color-navy-900) !important; }
+
+[data-avatar] { background-color: var(--color-brand-600) !important; color: #F3F3F1 !important; }
+[data-comp-topo] { background-color: var(--color-navy-900) !important; color: #F3F3F1; }
+.anel { background: conic-gradient(var(--color-brand-600) calc(var(--p) * 1%), var(--color-neutral-200) 0) !important; }
+
+/* ── 2. Sombras: só camadas flutuantes (menu aberto, modais, cartão de acesso) ── */
+*, *::before, *::after { text-shadow: none !important; }
+body *:not(dialog):not(#menu-usuario):not(#sino-painel):not(#detalhe-cliente):not(#modal-solicitacao):not(#menu-inferior):not(.auth-card) { box-shadow: none !important; }
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--color-brand-600) !important; outline-offset: 2px !important; box-shadow: none !important; }
+[aria-current=true], .sol-card[aria-current=true], .func-card[aria-current=true], #detalhe-conteudo > article[aria-current=true] { box-shadow: none !important; border-color: var(--color-brand-600) !important; border-width: 1px; outline: 1px solid var(--color-brand-600); }
+.linha-status > li[data-estado=atual] > span, .evento[data-nova] .evento-icone, #sino-lista > li[data-nova]::before { box-shadow: none !important; }
+* { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.inferior-fab > a > .i, .inferior-indicador, [data-aprovar]:hover:not(:disabled), #menu > ul a[aria-current=page], .menu-destaque a:hover, #lista-dicas article > p:last-child a:hover { box-shadow: none !important; transform: none !important; }
+
+/* ── 3. Tipografia ─────────────────────────────────────────────────── */
+body { font-family: var(--font-body) !important; color: var(--color-navy-900); font-feature-settings: "ss02" 0; }
+h1, h2, h3, h4, legend, .kpi-valor, .anel > span, .numeros-mini dd, .auth-form h2 {
+  font-family: var(--font-display) !important; font-weight: 500 !important; letter-spacing: -0.02em;
+}
+h1 { letter-spacing: -0.03em; line-height: 1.02; }
+h2 { line-height: 1.08; }
+h3, h4 { letter-spacing: -0.01em; }
+/* números grandes em Clash; valores em dinheiro alinhados */
+.kpi-valor, .numeros-mini dd, [data-item-preco], .valor, .total { font-variant-numeric: tabular-nums; }
+small, .texto-apoio { color: var(--color-neutral-600); }
+
+/* sobretítulos (caixa alta) em Satoshi, como os rótulos do site */
+.overline, [data-overline], .secao-topo small { font-family: var(--font-body) !important; letter-spacing: .14em; }
+.kpi-rotulo { font-family: var(--font-body) !important; letter-spacing: 0 !important; }
+
+/* ── 4. Botões e campos: cantos retos, marinho, sem levantar ───────── */
+button, .botao, a.botao, input, select, textarea { border-radius: 2px !important; }
+button { font-family: var(--font-body) !important; font-weight: 700 !important; letter-spacing: .005em; }
+button:active:not(:disabled) { transform: none !important; }
+button[type=submit], .botao-primario, a.botao-primario, [data-primario] {
+  background: var(--color-brand-600) !important; border-color: var(--color-brand-600) !important; color: #FFFFFF !important;
+}
+button[type=submit]:hover:not(:disabled), .botao-primario:hover, a.botao-primario:hover, [data-primario]:hover:not(:disabled) {
+  background: var(--color-brand-700) !important; border-color: var(--color-brand-700) !important;
+}
+button:hover:not(:disabled):not([type=submit]) { border-color: var(--color-navy-900); color: var(--color-navy-900); }
+input:focus, select:focus, textarea:focus { border-color: var(--color-navy-900) !important; }
+.avatar, [data-avatar], .botao-icone { border-radius: 50% !important; }
+
+/* ── 5. Cartões e blocos: fio de 1 px, fundo branco sobre papel ────── */
+.lista-cards > article, .kpi, .card, .sol-card, .func-card, [data-card] { border-radius: 2px !important; border: 1px solid var(--color-border) !important; }
+.lista-cards > article:hover, .sol-card:hover, .func-card:hover { border-color: var(--color-navy-900) !important; transform: none !important; }
+
+/* ── 6. Menu lateral (grafite) ─────────────────────────────────────── */
+#menu > ul a[aria-current=page] { background: var(--color-navy-800) !important; color: #F3F3F1 !important; border-left: 2px solid var(--color-brand-300); }
+#menu a:hover { background: var(--color-navy-800) !important; }
+.menu-destaque a { background: #F3F3F1 !important; color: var(--color-brand-600) !important; border-radius: 2px !important; }
+
+/* ── 7. Telas de acesso (login, cadastro, senha) ───────────────────── */
+body.acesso > main { border: 1px solid var(--color-border); }
+.auth-card { box-shadow: none !important; border: 1px solid var(--color-border); border-radius: 2px !important; }
+.auth-painel h1, .auth-painel h2, .auth-painel p, .auth-painel li { color: #F3F3F1 !important; }
+
+@media print { #menu, #barra-topo, #menu-inferior { display: none !important; } }
+
+/* filtros, abas e etiquetas: retos, como as etiquetas do site */
+.filtro-pilulas, .filtro-pilulas > *, .abas, .abas > *, [data-etiqueta] { border-radius: 2px !important; }
+[data-etiqueta] { font-weight: 700; letter-spacing: .02em; }
+
+/* fundos que eram degradê ou imagem num elemento comum (a regra do item 1 apaga background-image) */
+.avatar, .inferior-fab > a > .i, .passo-icone { background-color: var(--color-brand-600) !important; color: #F3F3F1 !important; }
+.topo-marca { background: var(--color-navy-900) url(../assets/images/cmk-symbol.png) center / 24px no-repeat !important; border-radius: 2px !important; }

@@ -29,8 +29,8 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | Pasta / arquivo | O que é |
 |---|---|
 | `public/` | Páginas (HTML + JS) — veja a lista abaixo |
-| `public/css/plataforma.css` | Visual da plataforma (tokens da marca + componentes), baseado no site. Estiliza o HTML existente sem depender de classes no JS |
-| `public/assets/` | Logo, símbolo/favicon e fontes (Inter e Manrope) copiados do site, servidos localmente |
+| `public/css/plataforma.css` + `identidade.css` | Visual da plataforma. `tokens.css` tem a paleta e as fontes da identidade 2026 (igual ao site); `identidade.css`, carregado por último, tira degradês e sombras e aplica cantos retos, Clash Display nos títulos e Satoshi na interface |
+| `public/assets/` | Logo, símbolo/favicon e fontes (Clash Display e Satoshi, identidade 2026) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
 | `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20` e `21` (o `14` é só dado de teste) |
