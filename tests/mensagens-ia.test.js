@@ -1,4 +1,4 @@
-// /api/mensagens-ia com o Supabase e o Gemini SIMULADOS (sem internet).
+// /api/mensagens-ia com o Supabase, a Groq e o Gemini SIMULADOS (sem internet).
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizarSugestoes, instrucoesSistema } from '../api/mensagens-ia.js';
@@ -13,11 +13,19 @@ const TOKENS = { 'tok-cli': CLI, 'tok-adm': ADM };
 let banco;
 let pedidosGemini;
 let respostaGemini;
+let pedidosGroq;
+let respostaGroq;
 
 beforeEach(() => {
   process.env.GEMINI_API_KEY = 'chave-teste';
   delete process.env.GEMINI_MODEL;
+  delete process.env.GROQ_API_KEY;
+  delete process.env.GROQ_MODEL;
   pedidosGemini = [];
+  pedidosGroq = [];
+  respostaGroq = (modelo) => ({ status: 200, corpo: { choices: [{ message: { content: JSON.stringify({ sugestoes: [
+    { titulo: 'Groq', texto: 'Oi, Ana!\nResposta via ' + modelo }
+  ] }) } }] } });
   respostaGemini = (modelo) => ({
     status: 200,
     corpo: { candidates: [{ content: { parts: [{ text: JSON.stringify({ sugestoes: [
@@ -45,6 +53,12 @@ const resposta = (status, corpo) => new Response(JSON.stringify(corpo), { status
 
 globalThis.fetch = async (url, op = {}) => {
   const u = new URL(url);
+  if (u.hostname === 'api.groq.com') {
+    const corpo = JSON.parse(op.body);
+    pedidosGroq.push({ modelo: corpo.model, auth: op.headers.Authorization, corpo });
+    const r = respostaGroq(corpo.model);
+    return resposta(r.status, r.corpo);
+  }
   if (u.hostname === 'generativelanguage.googleapis.com') {
     const modelo = decodeURIComponent(u.pathname.split('/').pop().replace(':generateContent', ''));
     pedidosGemini.push({ modelo, chave: op.headers['x-goog-api-key'], corpo: JSON.parse(op.body) });
@@ -82,7 +96,7 @@ test('sem login 401; cliente não usa a IA (403 somente_admin)', async () => {
   assert.equal(pedidosGemini.length, 0);
 });
 
-test('sem GEMINI_API_KEY: 503 ia_indisponivel, sem chamar o Google', async () => {
+test('sem nenhuma chave de IA: 503 ia_indisponivel, sem chamar ninguém', async () => {
   delete process.env.GEMINI_API_KEY;
   const r = await chamar('tok-adm', { acao: 'reescrever', texto: 'oi' });
   assert.equal(r.status, 503);
@@ -137,4 +151,40 @@ test('normalizarSugestoes e instruções', () => {
   assert.equal(normalizarSugestoes({ sugestoes: [{ texto: 'a' }] })[0].titulo, 'Sugestão');
   assert.doesNotMatch(instrucoesSistema('plataforma'), /emoji, só se/);
   assert.match(instrucoesSistema('plataforma'), /Nunca invente fatos/);
+});
+
+test('Groq configurada: usa a Groq (modo JSON, prompt com o formato) e não o Gemini', async () => {
+  process.env.GROQ_API_KEY = 'gsk-teste';
+  const r = await chamar('tok-adm', { acao: 'reescrever', texto: 'oi tudo bem', tom: 'formal' });
+  assert.equal(r.status, 200);
+  assert.equal(pedidosGemini.length, 0);
+  const p = pedidosGroq[0];
+  assert.equal(p.auth, 'Bearer gsk-teste');
+  assert.equal(p.modelo, 'openai/gpt-oss-120b');
+  assert.equal(p.corpo.reasoning_effort, 'low');
+  assert.deepEqual(p.corpo.response_format, { type: 'json_object' });
+  assert.match(p.corpo.messages[0].content, /JSON/);
+  assert.match(p.corpo.messages[1].content, /formal e respeitoso/);
+  assert.match(r.json.sugestoes[0].texto, /Resposta via openai\/gpt-oss-120b/);
+});
+
+test('Groq: modelo aposentado tenta o próximo; limite (429) cai para o Gemini', async () => {
+  process.env.GROQ_API_KEY = 'gsk-teste';
+  process.env.GROQ_MODEL = 'modelo-velho';
+  respostaGroq = (modelo) => (modelo === 'modelo-velho'
+    ? { status: 400, corpo: { error: { code: 'model_decommissioned', message: 'x' } } }
+    : { status: 200, corpo: { choices: [{ message: { content: '{"sugestoes":[{"titulo":"A","texto":"ok"}]}' } }] } });
+  let r = await chamar('tok-adm', { acao: 'construir', objetivo: 'boas-vindas' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(pedidosGroq.map((x) => x.modelo), ['modelo-velho', 'openai/gpt-oss-120b']);
+
+  respostaGroq = () => ({ status: 429, corpo: { error: { message: 'rate limit' } } });
+  r = await chamar('tok-adm', { acao: 'construir', objetivo: 'boas-vindas' });
+  assert.equal(r.status, 200);
+  assert.equal(pedidosGemini.length, 1); // reserva
+
+  delete process.env.GEMINI_API_KEY;
+  r = await chamar('tok-adm', { acao: 'construir', objetivo: 'boas-vindas' });
+  assert.equal(r.status, 429);
+  assert.equal(r.json.codigo, 'ia_limite');
 });

@@ -147,9 +147,10 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
 16. Rode `25_mensagens.sql` para a tela de **Mensagens**: tabelas `conversas`, `mensagens`, `conversa_leituras` e
    `modelos_mensagem` (com 5 modelos iniciais), bucket privado `mensagens` no Storage (`<conversa>/publico|interno/...`),
    regras de acesso (a nota interna e o anexo dela são invisíveis para o cliente no próprio banco), aviso no sino e tempo real.
-   **IA (Gemini):** na Vercel, configure `GEMINI_API_KEY` (chave do [Google AI Studio](https://aistudio.google.com/apikey)) e,
-   opcional, `GEMINI_MODEL` (padrão `gemini-flash-latest`). Sem a chave, as mensagens funcionam normalmente e o painel de
-   IA avisa que não está configurado. Só administradores usam a IA (rota `/api/mensagens-ia`).
+   **IA (gratuita, Groq):** crie uma chave em [console.groq.com/keys](https://console.groq.com/keys) e, na Vercel, configure
+   `GROQ_API_KEY` (opcional: `GROQ_MODEL`, padrão `openai/gpt-oss-120b`). Também aceita o Gemini (`GEMINI_API_KEY`,
+   `GEMINI_MODEL`); com os dois, a Groq vem primeiro e o Gemini é a reserva quando ela está no limite. Sem chave, as mensagens
+   funcionam normalmente e o painel de IA avisa que não está configurado. Só administradores usam a IA (rota `/api/mensagens-ia`).
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.

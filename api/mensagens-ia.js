@@ -1,4 +1,4 @@
-// /api/mensagens-ia   (só admin) — sugestões de mensagens com o Gemini
+// /api/mensagens-ia   (só admin) — sugestões de mensagens com IA (Groq gratuita ou Gemini, lib/ia.js)
 //   POST { acao: 'sugerir',   conversa_id, tom? }              -> 3 respostas para a conversa
 //   POST { acao: 'reescrever', texto, tom?, canal? }            -> 3 versões melhores do rascunho
 //   POST { acao: 'construir', objetivo, detalhes?, tom?, canal?, destinatario? } -> 3 mensagens prontas
@@ -6,7 +6,7 @@
 // A IA não inventa valores, datas ou links: o que faltar vem entre colchetes para a equipe completar.
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID } from '../lib/http.js';
-import { gerarJson, ErroIA } from '../lib/gemini.js';
+import { gerarJson, ErroIA } from '../lib/ia.js';
 
 export const TONS = {
   profissional: 'profissional, claro e cordial',
@@ -31,6 +31,9 @@ const ESQUEMA = {
   },
   required: ['sugestoes']
 };
+
+// O mesmo formato do ESQUEMA, em texto (a Groq usa "modo JSON", sem esquema)
+export const FORMATO_JSON = 'Responda somente com um objeto JSON no formato {"sugestoes":[{"titulo":"...","texto":"..."}]}, com exatamente 3 itens. No campo "texto", use \\n para quebrar linha.';
 
 export function instrucoesSistema(canal) {
   return [
@@ -131,7 +134,7 @@ export default async function handler(req, res) {
 
   try {
     const pedido = await montarPedido(db, corpo || {});
-    const dados = await gerarJson({ sistema: instrucoesSistema(pedido.canal), prompt: pedido.prompt, esquema: ESQUEMA });
+    const dados = await gerarJson({ sistema: instrucoesSistema(pedido.canal), prompt: pedido.prompt, esquema: ESQUEMA, formatoJson: FORMATO_JSON });
     const sugestoes = normalizarSugestoes(dados);
     if (!sugestoes.length) return erro(res, 502, 'A IA não trouxe sugestões desta vez. Tente de novo.');
     return json(res, 200, { ok: true, sugestoes });
