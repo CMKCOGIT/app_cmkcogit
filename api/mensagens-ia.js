@@ -48,6 +48,7 @@ export function instrucoesSistema(canal) {
   ].join('\n');
 }
 
+const ASSUNTOS = { duvida: 'dúvida', prazo: 'prazo e andamento', alteracao: 'pedido de alteração', material: 'envio de material', pagamento: 'pagamento', outro: 'outro' };
 const limpar = (v, max) => String(v == null ? '' : v).replace(/\u0000/g, '').trim().slice(0, max);
 
 function linhaDaConversa(m, clienteId) {
@@ -55,7 +56,8 @@ function linhaDaConversa(m, clienteId) {
     : m.autor_papel === 'admin' ? 'Equipe (' + (m.autor_nome || 'equipe') + ')'
       : m.autor_id === clienteId ? 'Cliente' : (m.autor_nome || 'Pessoa');
   const conteudo = m.tipo === 'audio' ? '[enviou um áudio]' : m.tipo === 'arquivo' ? '[enviou o arquivo ' + (m.anexo_nome || '') + ']' + (m.corpo ? ' ' + m.corpo : '') : m.corpo;
-  return quem + ': ' + String(conteudo || '').replace(/\s+/g, ' ').slice(0, 500);
+  const assunto = ASSUNTOS[m.assunto] ? ' [assunto: ' + ASSUNTOS[m.assunto] + ']' : '';
+  return quem + assunto + ': ' + String(conteudo || '').replace(/\s+/g, ' ').slice(0, 500);
 }
 
 export async function montarPedido(db, corpo) {
@@ -70,7 +72,7 @@ export async function montarPedido(db, corpo) {
     if (!conversa) throw new ErroIA('pedido', 'Conversa não encontrada.', 404);
     const [mensagens, cliente] = await Promise.all([
       db.select('mensagens', {
-        select: 'autor_id,autor_nome,autor_papel,tipo,corpo,interna,anexo_nome,created_at',
+        select: 'autor_id,autor_nome,autor_papel,tipo,corpo,interna,anexo_nome,assunto,created_at',
         conversa_id: 'eq.' + conversa.id, apagada_em: 'is.null', order: 'created_at.desc', limit: '15'
       }),
       conversa.cliente_id ? db.um('profiles', { select: 'nome', id: 'eq.' + conversa.cliente_id }) : null

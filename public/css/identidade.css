@@ -35,7 +35,7 @@ body *:not(dialog):not(#menu-usuario):not(#sino-painel):not(#detalhe-cliente):no
 [aria-current=true], .sol-card[aria-current=true], .func-card[aria-current=true], #detalhe-conteudo > article[aria-current=true] { box-shadow: none !important; border-color: var(--color-brand-600) !important; border-width: 1px; outline: 1px solid var(--color-brand-600); }
 .linha-status > li[data-estado=atual] > span, .evento[data-nova] .evento-icone, #sino-lista > li[data-nova]::before { box-shadow: none !important; }
 * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-.inferior-fab > a > .i, .inferior-indicador, [data-aprovar]:hover:not(:disabled), #menu > ul a[aria-current=page], .menu-destaque a:hover, #lista-dicas article > p:last-child a:hover { box-shadow: none !important; transform: none !important; }
+.inferior-fab > a > .i, [data-aprovar]:hover:not(:disabled), #menu > ul a[aria-current=page], .menu-destaque a:hover, #lista-dicas article > p:last-child a:hover { box-shadow: none !important; transform: none !important; }
 
 /* ── 3. Tipografia ─────────────────────────────────────────────────── */
 body { font-family: var(--font-body) !important; color: var(--color-navy-900); font-feature-settings: "ss02" 0; }
@@ -86,6 +86,11 @@ body.acesso > main { border: 1px solid var(--color-border); }
 /* filtros, abas e etiquetas: retos, como as etiquetas do site */
 .filtro-pilulas, .filtro-pilulas > *, .abas, .abas > *, [data-etiqueta] { border-radius: 2px !important; }
 [data-etiqueta] { font-weight: 700; letter-spacing: .02em; }
+
+/* menu inferior sólido: sem o desfoque (removido acima), o conteúdo aparecia através dele */
+#menu-inferior { background: var(--color-navy-900) !important; }
+/* indicador do menu inferior: sem sombra, mas o deslocamento (transform) é o que o move */
+.inferior-indicador { box-shadow: none !important; }
 
 /* fundos que eram degradê ou imagem num elemento comum (a regra do item 1 apaga background-image) */
 .avatar, .inferior-fab > a > .i, .passo-icone { background-color: var(--color-brand-600) !important; color: #F3F3F1 !important; }

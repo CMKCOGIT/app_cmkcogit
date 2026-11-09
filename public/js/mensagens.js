@@ -19,7 +19,7 @@
   const POR_PAGINA = 40;
   const AUDIO_MAX_SEG = 300;
   const BUCKET = 'mensagens';
-  const CAMPOS = 'id, conversa_id, autor_id, autor_nome, autor_papel, tipo, corpo, interna, anexo_path, anexo_nome, anexo_mime, anexo_tamanho, duracao_seg, editada_em, apagada_em, created_at';
+  const CAMPOS = 'id, conversa_id, autor_id, autor_nome, autor_papel, tipo, corpo, interna, anexo_path, anexo_nome, anexo_mime, anexo_tamanho, duracao_seg, editada_em, apagada_em, created_at, projeto_id, assunto';
 
   const estado = {
     conversas: [], filtro: 'todas', busca: '', atual: null,
@@ -27,6 +27,17 @@
     leituraOutro: null, canal: null, pessoas: null, modelos: [], categoria: 'todas'
   };
   const urls = new Map(); // anexo_path -> { url, expira }
+  const ASSUNTOS = { duvida: 'Dúvida', prazo: 'Prazo e andamento', alteracao: 'Alteração', material: 'Material', pagamento: 'Pagamento', outro: 'Outro' };
+  // Mensagens rápidas do cliente: um toque escolhe o assunto e começa o texto
+  const ATALHOS = [
+    { assunto: 'prazo', rotulo: 'Prazo e andamento', icone: 'prazo', texto: 'Olá! Gostaria de saber como está o andamento e a previsão de entrega do meu projeto.' },
+    { assunto: 'alteracao', rotulo: 'Pedir alteração', icone: 'editar', texto: 'Olá! Gostaria de pedir uma alteração: ' },
+    { assunto: 'material', rotulo: 'Enviar material', icone: 'anexo', texto: 'Olá! Estou enviando os materiais do projeto.', anexar: true },
+    { assunto: 'duvida', rotulo: 'Tirar uma dúvida', icone: 'ajuda', texto: 'Olá! Tenho uma dúvida: ' },
+    { assunto: 'pagamento', rotulo: 'Pagamento', icone: 'pagamentos', texto: 'Olá! Tenho uma dúvida sobre o pagamento: ' }
+  ];
+  const projetosPorCliente = new Map(); // cliente_id -> [{ id, codigo, nome }]
+  let projetoInicial = new URLSearchParams(location.search).get('projeto');
 
   // ---------------------------------------------------------------
   // Papel: cliente vê só a conversa com a equipe
@@ -146,6 +157,7 @@
 
     const params = new URLSearchParams(location.search);
     params.delete('cliente');
+    params.delete('projeto');
     params.set('c', id);
     history.replaceState(null, '', location.pathname + '?' + params);
 
@@ -157,6 +169,7 @@
     document.documentElement.classList.toggle('msg-em-conversa', ADMIN && telaPequena());
     renderLista();
     montarTopo(c);
+    montarContexto(c);
     linhas.innerHTML = '<li class="msg-carregando">' + carregandoCogit('Carregando mensagens...') + '</li>';
 
     const podeNota = ADMIN && c.tipo === 'cliente';
@@ -190,6 +203,71 @@
     $('btn-detalhes').hidden = !(ADMIN && c.tipo === 'cliente');
     if ($('btn-detalhes').hidden) fecharDetalhes();
   }
+
+  // ---- Sobre o que é a mensagem (projeto e assunto) ----
+  async function projetosDoCliente(clienteId) {
+    if (!projetosPorCliente.has(clienteId)) {
+      let q = db.from('projetos').select('id, codigo, nome, status_projeto').order('created_at', { ascending: false });
+      if (ADMIN) q = q.eq('cliente_id', clienteId);
+      const { data } = await q;
+      projetosPorCliente.set(clienteId, data || []);
+    }
+    return projetosPorCliente.get(clienteId);
+  }
+  function projetoPorId(id) {
+    for (const lista of projetosPorCliente.values()) { const p = lista.find((x) => x.id === id); if (p) return p; }
+    return null;
+  }
+  function rotuloContexto(m) {
+    const p = m.projeto_id && projetoPorId(m.projeto_id);
+    return [m.assunto && ASSUNTOS[m.assunto], p && (p.codigo ? p.codigo + ' · ' + p.nome : p.nome)].filter(Boolean).join(' · ');
+  }
+  async function montarContexto(c) {
+    const barra = $('contexto-barra');
+    const sel = $('msg-projeto');
+    $('msg-assunto').value = '';
+    sel.innerHTML = '<option value="">Geral</option>';
+    if (c.tipo !== 'cliente') { barra.hidden = true; atualizarAtalhos(); return; }
+    const projetos = await projetosDoCliente(c.cliente_id);
+    if (estado.atual !== c) return;
+    sel.innerHTML = '<option value="">Geral</option>' + projetos.map((p) => `<option value="${esc(p.id)}">${esc(p.codigo ? p.codigo + ' · ' + p.nome : p.nome)}</option>`).join('');
+    if (projetoInicial && projetos.some((p) => p.id === projetoInicial)) sel.value = projetoInicial;
+    else if (projetos.length === 1 && !ADMIN) sel.value = projetos[0].id; // um projeto só: já vem marcado
+    projetoInicial = null;
+    $('campo-projeto').hidden = !projetos.length;
+    $('campo-assunto').hidden = ADMIN;
+    barra.hidden = ADMIN && !projetos.length;
+    marcarSelecionados();
+    atualizarAtalhos();
+    if (estado.mensagens.length) renderMensagens(); // etiquetas com o nome do projeto
+  }
+  function marcarSelecionados() {
+    ['msg-projeto', 'msg-assunto'].forEach((id) => $(id).closest('label').toggleAttribute('data-escolhido', Boolean($(id).value)));
+  }
+  $('msg-projeto').addEventListener('change', marcarSelecionados);
+  $('msg-assunto').addEventListener('change', marcarSelecionados);
+  const contexto = () => ({ projeto_id: estado.atual && estado.atual.tipo === 'cliente' ? $('msg-projeto').value || null : null, assunto: !ADMIN ? $('msg-assunto').value || null : null });
+
+  function atualizarAtalhos() {
+    const box = $('msg-atalhos');
+    const mostrar = !ADMIN && estado.atual && !texto.value.trim() && !estado.anexos.length && !estado.editando && !gravacao.rec;
+    box.hidden = !mostrar;
+    if (mostrar && !box.children.length) {
+      box.innerHTML = ATALHOS.map((a, i) => `<button type="button" data-atalho="${i}">${icone(a.icone)}<span>${esc(a.rotulo)}</span></button>`).join('');
+    }
+  }
+  $('msg-atalhos').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-atalho]');
+    if (!b) return;
+    const a = ATALHOS[Number(b.dataset.atalho)];
+    $('msg-assunto').value = a.assunto;
+    marcarSelecionados();
+    texto.value = a.texto;
+    ajustarAltura(); atualizarBotoes();
+    texto.focus();
+    texto.setSelectionRange(texto.value.length, texto.value.length);
+    if (a.anexar) $('msg-arquivo').click();
+  });
 
   $('btn-voltar-lista').addEventListener('click', () => {
     app.dataset.vista = 'lista';
@@ -299,6 +377,15 @@
     return `<p>${formatar(m.corpo)}</p>`;
   }
 
+  function contextoHtml(m) {
+    if (m.apagada_em || (!m.projeto_id && !m.assunto)) return '';
+    const rot = rotuloContexto(m) || (m.assunto ? ASSUNTOS[m.assunto] : 'Projeto');
+    const conteudo = `${icone(m.projeto_id ? 'projetos' : 'info')}<span>${esc(rot)}</span>`;
+    return m.projeto_id
+      ? `<a class="msg-contexto" href="projeto.html?id=${esc(m.projeto_id)}" title="Abrir o projeto">${conteudo}</a>`
+      : `<span class="msg-contexto">${conteudo}</span>`;
+  }
+
   function mensagemHtml(m, { eu, junta, lida }) {
     const podeEditar = eu && !m.apagada_em && m.tipo === 'texto';
     const podeApagar = eu && !m.apagada_em;
@@ -318,6 +405,7 @@
       <div class="msg-balao" data-tipo="${esc(m.tipo)}">
         ${m.interna ? `<span class="msg-tag-nota">${icone('nota')} Nota interna · só a equipe vê</span>` : ''}
         ${!eu && !junta ? `<span class="msg-autor">${esc(nomeAutor(m))}</span>` : ''}
+        ${contextoHtml(m)}
         ${conteudoHtml(m)}
         <span class="msg-meta">${m.editada_em && !m.apagada_em ? '<span>editada</span>' : ''}<time datetime="${esc(m.created_at)}" title="${esc(fmtDataHora(m.created_at))}">${esc(hora(m.created_at))}</time>${status}</span>
         ${m._erro ? `<button type="button" class="msg-reenviar" data-acao="reenviar">${icone('recarregar')} Não enviada. Tentar de novo</button>` : ''}
@@ -462,6 +550,8 @@
     const temConteudo = texto.value.trim() || estado.anexos.length || estado.editando;
     $('btn-enviar').hidden = !temConteudo && PODE_GRAVAR;
     $('btn-gravar').hidden = Boolean(temConteudo) || !PODE_GRAVAR;
+    $('contexto-barra').classList.toggle('msg-desativado', Boolean(estado.editando));
+    if (typeof atualizarAtalhos === 'function' && estado.atual) atualizarAtalhos();
   }
   function atualizarModoNota() {
     const nota = $('msg-interna').checked;
@@ -492,14 +582,18 @@
     const anexos = estado.anexos.slice();
     if (!corpo && !anexos.length) return;
     const interna = $('msg-interna').checked;
+    const ctx = contexto();
     texto.value = '';
     salvarRascunho(estado.atual.id, '');
     limparAnexos();
     ajustarAltura();
     atualizarBotoes();
     texto.focus({ preventScroll: true });
-    if (corpo) await enviarTexto(corpo, interna);
-    for (const f of anexos) await enviarArquivo(f, { interna, tipo: 'arquivo' });
+    $('msg-assunto').value = ''; // o assunto vale para esta mensagem; o projeto continua escolhido
+    marcarSelecionados();
+    atualizarAtalhos();
+    if (corpo) await enviarTexto(corpo, interna, null, ctx);
+    for (const f of anexos) await enviarArquivo(f, { interna, tipo: 'arquivo', ctx });
   });
 
   function provisoria(campos) {
@@ -523,10 +617,11 @@
     renderMensagens();
   }
 
-  async function enviarTexto(corpo, interna, tmpExistente) {
-    const tmp = tmpExistente || provisoria({ tipo: 'texto', corpo, interna });
+  async function enviarTexto(corpo, interna, tmpExistente, ctx = {}) {
+    const c = { projeto_id: ctx.projeto_id || (tmpExistente && tmpExistente.projeto_id) || null, assunto: ctx.assunto || (tmpExistente && tmpExistente.assunto) || null };
+    const tmp = tmpExistente || provisoria({ tipo: 'texto', corpo, interna, ...c });
     const { data, error } = await db.from('mensagens')
-      .insert({ conversa_id: tmp.conversa_id, autor_id: perfil.id, tipo: 'texto', corpo, interna })
+      .insert({ conversa_id: tmp.conversa_id, autor_id: perfil.id, tipo: 'texto', corpo, interna, ...c })
       .select(CAMPOS).single();
     if (error) { trocarProvisoria(tmp, null, error.message); toast('Não foi possível enviar: ' + error.message, 'erro'); return null; }
     trocarProvisoria(tmp, data);
@@ -534,17 +629,18 @@
     return data;
   }
 
-  async function enviarArquivo(arquivo, { interna, tipo, duracaoSeg = null, nome = null }) {
+  async function enviarArquivo(arquivo, { interna, tipo, duracaoSeg = null, nome = null, ctx = contexto() }) {
     const conversa = estado.atual.id;
     const nomeFinal = nome || arquivo.name || 'arquivo';
-    const tmp = provisoria({ tipo, interna, anexo_nome: nomeFinal, anexo_tamanho: arquivo.size, anexo_mime: arquivo.type, duracao_seg: duracaoSeg });
+    const tmp = provisoria({ tipo, interna, anexo_nome: nomeFinal, anexo_tamanho: arquivo.size, anexo_mime: arquivo.type, duracao_seg: duracaoSeg, projeto_id: ctx.projeto_id, assunto: ctx.assunto });
     const seguro = nomeFinal.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.-]+/g, '-').slice(-80) || 'arquivo';
     const caminho = `${conversa}/${interna ? 'interno' : 'publico'}/${crypto.randomUUID()}-${seguro}`;
     const up = await db.storage.from(BUCKET).upload(caminho, arquivo, { contentType: arquivo.type || 'application/octet-stream' });
     if (up.error) { trocarProvisoria(tmp, null, up.error.message); toast('Não foi possível enviar ' + nomeFinal + ': ' + up.error.message, 'erro'); return; }
     const { data, error } = await db.from('mensagens').insert({
       conversa_id: conversa, autor_id: perfil.id, tipo, interna, anexo_path: caminho, anexo_nome: nomeFinal,
-      anexo_mime: arquivo.type || null, anexo_tamanho: arquivo.size, duracao_seg: duracaoSeg
+      anexo_mime: arquivo.type || null, anexo_tamanho: arquivo.size, duracao_seg: duracaoSeg,
+      projeto_id: ctx.projeto_id || null, assunto: ctx.assunto || null
     }).select(CAMPOS).single();
     if (error) {
       await db.storage.from(BUCKET).remove([caminho]);
@@ -725,6 +821,7 @@
     rec.start(250);
     $('linha-texto').hidden = true;
     $('linha-gravando').hidden = false;
+    $('msg-atalhos').hidden = true;
     form.dataset.gravando = '';
     medirVolume(stream);
     gravacao.timer = setInterval(() => {
@@ -781,7 +878,11 @@
     if (seg < 1 || blob.size < 1000) { toast('Áudio muito curto.', 'erro'); return; }
     const ext = mime.includes('mp4') ? 'm4a' : mime.includes('ogg') ? 'ogg' : 'webm';
     const nome = 'audio-' + new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-') + '.' + ext;
-    await enviarArquivo(new File([blob], nome, { type: mime }), { interna: $('msg-interna').checked, tipo: 'audio', duracaoSeg: seg, nome });
+    const ctx = contexto();
+    $('msg-assunto').value = '';
+    marcarSelecionados();
+    await enviarArquivo(new File([blob], nome, { type: mime }), { interna: $('msg-interna').checked, tipo: 'audio', duracaoSeg: seg, nome, ctx });
+    atualizarAtalhos();
   }
   $('btn-enviar-audio').addEventListener('click', () => pararGravacao(false));
   $('btn-descartar-audio').addEventListener('click', () => pararGravacao(true));

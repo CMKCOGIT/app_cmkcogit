@@ -33,9 +33,9 @@
   <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
-  <link rel="stylesheet" href="/css/plataforma.css?v=9ff5ffbb38">
-  <link rel="stylesheet" href="/css/identidade.css?v=2539fe74f9">
-  <link rel="stylesheet" href="/css/mensagens.css?v=920daaed38">
+  <link rel="stylesheet" href="/css/plataforma.css?v=e836beed99">
+  <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
+  <link rel="stylesheet" href="/css/mensagens.css?v=956d198664">
 </head>
 <body class="app pagina-mensagens">
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
@@ -140,6 +140,32 @@
             <span><strong>Nota interna.</strong> Só a equipe vê; o cliente não recebe nem é avisado.</span>
           </div>
           <div class="msg-anexo-previa" id="anexo-previa" hidden></div>
+
+          <!-- Mensagens rápidas (cliente): um toque escolhe o assunto e começa o texto -->
+          <div class="msg-atalhos" id="msg-atalhos" role="group" aria-label="Mensagens rápidas" hidden></div>
+
+          <!-- Sobre o que é a mensagem: projeto e assunto (viram etiqueta na mensagem) -->
+          <div class="msg-contexto-barra" id="contexto-barra" hidden>
+            <span class="msg-contexto-rotulo">Sobre</span>
+            <label class="msg-contexto-campo" id="campo-projeto" hidden>
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#projetos"></use></svg>
+              <span class="so-leitor-tela">Projeto da mensagem</span>
+              <select id="msg-projeto"><option value="">Geral</option></select>
+            </label>
+            <label class="msg-contexto-campo" id="campo-assunto">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#info"></use></svg>
+              <span class="so-leitor-tela">Assunto da mensagem</span>
+              <select id="msg-assunto">
+                <option value="">Sem assunto</option>
+                <option value="duvida">Dúvida</option>
+                <option value="prazo">Prazo e andamento</option>
+                <option value="alteracao">Alteração</option>
+                <option value="material">Material</option>
+                <option value="pagamento">Pagamento</option>
+                <option value="outro">Outro</option>
+              </select>
+            </label>
+          </div>
 
           <div class="msg-compositor-linha" id="linha-texto">
             <label class="acao-icone msg-btn-anexo" title="Anexar arquivo" id="rotulo-anexo">
@@ -315,7 +341,7 @@
 
   <script src="js/vendor/supabase-2.45.4.min.js"></script>
   <script src="/config.js"></script>
-  <script src="js/app.js?v=c0161b54dd"></script>
-  <script src="js/mensagens.js?v=bfd3668d04"></script>
+  <script src="js/app.js?v=12474a56e6"></script>
+  <script src="js/mensagens.js?v=a4f079bd35"></script>
 </body>
 </html>

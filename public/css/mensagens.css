@@ -272,6 +272,37 @@ mark { padding: 0 2px; background: var(--color-warning-bg); color: var(--color-w
 .msg-compositor[data-nota] .msg-compositor-linha { border-style: dashed; border-color: var(--color-warning); background: #FFFBEF; }
 .msg-compositor[data-nota] .msg-btn-redondo#btn-enviar { background: var(--color-warning) !important; }
 
+/* "Sobre": projeto e assunto da mensagem (compacto, vira etiqueta no balão) */
+.msg-contexto-barra { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.msg-contexto-rotulo { color: var(--color-text-subtle); font-size: 0.6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.msg-contexto-campo { position: relative; display: inline-flex; align-items: center; max-width: 100%; margin: 0 !important; }
+.msg-contexto-campo > .i { position: absolute; left: 10px; width: 13px; height: 13px; color: var(--color-text-muted); pointer-events: none; }
+.msg-contexto-campo select {
+  width: auto; max-width: min(320px, 70vw); min-height: 32px !important; padding: 0 30px 0 30px !important;
+  border: 1px solid var(--color-border) !important; background-color: var(--color-neutral-50) !important; background-position: right 10px center !important;
+  color: var(--color-text-muted); font-size: var(--text-xs) !important; font-weight: 700; text-overflow: ellipsis;
+}
+.msg-contexto-campo select:hover { border-color: var(--color-border-strong) !important; }
+.msg-contexto-campo[data-escolhido] select { border-color: var(--color-brand-600) !important; background-color: var(--color-brand-50) !important; color: var(--color-brand-600); }
+.msg-contexto-campo[data-escolhido] > .i { color: var(--color-brand-600); }
+.msg-contexto { display: inline-flex; align-items: center; gap: 5px; justify-self: start; max-width: 100%; padding: 1px 8px; border: 1px solid var(--color-border); background: var(--color-neutral-50); color: var(--color-text-muted) !important; font-size: 0.6875rem; font-weight: 700; text-decoration: none; }
+.msg-contexto span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-contexto .i { flex: none; width: 11px; height: 11px; }
+a.msg-contexto:hover { border-color: currentColor; color: var(--color-navy-900) !important; }
+.msg[data-lado=eu] .msg-contexto { border-color: rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .9) !important; }
+.msg[data-interna] .msg-contexto { border-color: rgba(138, 90, 0, .3); background: transparent; color: var(--color-warning) !important; }
+
+/* mensagens rápidas (cliente) */
+.msg-atalhos { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; animation: msg-sobe var(--dur-base) var(--ease-out) both; }
+.msg-atalhos::-webkit-scrollbar { display: none; }
+.msg-atalhos > button {
+  flex: none; gap: 6px; min-height: 34px !important; padding: 0 var(--space-3) !important;
+  border: 1px solid var(--color-border) !important; background: var(--color-surface); color: var(--color-navy-900);
+  font-size: var(--text-xs) !important; font-weight: 700 !important; white-space: nowrap;
+}
+.msg-atalhos > button .i { width: 13px; height: 13px; color: var(--color-brand-600); }
+.msg-atalhos > button:hover:not(:disabled) { border-color: var(--color-brand-600) !important; background: var(--color-brand-50); color: var(--color-brand-600); }
+
 /* chave "Nota interna" */
 .msg-chave { position: relative; display: inline-flex; align-items: center; gap: var(--space-2); min-height: 32px; color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 700; cursor: pointer; user-select: none; }
 .msg-chave input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -405,6 +436,8 @@ mark { padding: 0 2px; background: var(--color-warning-bg); color: var(--color-w
   .msg[data-lado=outro][data-junta] { padding-left: 0; }
   .msg-compositor { padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom)); }
   .msg-compositor-rodape:has(#chave-nota[hidden]) { display: none; }
+  .msg-contexto-barra { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .msg-contexto-campo select { max-width: 62vw; }
   .msg-ia-painel { max-height: 58%; padding: var(--space-3); }
   .msg-ia-lista { grid-auto-flow: column; grid-auto-columns: 86%; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; }
   .msg-ia-item { scroll-snap-align: start; }

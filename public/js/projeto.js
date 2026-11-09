@@ -52,6 +52,12 @@
     }
     projeto = { ...proj.data, projeto_etapas: etapas.data };
     renderResumo(projeto);
+    // conversar sobre este projeto (a mensagem já sai marcada com ele)
+    const destinoMsg = admin
+      ? 'mensagens.html?cliente=' + encodeURIComponent(projeto.cliente_id) + '&projeto=' + encodeURIComponent(projeto.id)
+      : 'mensagens.html?projeto=' + encodeURIComponent(projeto.id);
+    document.getElementById('resumo-projeto').insertAdjacentHTML('beforeend',
+      `<p><a class="botao-link" href="${destinoMsg}">${icone('mensagens')} ${admin ? 'Mensagem ao cliente sobre este projeto' : 'Falar com a equipe sobre este projeto'}</a></p>`);
     renderEtapas(etapas.data);
     renderPendencias(pend.data);
     await renderArquivos(arqs.data);

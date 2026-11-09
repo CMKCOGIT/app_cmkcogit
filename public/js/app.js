@@ -797,10 +797,8 @@ function ligarShell(perfil, todos, m) {
   folha.addEventListener('cancel', (e) => { e.preventDefault(); fecharFolha(folha); });
   arrastarParaFechar(folha);
 
-  // indicador deslizante do menu inferior (de novo depois das fontes: a largura muda)
-  posicionarIndicador();
-  requestAnimationFrame(posicionarIndicador);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(posicionarIndicador);
+  // indicador deslizante do menu inferior: nasce onde estava na tela anterior e desliza até a atual
+  iniciarIndicador();
 
   // busca global
   const destinos = [
@@ -837,7 +835,8 @@ function ligarShell(perfil, todos, m) {
       document.getElementById('btn-busca')?.click();
     }
   });
-  window.addEventListener('resize', posicionarIndicador, { passive: true });
+  window.addEventListener('resize', () => posicionarIndicador(), { passive: true });
+  window.addEventListener('pagehide', guardarIndicador);
   // menu inferior: recolhe ao rolar para baixo, volta ao rolar para cima
   let ultimoY = window.scrollY;
   let agendado = false;
@@ -855,18 +854,60 @@ function ligarShell(perfil, todos, m) {
   }, { passive: true });
 }
 
-function posicionarIndicador() {
+// Indicador do menu inferior (celular). Posição medida em relação à lista; "animar" desliza,
+// senão vai direto (sem transição). Ao tocar num item ele já desliza antes da página trocar.
+const CHAVE_INDICADOR = 'cmk_indicador_v1';
+function posicionarIndicador(alvo = null, { animar = false } = {}) {
   const nav = document.getElementById('menu-inferior');
-  if (!nav) return;
-  const ativo = nav.querySelector('li:not(.inferior-fab) > [aria-current=page]');
+  if (!nav) return false;
   const ind = nav.querySelector('.inferior-indicador');
-  if (!ativo || !ind) { if (ind) ind.hidden = true; return; }
+  const ativo = alvo || nav.querySelector('li:not(.inferior-fab) > [aria-current=page]');
+  if (!ind) return false;
+  if (!ativo) { ind.hidden = true; return false; }
   const a = ativo.getBoundingClientRect();
-  const n = nav.getBoundingClientRect();
-  if (!a.width) return;
+  const u = nav.querySelector('ul').getBoundingClientRect();
+  if (!a.width) return false;
   ind.hidden = false;
+  ind.classList.toggle('sem-transicao', !animar || MOVIMENTO_REDUZIDO);
   ind.style.width = a.width + 'px';
-  ind.style.transform = `translateX(${a.left - n.left}px)`;
+  ind.style.transform = `translateX(${a.left - u.left}px)`;
+  if (!animar) { void ind.offsetWidth; ind.classList.remove('sem-transicao'); }
+  return true;
+}
+function guardarIndicador() {
+  const ind = document.querySelector('#menu-inferior .inferior-indicador');
+  try {
+    if (ind && !ind.hidden && ind.style.transform) sessionStorage.setItem(CHAVE_INDICADOR, JSON.stringify({ t: ind.style.transform, w: ind.style.width }));
+    else sessionStorage.removeItem(CHAVE_INDICADOR);
+  } catch (_) {}
+}
+function iniciarIndicador() {
+  const nav = document.getElementById('menu-inferior');
+  if (!nav || !window.matchMedia('(max-width: 767.98px)').matches) { posicionarIndicador(); return; }
+  const ind = nav.querySelector('.inferior-indicador');
+  let antes = null;
+  try { antes = JSON.parse(sessionStorage.getItem(CHAVE_INDICADOR)); } catch (_) {}
+  if (antes && antes.t && !MOVIMENTO_REDUZIDO && nav.querySelector('li:not(.inferior-fab) > [aria-current=page]')) {
+    ind.hidden = false;
+    ind.classList.add('sem-transicao');
+    ind.style.transform = antes.t;
+    ind.style.width = antes.w;
+    void ind.offsetWidth;
+    requestAnimationFrame(() => requestAnimationFrame(() => posicionarIndicador(null, { animar: true })));
+  } else {
+    posicionarIndicador();
+  }
+  // as fontes mudam a largura dos itens: reposiciona sem animar
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => posicionarIndicador(null, { animar: true }));
+  // toque: o indicador vai para o item na hora (a página troca em seguida)
+  nav.addEventListener('click', (e) => {
+    const link = e.target.closest('li:not(.inferior-fab) > a[href]');
+    if (!link || link.target === '_blank' || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
+    if (link.getAttribute('aria-current') === 'page') return;
+    nav.querySelectorAll('li > [aria-current=page]').forEach((x) => x.removeAttribute('aria-current'));
+    link.setAttribute('aria-current', 'page');
+    posicionarIndicador(link, { animar: true });
+  });
 }
 
 // Folha inferior (<dialog>): abre com showModal (foco preso, ESC) e fecha com animação

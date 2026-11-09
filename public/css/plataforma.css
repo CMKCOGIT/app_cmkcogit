@@ -953,9 +953,19 @@ body.app > main {
     border-radius: 2px;
     background: var(--color-brand-600);
     box-shadow: 0 6px 18px rgba(26, 44, 82, 0.45);
-    transition: transform 420ms var(--ease-spring), width 420ms var(--ease-spring);
+    will-change: transform;
+    view-transition-name: indicador-inferior;
+    transition: transform 360ms var(--ease-out), width 360ms var(--ease-out);
   }
+  .inferior-indicador.sem-transicao { transition: none; }
   .inferior-indicador[hidden] { display: none; }
+  /* toque: sem "hover preso" (o botão tocado não fica com cor de hover) e resposta imediata */
+  #menu-inferior li > a, #menu-inferior li > button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  #menu-inferior li > a:hover, #menu-inferior li > button:hover:not(:disabled) { border: 0; background: none; color: rgba(255, 255, 255, 0.68); }
+  #menu-inferior li > [aria-current=page]:hover, #menu-inferior li > [aria-current=page] { color: var(--white); }
+  #menu-inferior li > a:active > .i, #menu-inferior li > button:active > .i { transform: scale(0.92); }
+  #menu-inferior li > * > .i { transition: transform var(--dur-fast) var(--ease-out); }
+  @media (hover: hover) { #menu-inferior li > a:hover, #menu-inferior li > button:hover:not(:disabled) { color: var(--white); } }
   .inferior-fab > a { color: var(--white) !important; }
   .inferior-fab > a > .i {
     box-sizing: content-box;
@@ -1950,6 +1960,8 @@ html.anima [data-revelar] { transition: opacity var(--dur-slow) var(--ease-out),
   .evento-texto { grid-column: 2; }
   .pagina-acoes { width: 100%; }
   .pagina-acoes > a, .pagina-acoes > button { flex: 1 1 auto; }
+  .pagina-acoes > .acao-icone { flex: 0 0 44px; width: 44px; height: 44px; margin-left: 0; } /* ícones não esticam */
+  .projeto-card > footer .botao-link { white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   .kpi, .kpi:has(> a):hover { transform: none; }
