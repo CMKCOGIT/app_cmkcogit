@@ -178,6 +178,18 @@ test('Groq: modelo aposentado tenta o próximo; limite (429) cai para o Gemini',
   assert.equal(r.status, 200);
   assert.deepEqual(pedidosGroq.map((x) => x.modelo), ['modelo-velho', 'openai/gpt-oss-120b']);
 
+  // um modelo no limite: passa para o próximo da Groq
+  pedidosGroq = [];
+  delete process.env.GROQ_MODEL;
+  respostaGroq = (modelo) => (modelo === 'openai/gpt-oss-120b'
+    ? { status: 429, corpo: { error: { message: 'rate limit' } } }
+    : { status: 200, corpo: { choices: [{ message: { content: '{"sugestoes":[{"titulo":"A","texto":"ok"}]}' } }] } });
+  r = await chamar('tok-adm', { acao: 'construir', objetivo: 'boas-vindas' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(pedidosGroq.map((x) => x.modelo), ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b']);
+  assert.equal(pedidosGemini.length, 0);
+
+  // todos os modelos da Groq no limite: usa o Gemini de reserva
   respostaGroq = () => ({ status: 429, corpo: { error: { message: 'rate limit' } } });
   r = await chamar('tok-adm', { acao: 'construir', objetivo: 'boas-vindas' });
   assert.equal(r.status, 200);

@@ -55,7 +55,7 @@ function linhaDaConversa(m, clienteId) {
     : m.autor_papel === 'admin' ? 'Equipe (' + (m.autor_nome || 'equipe') + ')'
       : m.autor_id === clienteId ? 'Cliente' : (m.autor_nome || 'Pessoa');
   const conteudo = m.tipo === 'audio' ? '[enviou um áudio]' : m.tipo === 'arquivo' ? '[enviou o arquivo ' + (m.anexo_nome || '') + ']' + (m.corpo ? ' ' + m.corpo : '') : m.corpo;
-  return quem + ': ' + String(conteudo || '').replace(/\s+/g, ' ').slice(0, 800);
+  return quem + ': ' + String(conteudo || '').replace(/\s+/g, ' ').slice(0, 500);
 }
 
 export async function montarPedido(db, corpo) {
@@ -71,7 +71,7 @@ export async function montarPedido(db, corpo) {
     const [mensagens, cliente] = await Promise.all([
       db.select('mensagens', {
         select: 'autor_id,autor_nome,autor_papel,tipo,corpo,interna,anexo_nome,created_at',
-        conversa_id: 'eq.' + conversa.id, apagada_em: 'is.null', order: 'created_at.desc', limit: '20'
+        conversa_id: 'eq.' + conversa.id, apagada_em: 'is.null', order: 'created_at.desc', limit: '15'
       }),
       conversa.cliente_id ? db.um('profiles', { select: 'nome', id: 'eq.' + conversa.cliente_id }) : null
     ]);
