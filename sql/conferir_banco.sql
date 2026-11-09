@@ -89,7 +89,16 @@ with item(arquivo, o_que, nome) as (values
   ('19_assinaturas', 'gatilho', 'trg_assinatura_ao_pagar'),
   ('20_renovacao_cartao', 'coluna', 'assinaturas.mp_preapproval_id'),
   ('20_renovacao_cartao', 'função', 'registrar_cobrancas_cartao'),
-  ('20_renovacao_cartao', 'função', 'atualizar_renovacao_cartao')
+  ('20_renovacao_cartao', 'função', 'atualizar_renovacao_cartao'),
+  ('25_mensagens', 'tabela', 'conversas'),
+  ('25_mensagens', 'tabela', 'mensagens'),
+  ('25_mensagens', 'tabela', 'modelos_mensagem'),
+  ('25_mensagens', 'função', 'listar_conversas'),
+  ('25_mensagens', 'função', 'abrir_conversa_cliente'),
+  ('25_mensagens', 'gatilho', 'trg_notificar_mensagem'),
+  ('25_mensagens', 'política', 'mensagens_storage_insert'),
+  ('25_mensagens', 'bucket', 'mensagens'),
+  ('25_mensagens', 'tempo real', 'mensagens')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

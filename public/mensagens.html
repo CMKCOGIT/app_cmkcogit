@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Mensagens | CMKCOGIT</title>
+  <!-- seo -->
+  <meta name="description" content="Converse com a equipe CMKCOGIT sobre os seus projetos.">
+  <meta name="robots" content="noindex">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Mensagens | CMKCOGIT">
+  <meta property="og:description" content="Converse com a equipe CMKCOGIT sobre os seus projetos.">
+  <meta property="og:url" content="https://app.cmkcogit.com.br/mensagens.html">
+  <meta property="og:site_name" content="CMKCOGIT">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="600">
+  <meta property="og:image:alt" content="Ícone da CMKCOGIT">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Mensagens | CMKCOGIT">
+  <meta name="twitter:description" content="Converse com a equipe CMKCOGIT sobre os seus projetos.">
+  <meta name="twitter:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <!-- /seo -->
+  <meta name="theme-color" content="#121314">
+  <link rel="icon" href="/assets/marca/cogit-favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/marca/cogit-icone-192.png">
+  <link rel="apple-touch-icon" href="/assets/marca/cogit-apple-touch.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="preload" href="/assets/fonts/clash-display-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
+  <link rel="stylesheet" href="/css/plataforma.css?v=9ff5ffbb38">
+  <link rel="stylesheet" href="/css/identidade.css?v=2539fe74f9">
+  <link rel="stylesheet" href="/css/mensagens.css?v=920daaed38">
+</head>
+<body class="app pagina-mensagens">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <header id="barra-topo"></header>
+  <main id="conteudo">
+    <header class="pagina-cabecalho msg-cabecalho">
+      <div>
+        <p class="pagina-rotulo" id="msg-rotulo">Plataforma do cliente</p>
+        <h1>Mensagens</h1>
+        <p id="msg-intro">Fale com a equipe CMKCOGIT sobre seus projetos. Responderemos por aqui.</p>
+      </div>
+      <div class="pagina-acoes" id="msg-acoes-admin" hidden>
+        <button type="button" id="btn-abrir-modelos"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#modelos"></use></svg> Modelos e WhatsApp</button>
+        <button type="button" id="btn-nova-conversa" data-primario><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#nova-conversa"></use></svg> Nova conversa</button>
+      </div>
+    </header>
+    <p id="erro" role="alert"></p>
+
+    <div id="msg-app" class="msg-app" data-vista="lista">
+      <!-- Lista de conversas (admin) -->
+      <aside class="msg-lista" id="msg-lista-painel" aria-label="Conversas">
+        <div class="msg-lista-topo">
+          <label class="campo-busca msg-busca">
+            <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+            <span class="so-leitor-tela">Buscar conversa</span>
+            <input type="search" id="msg-busca" placeholder="Buscar conversa" autocomplete="off">
+          </label>
+          <div class="filtro-pilulas msg-filtros" role="group" aria-label="Filtrar conversas">
+            <button type="button" data-filtro="todas" aria-pressed="true">Todas</button>
+            <button type="button" data-filtro="cliente" aria-pressed="false">Clientes</button>
+            <button type="button" data-filtro="equipe" aria-pressed="false">Equipe</button>
+            <button type="button" data-filtro="nao_lidas" aria-pressed="false">Não lidas</button>
+          </div>
+        </div>
+        <ul id="lista-conversas" class="msg-conversas" aria-busy="true">
+          <li data-esqueleto-linha></li><li data-esqueleto-linha></li><li data-esqueleto-linha></li>
+        </ul>
+      </aside>
+
+      <!-- Conversa aberta -->
+      <section class="msg-thread" id="msg-thread" aria-labelledby="thread-nome">
+        <div class="msg-thread-vazia" id="thread-vazia">
+          <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#mensagens"></use></svg>
+          <h2>Escolha uma conversa</h2>
+          <p>As conversas com clientes e com a equipe aparecem à esquerda.</p>
+        </div>
+
+        <header class="msg-thread-topo" id="thread-topo" hidden>
+          <button type="button" class="msg-voltar" id="btn-voltar-lista" aria-label="Voltar para as conversas">
+            <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#voltar"></use></svg>
+          </button>
+          <span class="avatar" id="thread-avatar" aria-hidden="true"></span>
+          <div class="msg-thread-titulo">
+            <h2 id="thread-nome"></h2>
+            <p id="thread-sub"></p>
+          </div>
+          <div class="msg-thread-acoes">
+            <a class="acao-icone" id="thread-whatsapp" href="#" target="_blank" rel="noopener noreferrer" hidden title="Abrir o WhatsApp do cliente" aria-label="Abrir o WhatsApp do cliente">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg></a>
+            <button type="button" class="acao-icone" id="btn-detalhes" hidden aria-pressed="false" title="Detalhes do cliente" aria-label="Detalhes do cliente">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#detalhes"></use></svg></button>
+          </div>
+        </header>
+
+        <div class="msg-rolagem" id="msg-rolagem" hidden>
+          <button type="button" class="msg-carregar-antigas" id="btn-antigas" hidden>Carregar mensagens anteriores</button>
+          <ol class="msg-linhas" id="msg-linhas" aria-live="polite" aria-relevant="additions"></ol>
+        </div>
+        <button type="button" class="msg-novas" id="btn-novas" hidden>Novas mensagens <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#desceu"></use></svg></button>
+
+        <!-- Sugestões da IA -->
+        <section class="msg-ia-painel" id="ia-painel" aria-labelledby="ia-titulo" hidden>
+          <header>
+            <h3 id="ia-titulo"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#ia"></use></svg> Sugestões com IA</h3>
+            <label class="msg-ia-tom"><span class="so-leitor-tela">Tom</span>
+              <select id="ia-tom">
+                <option value="profissional">Profissional</option>
+                <option value="cordial">Cordial</option>
+                <option value="objetivo">Objetivo</option>
+                <option value="formal">Formal</option>
+                <option value="persuasivo">Persuasivo</option>
+                <option value="descontraido">Descontraído</option>
+              </select></label>
+            <button type="button" class="acao-icone" id="ia-fechar" aria-label="Fechar sugestões"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>
+          </header>
+          <div class="msg-ia-acoes">
+            <button type="button" id="ia-sugerir"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#mensagem"></use></svg> Sugerir resposta</button>
+            <button type="button" id="ia-melhorar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#editar"></use></svg> Melhorar meu texto</button>
+          </div>
+          <ul class="msg-ia-lista" id="ia-lista" aria-live="polite"></ul>
+        </section>
+
+        <form class="msg-compositor" id="msg-form" hidden autocomplete="off">
+          <div class="msg-faixa" id="faixa-edicao" hidden>
+            <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#editar"></use></svg>
+            <span>Editando mensagem</span>
+            <button type="button" id="btn-cancelar-edicao">Cancelar</button>
+          </div>
+          <div class="msg-faixa msg-faixa-nota" id="faixa-nota" hidden>
+            <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#nota"></use></svg>
+            <span><strong>Nota interna.</strong> Só a equipe vê; o cliente não recebe nem é avisado.</span>
+          </div>
+          <div class="msg-anexo-previa" id="anexo-previa" hidden></div>
+
+          <div class="msg-compositor-linha" id="linha-texto">
+            <label class="acao-icone msg-btn-anexo" title="Anexar arquivo" id="rotulo-anexo">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#anexo"></use></svg>
+              <span class="so-leitor-tela">Anexar arquivo</span>
+              <input type="file" id="msg-arquivo" class="so-leitor-tela" multiple>
+            </label>
+            <label class="so-leitor-tela" for="msg-texto">Mensagem</label>
+            <textarea id="msg-texto" rows="1" maxlength="5000" placeholder="Escreva uma mensagem"></textarea>
+            <button type="button" class="acao-icone msg-btn-ia" id="btn-ia" hidden title="Sugestões com IA" aria-label="Sugestões com IA" aria-expanded="false" aria-controls="ia-painel">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#ia"></use></svg></button>
+            <button type="button" class="msg-btn-redondo" id="btn-gravar" title="Gravar áudio" aria-label="Gravar áudio">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#microfone"></use></svg></button>
+            <button type="submit" class="msg-btn-redondo" id="btn-enviar" hidden title="Enviar" aria-label="Enviar">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#enviado"></use></svg></button>
+          </div>
+
+          <div class="msg-compositor-linha msg-gravando" id="linha-gravando" hidden>
+            <button type="button" class="acao-icone" id="btn-descartar-audio" title="Descartar áudio" aria-label="Descartar áudio">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#remover"></use></svg></button>
+            <span class="msg-rec" aria-hidden="true"></span>
+            <span class="msg-rec-tempo" id="rec-tempo" role="timer" aria-live="off">0:00</span>
+            <span class="msg-rec-onda" id="rec-onda" aria-hidden="true"></span>
+            <button type="button" class="msg-btn-redondo" id="btn-enviar-audio" title="Enviar áudio" aria-label="Parar e enviar áudio">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#enviado"></use></svg></button>
+          </div>
+
+          <div class="msg-compositor-rodape">
+            <label class="msg-chave" id="chave-nota" hidden>
+              <input type="checkbox" id="msg-interna" role="switch">
+              <span class="msg-chave-trilho" aria-hidden="true"></span>
+              <span>Nota interna</span>
+            </label>
+            <small class="msg-dica"><kbd>Enter</kbd> envia · <kbd>Shift</kbd>+<kbd>Enter</kbd> quebra a linha</small>
+          </div>
+        </form>
+      </section>
+
+      <!-- Detalhes do cliente (admin) -->
+      <aside class="msg-detalhes" id="msg-detalhes" aria-labelledby="detalhes-titulo" hidden>
+        <header>
+          <h2 id="detalhes-titulo">Detalhes</h2>
+          <button type="button" class="acao-icone" id="detalhes-fechar" aria-label="Fechar detalhes"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>
+        </header>
+        <div id="detalhes-corpo"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Nova conversa (admin) -->
+  <dialog id="dlg-nova" class="gaveta" aria-labelledby="dlg-nova-titulo">
+    <header>
+      <div><p class="pagina-rotulo">Mensagens</p><h2 id="dlg-nova-titulo">Nova conversa</h2></div>
+      <button type="button" data-fechar aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>
+    </header>
+    <div class="gaveta-corpo">
+      <label class="campo-busca msg-busca">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+        <span class="so-leitor-tela">Buscar pessoa</span>
+        <input type="search" id="nova-busca" placeholder="Buscar cliente ou administrador" autocomplete="off">
+      </label>
+      <ul class="msg-pessoas" id="nova-lista"></ul>
+    </div>
+  </dialog>
+
+  <!-- Modelos de mensagem + construtor + WhatsApp (admin) -->
+  <dialog id="dlg-modelos" class="gaveta msg-gaveta-larga" aria-labelledby="dlg-modelos-titulo">
+    <header>
+      <div><p class="pagina-rotulo">Mensagens</p><h2 id="dlg-modelos-titulo">Modelos e WhatsApp</h2></div>
+      <button type="button" data-fechar aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>
+    </header>
+    <div class="msg-abas-wrap">
+      <div class="abas" role="tablist" aria-label="Modelos">
+        <button type="button" role="tab" id="aba-lista" aria-controls="painel-lista" aria-selected="true">Modelos salvos</button>
+        <button type="button" role="tab" id="aba-construtor" aria-controls="painel-construtor" aria-selected="false" tabindex="-1">Construir mensagem</button>
+      </div>
+    </div>
+    <div class="gaveta-corpo">
+      <div role="tabpanel" id="painel-lista" aria-labelledby="aba-lista" class="msg-painel">
+        <div class="msg-modelos-topo">
+          <label class="campo-busca msg-busca">
+            <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+            <span class="so-leitor-tela">Buscar modelo</span>
+            <input type="search" id="modelos-busca" placeholder="Buscar modelo" autocomplete="off">
+          </label>
+          <div class="filtro-pilulas" role="group" aria-label="Categoria" id="modelos-categorias"></div>
+        </div>
+        <ul class="msg-modelos" id="modelos-lista" aria-busy="true"><li data-esqueleto-linha></li><li data-esqueleto-linha></li></ul>
+      </div>
+
+      <div role="tabpanel" id="painel-construtor" aria-labelledby="aba-construtor" class="msg-painel" hidden>
+        <form id="form-modelo" class="msg-construtor" novalidate>
+          <input type="hidden" id="modelo-id">
+          <fieldset class="msg-construtor-ia">
+            <legend><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#ia"></use></svg> Montar com IA</legend>
+            <p><label for="ia-objetivo">Objetivo da mensagem</label>
+              <input id="ia-objetivo" list="ia-objetivos" maxlength="300" placeholder="Ex.: avisar que o site foi publicado">
+              <datalist id="ia-objetivos">
+                <option value="Boas-vindas a um cliente novo"></option>
+                <option value="Atualização do andamento do projeto"></option>
+                <option value="Pedir materiais (textos, logo, fotos)"></option>
+                <option value="Lembrete de pagamento pendente"></option>
+                <option value="Avisar que o projeto foi entregue"></option>
+                <option value="Oferecer uma nova funcionalidade"></option>
+                <option value="Pedir uma avaliação ou indicação"></option>
+              </datalist></p>
+            <p><label for="ia-detalhes">Detalhes (opcional)</label>
+              <textarea id="ia-detalhes" rows="2" maxlength="2000" placeholder="Prazos, valores, links ou o que não pode faltar"></textarea></p>
+            <div class="msg-construtor-ia-linha">
+              <label for="ia-tom-construtor" class="so-leitor-tela">Tom</label>
+              <select id="ia-tom-construtor">
+                <option value="profissional">Tom profissional</option>
+                <option value="cordial">Tom cordial</option>
+                <option value="objetivo">Tom objetivo</option>
+                <option value="formal">Tom formal</option>
+                <option value="persuasivo">Tom persuasivo</option>
+                <option value="descontraido">Tom descontraído</option>
+              </select>
+              <button type="button" id="btn-ia-construir"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#ia"></use></svg> Gerar opções</button>
+            </div>
+            <ul class="msg-ia-lista" id="ia-construtor-lista" aria-live="polite"></ul>
+          </fieldset>
+
+          <div class="form-grade">
+            <p><label for="modelo-titulo">Nome do modelo</label>
+              <input id="modelo-titulo" maxlength="120" placeholder="Ex.: Atualização semanal"></p>
+            <p><label for="modelo-categoria">Categoria</label>
+              <select id="modelo-categoria">
+                <option value="geral">Geral</option>
+                <option value="relacionamento">Relacionamento</option>
+                <option value="projeto">Projeto</option>
+                <option value="financeiro">Financeiro</option>
+                <option value="comercial">Comercial</option>
+              </select></p>
+          </div>
+          <p class="msg-corpo-modelo">
+            <label for="modelo-corpo">Mensagem</label>
+            <span class="msg-variaveis" id="modelo-variaveis" aria-label="Inserir variável">
+              <button type="button" data-variavel="{primeiro_nome}">Primeiro nome</button>
+              <button type="button" data-variavel="{nome}">Nome</button>
+              <button type="button" data-variavel="{projeto}">Projeto</button>
+              <button type="button" data-variavel="{link}">Link da plataforma</button>
+              <button type="button" data-formato="*" title="Negrito no WhatsApp"><b>N</b></button>
+              <button type="button" data-formato="_" title="Itálico no WhatsApp"><i>I</i></button>
+            </span>
+            <textarea id="modelo-corpo" rows="7" maxlength="5000" placeholder="Escreva ou gere com a IA. Use {primeiro_nome}, {projeto} e {link}."></textarea>
+            <small class="msg-contador" id="modelo-contador">0 / 5000</small>
+          </p>
+
+          <div class="msg-envio">
+            <p><label for="modelo-destino">Enviar para</label>
+              <select id="modelo-destino"><option value="">Escolha o cliente (opcional)</option></select></p>
+            <div class="msg-whats-previa" aria-label="Prévia no WhatsApp">
+              <span class="msg-whats-previa-rotulo"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg> Prévia</span>
+              <div class="msg-whats-balao" id="modelo-previa"><span class="nota">A prévia aparece aqui.</span></div>
+            </div>
+            <label class="msg-marcar"><input type="checkbox" id="modelo-registrar" checked> Registrar o envio na conversa do cliente (nota interna)</label>
+          </div>
+
+          <div class="msg-construtor-acoes">
+            <button type="button" id="btn-copiar-modelo"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#copiar"></use></svg> Copiar</button>
+            <button type="button" id="btn-usar-modelo"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#mensagens"></use></svg> Usar na conversa</button>
+            <button type="button" id="btn-whats-modelo" class="msg-btn-whats"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg> Abrir no WhatsApp</button>
+            <span class="msg-construtor-salvar">
+              <button type="button" id="btn-novo-modelo">Limpar</button>
+              <button type="submit" id="btn-salvar-modelo"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#salvar"></use></svg> Salvar modelo</button>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="js/vendor/supabase-2.45.4.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js?v=c0161b54dd"></script>
+  <script src="js/mensagens.js?v=bfd3668d04"></script>
+</body>
+</html>

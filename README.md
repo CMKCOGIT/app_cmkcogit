@@ -31,7 +31,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/` | Páginas (HTML + JS) — veja a lista abaixo |
 | `public/css/plataforma.css` + `identidade.css` | Visual da plataforma. `tokens.css` tem a paleta e as fontes da identidade 2026 (igual ao site); `identidade.css`, carregado por último, tira degradês e sombras e aplica cantos retos, Clash Display nos títulos e Satoshi na interface |
 | `public/assets/` | Logo, símbolo/favicon e fontes (Clash Display e Satoshi, identidade 2026) copiados do site, servidos localmente |
-| `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config` |
+| `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config`, `mensagens-ia` (Gemini) |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
 | `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20` e `21` (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
@@ -54,6 +54,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `funcionalidades.html` | cliente | Adquirir nova funcionalidade para um projeto e pagar no Mercado Pago |
 | `admin.html` | admin | Solicitações: cada card abre o **modal de validação** — itens com checkbox ("Remover selecionados"), "+ Adicionar funcionalidade" (catálogo ou item personalizado, marcados como "adicionado pela equipe"), valor sugerido recalculado + valor final editável, mensagem ao cliente, resumo com prévia do comprovante, aprovação (quem/quando) e envio pelo WhatsApp; cancelar com motivo. Também os avisos do Mercado Pago |
 | `comprovante.html?t=...` | público | Comprovante do pedido aprovado (link único e aleatório, sem login): itens, valor final, status do pagamento e a mensagem da equipe em destaque. "Baixar PDF" usa a impressão do navegador (Salvar como PDF) |
+| `mensagens.html` | cliente/admin | **Mensagens**: o cliente conversa com a equipe; o admin vê todas as conversas (clientes + equipe: grupo e diretas entre admins). Texto com *negrito*/_itálico_, áudio gravado no navegador, arquivos até 25 MB (arrastar/colar), editar e apagar a própria mensagem, "visto", tempo real e aviso no sino. Admin: **nota interna** (tag amarela, o cliente nunca vê nem é avisado), **sugestões com IA** (Gemini: sugerir resposta, melhorar o rascunho), detalhes do cliente e **Modelos e WhatsApp** (construir mensagem com IA, variáveis `{primeiro_nome}` `{projeto}` `{link}`, prévia, salvar, copiar e abrir no WhatsApp manualmente, registrando o envio como nota interna) |
 | `admin-clientes.html` | admin | Clientes: cards ou tabela, busca em tempo real por projeto/código/cliente, filtros rápidos (pago/pendente, em andamento/concluído, atrasado, entrega em 7 dias) e o detalhe de cada projeto, onde o admin atualiza % e status até concluir |
 
 **Cliente × admin.** O admin não compra: o menu dele é só Início (painel), Solicitações, Clientes, Meu perfil e Sair.
@@ -142,6 +143,13 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    assinatura for cancelada lá, ou o cartão não for cobrado em até 5 dias do vencimento, volta para a cobrança por
    e-mail + Pagamentos e o cliente é avisado. Cancelar o plano também cancela no Mercado Pago. Teste com a conta de
    teste do Mercado Pago antes de divulgar.
+
+16. Rode `25_mensagens.sql` para a tela de **Mensagens**: tabelas `conversas`, `mensagens`, `conversa_leituras` e
+   `modelos_mensagem` (com 5 modelos iniciais), bucket privado `mensagens` no Storage (`<conversa>/publico|interno/...`),
+   regras de acesso (a nota interna e o anexo dela são invisíveis para o cliente no próprio banco), aviso no sino e tempo real.
+   **IA (Gemini):** na Vercel, configure `GEMINI_API_KEY` (chave do [Google AI Studio](https://aistudio.google.com/apikey)) e,
+   opcional, `GEMINI_MODEL` (padrão `gemini-flash-latest`). Sem a chave, as mensagens funcionam normalmente e o painel de
+   IA avisa que não está configurado. Só administradores usam a IA (rota `/api/mensagens-ia`).
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.

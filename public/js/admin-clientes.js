@@ -239,6 +239,7 @@
     conteudo.innerHTML = `
       <section id="detalhe-contato" aria-label="Contato e valores">
         <p>${esc(c.email || '')}${c.telefone ? ' · ' + esc(formatarTelefone(c.telefone)) + ' · ' + whatsapp(c) : ''} · cliente desde ${fmtData(c.created_at)}</p>
+        <p><a class="botao-link" href="mensagens.html?cliente=${encodeURIComponent(c.id)}">${icone('mensagens')} Enviar mensagem pela plataforma</a></p>
         <p>${c.documento
           ? `${c.documento.length === 11 ? 'CPF' : 'CNPJ'}: <span data-documento>${esc(mascararDocumento(c.documento))}</span> <button type="button" data-mostrar-documento aria-pressed="false">Mostrar</button>`
           : '<span>CPF/CNPJ não informado (será pedido antes do pagamento)</span>'}</p>

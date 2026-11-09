@@ -270,7 +270,7 @@ function tempoRelativo(data) {
 }
 
 // Linha do tempo agrupada por dia, com ícone por tipo de evento
-const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar' };
+const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar', mensagem: 'mensagens' };
 function rotuloDia(data) {
   const d = new Date(data);
   const hoje = new Date();
@@ -605,10 +605,11 @@ function itensMenu(perfil) {
     grupos: [{ titulo: 'Gestão', itens: [
       { href: INICIO_ADMIN, texto: 'Início', curto: 'Início', icone: 'painel' },
       { href: 'admin.html', texto: 'Solicitações', curto: 'Solicitações', icone: 'solicitacoes', contador: 'menu-cont-validacao' },
-      { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' }
+      { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' },
+      { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
     ] }],
     fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },
-    inferior: [INICIO_ADMIN, 'admin.html', 'fab', 'admin-clientes.html'],
+    inferior: [INICIO_ADMIN, 'admin.html', 'fab', 'mensagens.html'],
     ajuda
   } : {
     rotulo: 'Plataforma do cliente',
@@ -617,14 +618,15 @@ function itensMenu(perfil) {
         { href: 'inicio.html', texto: 'Início', curto: 'Início', icone: 'inicio' },
         { href: 'continuar.html', texto: 'Minhas solicitações', curto: 'Solicitações', icone: 'solicitacoes' },
         { href: 'pagamentos.html', texto: 'Pagamentos', curto: 'Pagamentos', icone: 'pagamentos' },
-        { href: 'projetos.html', texto: 'Meus projetos', curto: 'Projetos', icone: 'projetos' }
+        { href: 'projetos.html', texto: 'Meus projetos', curto: 'Projetos', icone: 'projetos' },
+        { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
       ] },
       { titulo: 'Crescer', itens: [
         { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade', curto: 'Funcionalidades', icone: 'adquirir' }
       ] }
     ],
     fab: { href: urlSite('monte-sua-solucao.html'), texto: 'Montar nova solução', curto: 'Nova', complemento: ' solução (abre o site)', icone: 'adicionar', externo: true },
-    inferior: ['inicio.html', 'continuar.html', 'fab', 'pagamentos.html'],
+    inferior: ['inicio.html', 'continuar.html', 'fab', 'mensagens.html'],
     ajuda
   };
 }
@@ -698,7 +700,7 @@ function montarMenu(perfil) {
   inferior.innerHTML = `<span class="inferior-indicador" aria-hidden="true"></span><ul>
     ${m.inferior.map((h) => (h === 'fab'
       ? `<li class="inferior-fab"><a href="${esc(m.fab.href)}"${externo(m.fab)} title="${esc(m.fab.texto)}">${icone(m.fab.icone)}<span>${esc(m.fab.curto)}<span class="so-leitor-tela">${esc(m.fab.complemento)}</span></span></a></li>`
-      : `<li><a href="${esc(h)}"${corrente(h)}>${icone(porHref[h].icone)}<span>${esc(porHref[h].curto)}</span></a></li>`)).join('')}
+      : `<li><a href="${esc(h)}"${corrente(h)}>${icone(porHref[h].icone)}<span>${esc(porHref[h].curto)}</span>${porHref[h].contador ? `<span class="inferior-contador" data-contador="${porHref[h].contador}" hidden></span>` : ''}</a></li>`)).join('')}
     <li><button type="button" id="btn-mais" aria-haspopup="dialog" aria-controls="folha-mais"${m.inferior.includes(atual) ? '' : ' aria-current="page"'}>${icone('mais')}<span>Mais</span></button></li>
   </ul>`;
   document.body.appendChild(inferior);
@@ -725,6 +727,7 @@ function montarMenu(perfil) {
   depoisDoPrincipal(() => {
     if (perfil) iniciarSino(perfil);
     if (admin) contarEmValidacao();
+    contarMensagensNaoLidas();
   });
 }
 
@@ -741,6 +744,19 @@ async function contarEmValidacao() {
   if (cont) { cont.hidden = !count; cont.textContent = count > 99 ? '99+' : String(count); cont.setAttribute('aria-label', count + ' em validação'); }
   const texto = document.getElementById('menu-destaque-texto');
   if (texto) texto.textContent = count ? `${count} ${count === 1 ? 'solicitação espera' : 'solicitações esperam'} revisão.` : 'Nenhuma solicitação esperando revisão.';
+}
+
+// Mensagens não lidas (menu lateral, menu inferior e folha "Mais"). A tela de mensagens
+// também chama ao ler uma conversa. Sem o sql/25 a função não existe: fica escondido.
+async function contarMensagensNaoLidas() {
+  const { data, error } = await db.rpc('mensagens_nao_lidas');
+  const n = error ? 0 : Number(data) || 0;
+  document.querySelectorAll('#menu-cont-mensagens, [data-contador="menu-cont-mensagens"]').forEach((el) => {
+    el.hidden = !n;
+    el.textContent = n > 99 ? '99+' : String(n);
+    el.setAttribute('aria-label', n + (n === 1 ? ' mensagem não lida' : ' mensagens não lidas'));
+  });
+  return n;
 }
 
 let SHELL_GLOBAL = false;
@@ -781,8 +797,10 @@ function ligarShell(perfil, todos, m) {
   folha.addEventListener('cancel', (e) => { e.preventDefault(); fecharFolha(folha); });
   arrastarParaFechar(folha);
 
-  // indicador deslizante do menu inferior
+  // indicador deslizante do menu inferior (de novo depois das fontes: a largura muda)
   posicionarIndicador();
+  requestAnimationFrame(posicionarIndicador);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(posicionarIndicador);
 
   // busca global
   const destinos = [
@@ -991,6 +1009,7 @@ const Sino = {
       const r = await api('notificacoes?limite=20', null, 'GET');
       this.lista = r.notificacoes || [];
       this.naoLidas = Number(r.nao_lidas) || 0;
+      contarMensagensNaoLidas();
     } catch (e) {
       if (e.status === 404) this.disponivel = false; // rota ausente: desliga
       console.warn('Notificações indisponíveis:', e.message);

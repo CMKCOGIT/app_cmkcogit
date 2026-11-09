@@ -59,6 +59,25 @@
     "ok": "check-circle-fill",
     "loja": "bag-plus",
     "mensagem": "chat-dots",
-    "recibo": "receipt"
+    "recibo": "receipt",
+    "mensagens": "chat-left-text",
+    "microfone": "mic",
+    "parar": "stop-fill",
+    "tocar": "play-fill",
+    "pausar": "pause-fill",
+    "anexo": "paperclip",
+    "ia": "stars",
+    "nota": "lock",
+    "opcoes": "three-dots-vertical",
+    "arquivo": "file-earmark",
+    "imagem": "image",
+    "modelos": "bookmarks",
+    "lido": "check2-all",
+    "enviada": "check2",
+    "equipe": "people-fill",
+    "nova-conversa": "pencil-square",
+    "detalhes": "layout-sidebar-reverse",
+    "emoji": "emoji-smile",
+    "salvar": "floppy"
   }
 }
