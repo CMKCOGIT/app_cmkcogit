@@ -14,7 +14,7 @@ const conferir = process.argv.includes('--check');
 const APP = 'https://app.cmkcogit.com.br';
 const SITE = 'https://www.cmkcogit.com.br';
 const LASTMOD = '2026-11-06';
-const OG = { url: APP + '/assets/marca/cogit-og-2026.png', w: 1200, h: 630, alt: 'CMKCOGIT — Pensamos antes de construir.' };
+const OG = { url: APP + '/assets/marca/cogit-og-icone.png', w: 600, h: 600, alt: 'Ícone da CMKCOGIT' }; // quadrada: a prévia do link mostra só o ícone
 const DESC_PADRAO = 'Plataforma do cliente CMKCOGIT: acompanhe solicitações, projetos, pagamentos e comprovantes em um só lugar.';
 
 // página -> [título, descrição, robots]; indexável = robots sem "noindex"
@@ -86,7 +86,7 @@ function bloco(rel) {
     `<meta property="og:image:width" content="${OG.w}">`,
     `<meta property="og:image:height" content="${OG.h}">`,
     `<meta property="og:image:alt" content="${esc(OG.alt)}">`,
-    '<meta name="twitter:card" content="summary_large_image">',
+    '<meta name="twitter:card" content="summary">',
     `<meta name="twitter:title" content="${esc(titulo)}">`,
     `<meta name="twitter:description" content="${esc(desc)}">`,
     `<meta name="twitter:image" content="${OG.url}">`,
