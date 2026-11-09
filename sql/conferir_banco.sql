@@ -98,7 +98,16 @@ with item(arquivo, o_que, nome) as (values
   ('25_mensagens', 'gatilho', 'trg_notificar_mensagem'),
   ('25_mensagens', 'política', 'mensagens_storage_insert'),
   ('25_mensagens', 'bucket', 'mensagens'),
-  ('25_mensagens', 'tempo real', 'mensagens')
+  ('25_mensagens', 'tempo real', 'mensagens'),
+  ('26_mensagens_assunto_projeto', 'coluna', 'mensagens.assunto'),
+  ('27_quadros', 'tabela', 'empresas'),
+  ('27_quadros', 'tabela', 'quadros'),
+  ('27_quadros', 'tabela', 'cartoes'),
+  ('27_quadros', 'coluna', 'projetos.empresa_id'),
+  ('27_quadros', 'gatilho', 'trg_quadro_do_projeto'),
+  ('27_quadros', 'função', 'lembrar_prazos_cartoes'),
+  ('27_quadros', 'bucket', 'quadros'),
+  ('27_quadros', 'tempo real', 'cartoes')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

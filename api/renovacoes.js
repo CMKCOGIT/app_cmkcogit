@@ -1,4 +1,5 @@
 // GET /api/renovacoes   (rotina diária da Vercel — vercel.json "crons")
+// Também envia os lembretes de prazo dos quadros de tarefas (sql/27: lembrar_prazos_cartoes).
 // Cria as cobranças de renovação dos planos mensal/anual que vencem nos próximos
 // dias (sql/19: gerar_renovacoes) e avisa o cliente no sino e por e-mail.
 // Protegida por CRON_SECRET: a Vercel envia "Authorization: Bearer <CRON_SECRET>".
@@ -60,6 +61,10 @@ export default async function handler(req, res) {
   let db;
   try { db = criarDb(); } catch (e) { registrarErro('renovacoes:config', e); return erro(res, 500, 'Indisponível no momento.'); }
 
+  // Quadros (sql/27): lembra os responsáveis dos cartões que vencem hoje/amanhã ou estão atrasados
+  let tarefas = 0;
+  try { tarefas = Number(await db.rpc('lembrar_prazos_cartoes', {})) || 0; } catch (e) { registrarErro('renovacoes:tarefas', e); }
+
   let cartoes = { registradas: 0, voltaram_manual: 0 };
   try { cartoes = await sincronizarCartoes(db); } catch (e) { registrarErro('renovacoes:cartoes', e); }
 
@@ -91,5 +96,5 @@ export default async function handler(req, res) {
       if (envio.enviado) emails += 1;
     } catch (e) { registrarErro('renovacoes:email', e); }
   }
-  return json(res, 200, { ok: true, cobrancas: novas.length, emails, cartao: cartoes });
+  return json(res, 200, { ok: true, cobrancas: novas.length, emails, cartao: cartoes, tarefas_lembradas: tarefas });
 }

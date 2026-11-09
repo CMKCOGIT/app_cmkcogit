@@ -58,6 +58,14 @@
       : 'mensagens.html?projeto=' + encodeURIComponent(projeto.id);
     document.getElementById('resumo-projeto').insertAdjacentHTML('beforeend',
       `<p><a class="botao-link" href="${destinoMsg}">${icone('mensagens')} ${admin ? 'Mensagem ao cliente sobre este projeto' : 'Falar com a equipe sobre este projeto'}</a></p>`);
+    if (admin) { // quadro de tarefas do projeto (sql/27): quantas tarefas abertas
+      db.from('quadros').select('id, cartoes(count)').eq('projeto_id', projeto.id).is('cartoes.concluido_em', null).is('cartoes.arquivado_em', null).maybeSingle().then(({ data }) => {
+        if (!data) return;
+        const n = (data.cartoes && data.cartoes[0] && data.cartoes[0].count) || 0;
+        document.getElementById('resumo-projeto').insertAdjacentHTML('beforeend',
+          `<p><a class="botao-link" data-secundario href="admin-quadros.html?quadro=${encodeURIComponent(data.id)}">${icone('quadros')} Quadro de tarefas · ${n} ${n === 1 ? 'aberta' : 'abertas'}</a></p>`);
+      });
+    }
     renderEtapas(etapas.data);
     renderPendencias(pend.data);
     await renderArquivos(arqs.data);

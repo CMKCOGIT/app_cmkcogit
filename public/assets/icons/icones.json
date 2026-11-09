@@ -78,6 +78,26 @@
     "nova-conversa": "pencil-square",
     "detalhes": "layout-sidebar-reverse",
     "emoji": "emoji-smile",
-    "salvar": "floppy"
+    "salvar": "floppy",
+    "quadros": "kanban-fill",
+    "checklist": "check2-square",
+    "etiqueta": "tag",
+    "responsavel": "person-plus",
+    "comentario": "chat-left",
+    "capa": "card-image",
+    "prioridade": "flag",
+    "arquivar": "archive",
+    "restaurar": "arrow-counterclockwise",
+    "mover": "arrows-move",
+    "empresa": "building",
+    "descricao": "text-paragraph",
+    "atividade": "activity",
+    "fixar": "pin-angle",
+    "fixado": "pin-angle-fill",
+    "olho": "eye",
+    "lista-tarefas": "list-check",
+    "minhas": "person-check",
+    "link": "link-45deg",
+    "arrastar": "grip-vertical"
   }
 }

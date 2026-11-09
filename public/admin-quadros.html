@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Quadros | CMKCOGIT</title>
+  <!-- seo -->
+  <meta name="description" content="Painel de gestão CMKCOGIT.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Quadros | CMKCOGIT">
+  <meta property="og:description" content="Painel de gestão CMKCOGIT.">
+  <meta property="og:url" content="https://app.cmkcogit.com.br/admin-quadros.html">
+  <meta property="og:site_name" content="CMKCOGIT">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="600">
+  <meta property="og:image:alt" content="Ícone da CMKCOGIT">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Quadros | CMKCOGIT">
+  <meta name="twitter:description" content="Painel de gestão CMKCOGIT.">
+  <meta name="twitter:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <!-- /seo -->
+  <meta name="theme-color" content="#121314">
+  <link rel="icon" href="/assets/marca/cogit-favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/marca/cogit-icone-192.png">
+  <link rel="apple-touch-icon" href="/assets/marca/cogit-apple-touch.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="preload" href="/assets/fonts/clash-display-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
+  <link rel="stylesheet" href="/css/plataforma.css?v=cfe469304c">
+  <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
+  <link rel="stylesheet" href="/css/quadros.css?v=9b50658325">
+</head>
+<body class="app pagina-quadros">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <header id="barra-topo"></header>
+  <main id="conteudo">
+    <!-- Barra do quadro: qual quadro, como ver, buscar e filtrar -->
+    <header class="qd-barra">
+      <div class="qd-seletor" id="qd-seletor">
+        <button type="button" class="qd-seletor-botao" id="btn-quadros" aria-haspopup="dialog" aria-expanded="false" aria-controls="painel-quadros">
+          <span class="qd-cor" id="qd-cor-atual" aria-hidden="true"></span>
+          <span class="qd-seletor-texto">
+            <small id="qd-tipo-atual">Quadro</small>
+            <strong id="qd-nome-atual">Carregando...</strong>
+          </span>
+          <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#abrir-menu"></use></svg>
+        </button>
+        <section class="qd-painel-quadros" id="painel-quadros" hidden aria-label="Escolher quadro">
+          <label class="qd-busca-quadro">
+            <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+            <span class="so-leitor-tela">Buscar quadro</span>
+            <input type="search" id="busca-quadros" placeholder="Buscar projeto, empresa ou tema" autocomplete="off">
+          </label>
+          <div class="qd-lista-quadros" id="lista-quadros"></div>
+          <footer>
+            <button type="button" id="btn-novo-quadro-painel"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#adicionar"></use></svg> Novo quadro</button>
+            <button type="button" id="btn-empresas-painel"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#empresa"></use></svg> Empresas</button>
+          </footer>
+        </section>
+      </div>
+
+      <div class="filtro-pilulas qd-visoes" role="group" aria-label="Como ver">
+        <button type="button" data-visao="quadro" aria-pressed="true"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#quadros"></use></svg><span>Quadro</span></button>
+        <button type="button" data-visao="lista" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#visao-tabela"></use></svg><span>Lista</span></button>
+        <button type="button" data-visao="minhas" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#minhas"></use></svg><span>Minhas tarefas</span><span class="menu-contador" id="cont-minhas" hidden></span></button>
+      </div>
+
+      <div class="qd-ferramentas">
+        <label class="qd-busca">
+          <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+          <span class="so-leitor-tela">Buscar cartões</span>
+          <input type="search" id="busca-cartoes" placeholder="Buscar cartões" autocomplete="off">
+        </label>
+        <div class="qd-filtros-caixa">
+          <button type="button" id="btn-filtros" aria-expanded="false" aria-controls="painel-filtros"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#filtros"></use></svg><span>Filtros</span><span class="menu-contador" id="cont-filtros" hidden></span></button>
+          <section class="qd-popover" id="painel-filtros" hidden aria-label="Filtros">
+            <fieldset><legend>Responsável</legend><div id="filtro-responsaveis" class="qd-opcoes"></div></fieldset>
+            <fieldset><legend>Prazo</legend><div class="qd-opcoes" id="filtro-prazo">
+              <label><input type="checkbox" value="atrasado"> Atrasados</label>
+              <label><input type="checkbox" value="hoje"> Vencem hoje</label>
+              <label><input type="checkbox" value="semana"> Próximos 7 dias</label>
+              <label><input type="checkbox" value="sem"> Sem prazo</label>
+              <label><input type="checkbox" value="concluido"> Concluídos</label>
+            </div></fieldset>
+            <fieldset><legend>Prioridade</legend><div class="qd-opcoes" id="filtro-prioridade">
+              <label><input type="checkbox" value="urgente"> Urgente</label>
+              <label><input type="checkbox" value="alta"> Alta</label>
+              <label><input type="checkbox" value="media"> Média</label>
+              <label><input type="checkbox" value="baixa"> Baixa</label>
+            </div></fieldset>
+            <fieldset><legend>Etiquetas</legend><div id="filtro-etiquetas" class="qd-opcoes"></div></fieldset>
+            <footer><button type="button" id="btn-limpar-filtros">Limpar filtros</button></footer>
+          </section>
+        </div>
+        <div class="qd-filtros-caixa">
+          <button type="button" class="acao-icone" id="btn-menu-quadro" aria-label="Opções do quadro" title="Opções do quadro" aria-expanded="false" aria-controls="menu-quadro">
+            <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#opcoes"></use></svg></button>
+          <div class="qd-popover qd-menu" id="menu-quadro" role="menu" hidden>
+            <button type="button" role="menuitem" data-q="editar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#editar"></use></svg> Editar quadro</button>
+            <button type="button" role="menuitem" data-q="etiquetas"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#etiqueta"></use></svg> Etiquetas</button>
+            <button type="button" role="menuitem" data-q="fixar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fixar"></use></svg> <span>Fixar no topo</span></button>
+            <button type="button" role="menuitem" data-q="arquivados"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#arquivar"></use></svg> Itens arquivados</button>
+            <a role="menuitem" id="link-projeto-quadro" hidden href="#"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#projetos"></use></svg> Abrir o projeto</a>
+            <button type="button" role="menuitem" data-q="arquivar" data-perigo><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#arquivar"></use></svg> <span>Arquivar quadro</span></button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <p id="erro" role="alert"></p>
+
+    <!-- Resumo do quadro -->
+    <ul class="qd-resumo" id="qd-resumo" aria-label="Resumo do quadro"></ul>
+
+    <!-- Visão quadro (kanban) -->
+    <nav class="qd-atalhos-listas" id="atalhos-listas" aria-label="Ir para a lista"></nav>
+    <section class="qd-kanban" id="qd-kanban" aria-label="Listas do quadro" aria-busy="true">
+      <div class="qd-lista" data-esqueleto></div><div class="qd-lista" data-esqueleto></div><div class="qd-lista" data-esqueleto></div>
+    </section>
+
+    <!-- Visão lista (tabela) -->
+    <section class="qd-tabela" id="qd-tabela" hidden aria-label="Cartões em lista"></section>
+
+    <!-- Minhas tarefas (todos os quadros) -->
+    <section class="qd-minhas" id="qd-minhas" hidden aria-label="Minhas tarefas"></section>
+  </main>
+
+  <!-- Cartão (detalhe completo) -->
+  <dialog id="dlg-cartao" class="qd-dialogo-cartao" aria-labelledby="cartao-titulo">
+    <div class="qd-cartao-capa" id="cartao-capa" hidden></div>
+    <header class="qd-cartao-topo">
+      <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#quadros"></use></svg>
+      <div class="qd-cartao-titulo-caixa">
+        <label for="cartao-titulo" class="so-leitor-tela">Título do cartão</label>
+        <textarea id="cartao-titulo" rows="1" maxlength="300"></textarea>
+        <p class="qd-cartao-onde" id="cartao-onde"></p>
+      </div>
+      <button type="button" class="acao-icone" data-fechar aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button>
+    </header>
+    <div class="qd-cartao-corpo">
+      <div class="qd-cartao-principal">
+        <div class="qd-cartao-faixa" id="cartao-faixa"></div>
+        <section aria-labelledby="t-desc">
+          <h3 id="t-desc"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#descricao"></use></svg> Descrição</h3>
+          <div class="qd-descricao" id="cartao-descricao-ver" tabindex="0" role="button" aria-label="Editar descrição"></div>
+          <div id="cartao-descricao-editar" hidden>
+            <label for="cartao-descricao" class="so-leitor-tela">Descrição</label>
+            <textarea id="cartao-descricao" rows="6" maxlength="20000" placeholder="Detalhes, links, critérios de pronto... Use *negrito*, _itálico_ e listas com - ou 1."></textarea>
+            <p class="pagina-acoes"><button type="button" id="btn-salvar-desc" data-primario>Salvar</button><button type="button" id="btn-cancelar-desc">Cancelar</button></p>
+          </div>
+        </section>
+        <section aria-labelledby="t-check" id="secao-checklists">
+          <h3 id="t-check"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#checklist"></use></svg> Checklists</h3>
+          <div id="cartao-checklists"></div>
+        </section>
+        <section aria-labelledby="t-anexos" id="secao-anexos">
+          <h3 id="t-anexos"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#anexo"></use></svg> Anexos</h3>
+          <ul class="qd-anexos" id="cartao-anexos"></ul>
+        </section>
+        <section aria-labelledby="t-coment">
+          <header class="qd-secao-topo">
+            <h3 id="t-coment"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#atividade"></use></svg> Comentários e atividade</h3>
+            <label class="qd-mostrar"><input type="checkbox" id="mostrar-atividade" checked> Mostrar histórico</label>
+          </header>
+          <form id="form-comentario" class="qd-comentar">
+            <span class="avatar" id="avatar-eu" aria-hidden="true"></span>
+            <label for="novo-comentario" class="so-leitor-tela">Escrever um comentário</label>
+            <textarea id="novo-comentario" rows="1" maxlength="5000" placeholder="Escreva um comentário..."></textarea>
+            <button type="submit" id="btn-comentar" disabled>Comentar</button>
+          </form>
+          <ol class="qd-linha-tempo" id="cartao-timeline"></ol>
+        </section>
+      </div>
+
+      <aside class="qd-cartao-lateral" aria-label="Ações do cartão">
+        <h4>Adicionar ao cartão</h4>
+        <div class="qd-lateral-grupo">
+          <button type="button" data-abrir="responsaveis"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#responsavel"></use></svg> Responsáveis</button>
+          <button type="button" data-abrir="etiquetas"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#etiqueta"></use></svg> Etiquetas</button>
+          <button type="button" data-abrir="datas"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#prazo"></use></svg> Datas</button>
+          <button type="button" data-abrir="prioridade"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#prioridade"></use></svg> Prioridade</button>
+          <button type="button" id="btn-add-checklist"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#checklist"></use></svg> Checklist</button>
+          <label class="qd-botao-arquivo"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#anexo"></use></svg> Anexo
+            <input type="file" id="cartao-arquivo" class="so-leitor-tela" multiple></label>
+          <button type="button" data-abrir="capa"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#capa"></use></svg> Capa</button>
+          <button type="button" data-abrir="ligacoes"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#link"></use></svg> Cliente e projeto</button>
+        </div>
+        <h4>Ações</h4>
+        <div class="qd-lateral-grupo">
+          <button type="button" data-abrir="mover"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#mover"></use></svg> Mover</button>
+          <button type="button" id="btn-copiar-cartao"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#copiar"></use></svg> Duplicar</button>
+          <button type="button" id="btn-copiar-link"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#link"></use></svg> Copiar link</button>
+          <button type="button" id="btn-arquivar-cartao"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#arquivar"></use></svg> <span>Arquivar</span></button>
+          <button type="button" id="btn-excluir-cartao" data-perigo hidden><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#remover"></use></svg> Excluir</button>
+        </div>
+        <!-- painel pequeno de cada ação (responsáveis, etiquetas, datas...) -->
+        <section class="qd-popover qd-popover-cartao" id="pop-cartao" hidden aria-labelledby="pop-cartao-titulo">
+          <header><h4 id="pop-cartao-titulo"></h4><button type="button" class="acao-icone" id="pop-fechar" aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button></header>
+          <div id="pop-cartao-corpo"></div>
+        </section>
+      </aside>
+    </div>
+  </dialog>
+
+  <!-- Novo / editar quadro -->
+  <dialog id="dlg-quadro" class="gaveta" aria-labelledby="dlg-quadro-titulo">
+    <header><div><p class="pagina-rotulo">Quadros</p><h2 id="dlg-quadro-titulo">Novo quadro</h2></div>
+      <button type="button" data-fechar aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button></header>
+    <form id="form-quadro" class="gaveta-corpo" novalidate>
+      <input type="hidden" id="quadro-id">
+      <fieldset class="qd-tipos" id="quadro-tipos"><legend>Sobre o quê</legend>
+        <label><input type="radio" name="quadro-tipo" value="interno" checked> <span><strong>Tema interno</strong><small>Comercial, marketing, financeiro, operação...</small></span></label>
+        <label><input type="radio" name="quadro-tipo" value="empresa"> <span><strong>Empresa</strong><small>Tudo de uma empresa num lugar só</small></span></label>
+        <label><input type="radio" name="quadro-tipo" value="projeto"> <span><strong>Projeto</strong><small>Já criado sozinho para cada projeto pago</small></span></label>
+      </fieldset>
+      <p id="campo-quadro-empresa" hidden><label for="quadro-empresa">Empresa</label><select id="quadro-empresa"></select></p>
+      <p id="campo-quadro-projeto" hidden><label for="quadro-projeto">Projeto</label><select id="quadro-projeto"></select></p>
+      <p><label for="quadro-nome">Nome do quadro</label><input id="quadro-nome" maxlength="120" placeholder="Ex.: Marketing 2026"></p>
+      <p><label for="quadro-descricao">Descrição (opcional)</label><textarea id="quadro-descricao" rows="2" maxlength="500"></textarea></p>
+      <fieldset class="qd-cores-campo"><legend>Cor</legend><div class="qd-cores" id="quadro-cores"></div></fieldset>
+      <p class="pagina-acoes"><button type="submit" id="btn-salvar-quadro">Criar quadro</button></p>
+    </form>
+  </dialog>
+
+  <!-- Empresas -->
+  <dialog id="dlg-empresas" class="gaveta qd-gaveta-larga" aria-labelledby="dlg-empresas-titulo">
+    <header><div><p class="pagina-rotulo">Cadastro</p><h2 id="dlg-empresas-titulo">Empresas</h2></div>
+      <button type="button" data-fechar aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button></header>
+    <div class="gaveta-corpo">
+      <div id="empresas-lista-painel">
+        <p class="pagina-acoes"><button type="button" id="btn-nova-empresa" data-primario><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#adicionar"></use></svg> Nova empresa</button></p>
+        <ul class="qd-empresas" id="empresas-lista"></ul>
+      </div>
+      <form id="form-empresa" class="qd-form-empresa" hidden novalidate>
+        <input type="hidden" id="empresa-id">
+        <p><button type="button" id="btn-voltar-empresas" class="qd-link-voltar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#voltar"></use></svg> Empresas</button></p>
+        <div class="form-grade">
+          <p><label for="empresa-nome">Nome</label><input id="empresa-nome" maxlength="120" required placeholder="Ex.: Wavetype"></p>
+          <p><label for="empresa-documento">CNPJ (opcional)</label><input id="empresa-documento" maxlength="20" inputmode="numeric"></p>
+          <p><label for="empresa-site">Site (opcional)</label><input id="empresa-site" maxlength="200" placeholder="wavetype.com.br"></p>
+        </div>
+        <p><label for="empresa-obs">Observações</label><textarea id="empresa-obs" rows="2" maxlength="2000"></textarea></p>
+        <fieldset class="qd-cores-campo"><legend>Cor</legend><div class="qd-cores" id="empresa-cores"></div></fieldset>
+        <fieldset><legend>Clientes desta empresa</legend><div class="qd-opcoes qd-opcoes-rolagem" id="empresa-clientes"></div></fieldset>
+        <fieldset><legend>Projetos desta empresa</legend><div class="qd-opcoes qd-opcoes-rolagem" id="empresa-projetos"></div></fieldset>
+        <p class="pagina-acoes">
+          <button type="submit" id="btn-salvar-empresa">Salvar empresa</button>
+          <button type="button" id="btn-quadro-empresa"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#quadros"></use></svg> <span>Abrir quadro da empresa</span></button>
+          <button type="button" id="btn-excluir-empresa" data-cancelar hidden>Excluir</button>
+        </p>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Etiquetas do quadro -->
+  <dialog id="dlg-etiquetas" class="gaveta" aria-labelledby="dlg-etiquetas-titulo">
+    <header><div><p class="pagina-rotulo">Quadro</p><h2 id="dlg-etiquetas-titulo">Etiquetas</h2></div>
+      <button type="button" data-fechar aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button></header>
+    <div class="gaveta-corpo">
+      <ul class="qd-etiquetas-edicao" id="etiquetas-edicao"></ul>
+      <form id="form-etiqueta" class="qd-etiqueta-nova">
+        <label for="etiqueta-nome" class="so-leitor-tela">Nome da etiqueta</label>
+        <input id="etiqueta-nome" maxlength="40" placeholder="Nova etiqueta">
+        <div class="qd-cores qd-cores-pequenas" id="etiqueta-cores"></div>
+        <button type="submit">Adicionar</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Arquivados -->
+  <dialog id="dlg-arquivados" class="gaveta" aria-labelledby="dlg-arquivados-titulo">
+    <header><div><p class="pagina-rotulo">Quadro</p><h2 id="dlg-arquivados-titulo">Itens arquivados</h2></div>
+      <button type="button" data-fechar aria-label="Fechar"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#fechar"></use></svg></button></header>
+    <div class="gaveta-corpo"><ul class="qd-arquivados" id="lista-arquivados"></ul></div>
+  </dialog>
+
+  <script src="js/vendor/supabase-2.45.4.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js?v=075b92e230"></script>
+  <script src="js/quadros.js?v=b2f544498e"></script>
+</body>
+</html>

@@ -270,7 +270,7 @@ function tempoRelativo(data) {
 }
 
 // Linha do tempo agrupada por dia, com ícone por tipo de evento
-const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar', mensagem: 'mensagens' };
+const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar', mensagem: 'mensagens', tarefa: 'quadros' };
 function rotuloDia(data) {
   const d = new Date(data);
   const hoje = new Date();
@@ -299,7 +299,7 @@ function linhaDoTempoHtml(lista) {
 // ---------------------------------------------------------------------
 const INICIO_ADMIN = 'admin-inicio.html';
 const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html'];
-const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html'];
+const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html', 'admin-quadros.html'];
 
 function ehAdmin(perfil) {
   return Boolean(perfil && perfil.role === 'admin');
@@ -606,6 +606,7 @@ function itensMenu(perfil) {
       { href: INICIO_ADMIN, texto: 'Início', curto: 'Início', icone: 'painel' },
       { href: 'admin.html', texto: 'Solicitações', curto: 'Solicitações', icone: 'solicitacoes', contador: 'menu-cont-validacao' },
       { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' },
+      { href: 'admin-quadros.html', texto: 'Quadros', curto: 'Quadros', icone: 'quadros' },
       { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
     ] }],
     fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },
@@ -808,7 +809,7 @@ function ligarShell(perfil, todos, m) {
     { texto: 'Ajuda pelo WhatsApp', href: m.ajuda, icone: 'whatsapp', tipo: 'Ação', externo: true }
   ];
   const buscaEm = ehAdmin(perfil)
-    ? [{ rotulo: 'Solicitações', href: 'admin.html', icone: 'solicitacoes' }, { rotulo: 'Clientes', href: 'admin-clientes.html', icone: 'clientes' }]
+    ? [{ rotulo: 'Solicitações', href: 'admin.html', icone: 'solicitacoes' }, { rotulo: 'Clientes', href: 'admin-clientes.html', icone: 'clientes' }, { rotulo: 'Quadros', href: 'admin-quadros.html', icone: 'quadros' }]
     : [{ rotulo: 'Minhas solicitações', href: 'continuar.html', icone: 'solicitacoes' }];
   document.getElementById('btn-busca').addEventListener('click', () => abrirBusca(destinos, buscaEm));
 

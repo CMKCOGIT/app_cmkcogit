@@ -55,6 +55,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `admin.html` | admin | Solicitações: cada card abre o **modal de validação** — itens com checkbox ("Remover selecionados"), "+ Adicionar funcionalidade" (catálogo ou item personalizado, marcados como "adicionado pela equipe"), valor sugerido recalculado + valor final editável, mensagem ao cliente, resumo com prévia do comprovante, aprovação (quem/quando) e envio pelo WhatsApp; cancelar com motivo. Também os avisos do Mercado Pago |
 | `comprovante.html?t=...` | público | Comprovante do pedido aprovado (link único e aleatório, sem login): itens, valor final, status do pagamento e a mensagem da equipe em destaque. "Baixar PDF" usa a impressão do navegador (Salvar como PDF) |
 | `mensagens.html` | cliente/admin | **Mensagens**: o cliente conversa com a equipe; o admin vê todas as conversas (clientes + equipe: grupo e diretas entre admins). Texto com *negrito*/_itálico_, áudio gravado no navegador, arquivos até 25 MB (arrastar/colar), editar e apagar a própria mensagem, "visto", tempo real e aviso no sino. Admin: **nota interna** (tag amarela, o cliente nunca vê nem é avisado), **sugestões com IA** (Gemini: sugerir resposta, melhorar o rascunho), detalhes do cliente e **Modelos e WhatsApp** (construir mensagem com IA, variáveis `{primeiro_nome}` `{projeto}` `{link}`, prévia, salvar, copiar e abrir no WhatsApp manualmente, registrando o envio como nota interna) |
+| `admin-quadros.html` | admin | **Quadros** (estilo Trello, só a equipe): seletor de quadro por **projeto** (criado sozinho para cada projeto), **empresa** ou **tema interno**; colunas com arrastar e soltar, limite e "conclui"; cartão com descrição, responsáveis, etiquetas, datas, prioridade, capa, checklists, anexos, comentários, histórico, ligação com cliente/projeto, mover entre quadros, duplicar e arquivar; visões Quadro, Lista e **Minhas tarefas**; filtros e busca; cadastro de **Empresas** (clientes e projetos por empresa); avisos no sino (marcado como responsável, comentário, prazo) |
 | `admin-clientes.html` | admin | Clientes: cards ou tabela, busca em tempo real por projeto/código/cliente, filtros rápidos (pago/pendente, em andamento/concluído, atrasado, entrega em 7 dias) e o detalhe de cada projeto, onde o admin atualiza % e status até concluir |
 
 **Cliente × admin.** O admin não compra: o menu dele é só Início (painel), Solicitações, Clientes, Meu perfil e Sair.
@@ -151,6 +152,10 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    `GROQ_API_KEY` (opcional: `GROQ_MODEL`, padrão `openai/gpt-oss-120b`). Também aceita o Gemini (`GEMINI_API_KEY`,
    `GEMINI_MODEL`); com os dois, a Groq vem primeiro e o Gemini é a reserva quando ela está no limite. Sem chave, as mensagens
    funcionam normalmente e o painel de IA avisa que não está configurado. Só administradores usam a IA (rota `/api/mensagens-ia`).
+
+17. Rode `26_mensagens_assunto_projeto.sql`, `27_quadros.sql` e `28_quadros_integridade.sql` para o assunto/projeto nas
+   mensagens e para os **Quadros** de tarefas e o cadastro de **Empresas**. O lembrete de prazo dos cartões roda na
+   mesma rotina diária `/api/renovacoes`.
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.
