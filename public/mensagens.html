@@ -33,9 +33,9 @@
   <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
-  <link rel="stylesheet" href="/css/plataforma.css?v=e836beed99">
+  <link rel="stylesheet" href="/css/plataforma.css?v=cfe469304c">
   <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
-  <link rel="stylesheet" href="/css/mensagens.css?v=956d198664">
+  <link rel="stylesheet" href="/css/mensagens.css?v=73c78672d0">
 </head>
 <body class="app pagina-mensagens">
   <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
@@ -49,8 +49,8 @@
         <p id="msg-intro">Fale com a equipe CMKCOGIT sobre seus projetos. Responderemos por aqui.</p>
       </div>
       <div class="pagina-acoes" id="msg-acoes-admin" hidden>
-        <button type="button" id="btn-abrir-modelos"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#modelos"></use></svg> Modelos e WhatsApp</button>
-        <button type="button" id="btn-nova-conversa" data-primario><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#nova-conversa"></use></svg> Nova conversa</button>
+        <button type="button" id="btn-abrir-modelos" title="Modelos e WhatsApp"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#modelos"></use></svg> <span class="msg-rotulo-botao">Modelos e WhatsApp</span></button>
+        <button type="button" id="btn-nova-conversa" data-primario title="Nova conversa"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#nova-conversa"></use></svg> <span class="msg-rotulo-botao">Nova conversa</span></button>
       </div>
     </header>
     <p id="erro" role="alert"></p>
@@ -96,6 +96,8 @@
           <div class="msg-thread-acoes">
             <a class="acao-icone" id="thread-whatsapp" href="#" target="_blank" rel="noopener noreferrer" hidden title="Abrir o WhatsApp do cliente" aria-label="Abrir o WhatsApp do cliente">
               <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#whatsapp"></use></svg></a>
+            <button type="button" class="acao-icone" id="btn-modelos-conversa" hidden title="Modelos de mensagem" aria-label="Modelos de mensagem">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#modelos"></use></svg></button>
             <button type="button" class="acao-icone" id="btn-detalhes" hidden aria-pressed="false" title="Detalhes do cliente" aria-label="Detalhes do cliente">
               <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#detalhes"></use></svg></button>
           </div>
@@ -137,7 +139,7 @@
           </div>
           <div class="msg-faixa msg-faixa-nota" id="faixa-nota" hidden>
             <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#nota"></use></svg>
-            <span><strong>Nota interna.</strong> Só a equipe vê; o cliente não recebe nem é avisado.</span>
+            <span><strong>Nota interna</strong> · só a equipe vê, o cliente não é avisado</span>
           </div>
           <div class="msg-anexo-previa" id="anexo-previa" hidden></div>
 
@@ -342,6 +344,6 @@
   <script src="js/vendor/supabase-2.45.4.min.js"></script>
   <script src="/config.js"></script>
   <script src="js/app.js?v=12474a56e6"></script>
-  <script src="js/mensagens.js?v=a4f079bd35"></script>
+  <script src="js/mensagens.js?v=46d995c2f8"></script>
 </body>
 </html>

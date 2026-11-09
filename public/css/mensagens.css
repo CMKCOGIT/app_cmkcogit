@@ -10,19 +10,29 @@
 .msg-cabecalho h1 { margin-bottom: 2px !important; }
 
 /* ── Moldura ─────────────────────────────────────────────────────── */
+/* A página ocupa exatamente a altura que sobra abaixo da barra superior; a moldura do chat
+   estica para preencher (sem altura "chutada": cabeçalho maior ou menor não empurra o compositor
+   para fora da tela). A largura disponível do <main> decide 1 ou 2 painéis (container query),
+   então o layout se ajusta também quando o menu lateral está aberto ou recolhido. */
+body.pagina-mensagens > main {
+  container: msg-pagina / inline-size;
+  height: calc(100dvh - var(--topo-h));
+  min-height: 0;
+  padding-bottom: var(--space-5);
+}
 .msg-app {
   display: grid;
   grid-template-columns: var(--msg-lista-w) minmax(0, 1fr);
-  height: max(540px, calc(100dvh - var(--topo-h) - 168px));
+  flex: 1 1 auto;
+  min-height: 340px;
   border: 1px solid var(--color-border);
   border-radius: var(--msg-raio);
   background: var(--color-surface);
   overflow: hidden;
 }
 .msg-app[data-cliente] { grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1280px) {
+@container msg-pagina (min-width: 1180px) {
   .msg-app[data-detalhes] { grid-template-columns: var(--msg-lista-w) minmax(0, 1fr) var(--msg-detalhes-w); }
-  .msg-app[data-cliente][data-detalhes] { grid-template-columns: minmax(0, 1fr) var(--msg-detalhes-w); }
 }
 
 .pagina-mensagens button { font-size: var(--text-sm); }
@@ -213,7 +223,7 @@
 .msg-novas .i { width: 14px; height: 14px; }
 
 /* ── Painel de sugestões da IA ───────────────────────────────────── */
-.msg-ia-painel { display: grid; gap: var(--space-3); max-height: 46%; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-border); background: var(--color-surface); overflow-y: auto; animation: msg-sobe var(--dur-base) var(--ease-out) both; }
+.msg-ia-painel { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); max-height: 46%; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-border); background: var(--color-surface); overflow-y: auto; animation: msg-sobe var(--dur-base) var(--ease-out) both; }
 .msg-ia-painel > header { display: flex; align-items: center; gap: var(--space-3); }
 .msg-ia-painel h3 { display: flex; flex: 1; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--text-base) !important; }
 .msg-ia-painel h3 .i, .msg-construtor-ia legend .i { width: 16px; height: 16px; color: var(--color-brand-600); }
@@ -236,7 +246,13 @@ mark { padding: 0 2px; background: var(--color-warning-bg); color: var(--color-w
 @keyframes msg-sobe { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* ── Compositor ──────────────────────────────────────────────────── */
-.msg-compositor { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-5) var(--space-3); border-top: 1px solid var(--color-border); background: var(--color-surface); }
+/* Quem cede espaço quando a altura aperta: o painel da IA rola por dentro; as mensagens
+   nunca somem (mínimo de 96 px) e o compositor/cabeçalho mantêm o tamanho. */
+.msg-thread-topo, .msg-compositor { flex-shrink: 0; }
+.msg-rolagem { min-height: 96px; }
+.msg-ia-painel { flex-shrink: 1; min-height: 0; }
+.msg-compositor > *, .msg-ia-painel > * { width: 100%; max-width: 880px; margin-inline: auto; }
+.msg-compositor { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); padding: var(--space-3) var(--space-5) var(--space-3); border-top: 1px solid var(--color-border); background: var(--color-surface); }
 .msg-compositor-linha {
   display: flex; align-items: flex-end; gap: var(--space-1); padding: 5px;
   border: 1px solid var(--color-border-strong); background: var(--color-surface); transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
@@ -286,6 +302,8 @@ mark { padding: 0 2px; background: var(--color-warning-bg); color: var(--color-w
 .msg-contexto-campo[data-escolhido] select { border-color: var(--color-brand-600) !important; background-color: var(--color-brand-50) !important; color: var(--color-brand-600); }
 .msg-contexto-campo[data-escolhido] > .i { color: var(--color-brand-600); }
 .msg-contexto { display: inline-flex; align-items: center; gap: 5px; justify-self: start; max-width: 100%; padding: 1px 8px; border: 1px solid var(--color-border); background: var(--color-neutral-50); color: var(--color-text-muted) !important; font-size: 0.6875rem; font-weight: 700; text-decoration: none; }
+a.msg-contexto { position: relative; }
+a.msg-contexto::after { content: ''; position: absolute; inset: -7px -4px; } /* área de toque maior que o desenho */
 .msg-contexto span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .msg-contexto .i { flex: none; width: 11px; height: 11px; }
 a.msg-contexto:hover { border-color: currentColor; color: var(--color-navy-900) !important; }
@@ -348,7 +366,7 @@ a.msg-contexto:hover { border-color: currentColor; color: var(--color-navy-900) 
 .msg-detalhes-dados dt { color: var(--color-text-subtle); font-size: var(--text-xs); }
 .msg-detalhes-dados dd { margin: 0; overflow-wrap: anywhere; font-size: var(--text-sm); }
 #detalhes-corpo .anel { --tam: 36px; }
-@media (max-width: 1279.98px) {
+@container msg-pagina (max-width: 1179.98px) {
   .msg-detalhes { position: fixed; z-index: 70; top: 12px; right: 12px; bottom: 12px; width: min(360px, calc(100vw - 24px)); border: 1px solid var(--color-border); box-shadow: var(--shadow-4) !important; animation: msg-desliza var(--dur-base) var(--ease-out) both; }
 }
 @keyframes msg-desliza { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
@@ -420,41 +438,128 @@ a.msg-contexto:hover { border-color: currentColor; color: var(--color-navy-900) 
   .pagina-mensagens { --msg-lista-w: 300px; }
   .msg-dica { display: none; }
 }
-@media (max-width: 767.98px) {
-  .msg-cabecalho { gap: var(--space-3); }
-  .msg-cabecalho #msg-intro { display: none; }
-  .msg-cabecalho .pagina-acoes { width: 100%; }
-  .msg-cabecalho .pagina-acoes > button { flex: 1; }
-  .msg-app { grid-template-columns: minmax(0, 1fr) !important; height: calc(100dvh - var(--topo-h) - 250px); min-height: 420px; }
+
+/* ── Área estreita (celular, tablet em pé, notebook com menu aberto): um painel por vez ── */
+@container msg-pagina (max-width: 819.98px) {
+  .msg-app { grid-template-columns: minmax(0, 1fr) !important; }
   .msg-app[data-vista=lista] .msg-thread { display: none; }
   .msg-app[data-vista=conversa] .msg-lista { display: none; }
   .msg-voltar:not([hidden]) { display: grid !important; margin-left: -8px !important; }
   .msg-thread-topo { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
   .msg-rolagem { padding: var(--space-4) var(--space-3) var(--space-2); }
-  .msg-balao { max-width: 84%; }
-  .msg[data-lado=outro] .msg-avatar { display: none; }
-  .msg[data-lado=outro][data-junta] { padding-left: 0; }
+  .msg-balao { max-width: 86%; }
   .msg-compositor { padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom)); }
   .msg-compositor-rodape:has(#chave-nota[hidden]) { display: none; }
   .msg-contexto-barra { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .msg-contexto-barra::-webkit-scrollbar { display: none; }
   .msg-contexto-campo select { max-width: 62vw; }
-  .msg-ia-painel { max-height: 58%; padding: var(--space-3); }
-  .msg-ia-lista { grid-auto-flow: column; grid-auto-columns: 86%; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .msg-ia-painel { padding: var(--space-3); }
+  .msg-ia-lista { grid-auto-flow: column; grid-auto-columns: min(86%, 340px); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; }
   .msg-ia-item { scroll-snap-align: start; }
   .msg-novas { bottom: 120px; }
+}
+@container msg-pagina (max-width: 479.98px) {
+  .msg-compositor textarea { max-height: 120px; }
+  .msg-faixa > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg[data-lado=outro] .msg-avatar { display: none; }
+  .msg[data-lado=outro][data-junta] { padding-left: 0; }
+  .msg-balao { max-width: 88%; }
+}
 
-  /* conversa aberta: tela cheia, sem o menu inferior e sem o cabeçalho da página */
+/* ── Celular ── */
+@media (max-width: 767.98px) {
+  .msg-cabecalho { gap: var(--space-3); }
+  .msg-cabecalho #msg-intro { display: none; }
+  body.pagina-mensagens > main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); gap: var(--space-3); }
+  .msg-app { min-height: 0; }
+  /* cabeçalho enxuto: título + ações numa linha, sem texto de apoio (a lista é o conteúdo) */
+  .msg-cabecalho { flex-wrap: nowrap; align-items: center; }
+  .msg-cabecalho > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .msg-cabecalho .pagina-rotulo { display: none; }
+  .msg-cabecalho h1 { font-size: 1.75rem !important; }
+  .msg-cabecalho .pagina-acoes { width: auto; flex: none; flex-wrap: nowrap; }
+  .msg-cabecalho .pagina-acoes > button { flex: none; width: 44px; min-width: 44px; padding: 0 !important; }
+  .msg-cabecalho .pagina-acoes > button > .i { width: 18px; height: 18px; }
+  .msg-cabecalho .pagina-acoes > button .msg-rotulo-botao { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .msg-lista-topo { padding: var(--space-3); gap: var(--space-2); }
+
+  /* conversa aberta (admin): tela cheia, sem o menu inferior e sem o cabeçalho da página */
   html.msg-em-conversa #menu-inferior { display: none !important; }
-  html.msg-em-conversa body.app > main { padding: 0 0 0 !important; }
+  html.msg-em-conversa body.app > main { padding: 0 !important; }
   html.msg-em-conversa .msg-cabecalho, html.msg-em-conversa #erro:empty { display: none; }
-  html.msg-em-conversa .msg-app { height: calc(100dvh - var(--topo-h)); min-height: 0; border: 0; border-top: 1px solid var(--color-border); }
+  html.msg-em-conversa .msg-app { min-height: 0; border: 0; border-top: 1px solid var(--color-border); }
   /* cliente: conversa única; o menu inferior continua (é a navegação dele) */
   html.msg-cliente .msg-cabecalho, html.msg-cliente #erro:empty { display: none; }
-  html.msg-cliente body.app > main { padding-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
-  html.msg-cliente .msg-app { height: calc(100dvh - var(--topo-h) - 104px - env(safe-area-inset-bottom)); min-height: 0; border-inline: 0; }
+  html.msg-cliente body.app > main { padding: 0 0 calc(98px + env(safe-area-inset-bottom)) !important; }
+  html.msg-cliente .msg-app { min-height: 0; border-inline: 0; }
+  /* digitando (teclado aberto): o menu inferior sai da frente para sobrar espaço às mensagens */
+  html.msg-digitando #menu-inferior { display: none !important; }
+  html.msg-digitando body.app > main { padding-bottom: 0 !important; }
+
   .msg-abas-wrap { padding: var(--space-3) var(--space-4) 0; }
   .msg-construtor-acoes > button, .msg-construtor-salvar, .msg-construtor-salvar > button { flex: 1 1 auto; }
   .msg-construtor-acoes [data-espaco] { display: none; }
+}
+/* diálogos (modelos, nova conversa) em tela cheia no celular */
+@media (max-width: 599.98px) {
+  .pagina-mensagens dialog.gaveta { inset: 0; width: 100% !important; max-width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+  .pagina-mensagens .gaveta > header { padding: var(--space-4); }
+  .pagina-mensagens .gaveta-corpo { padding: var(--space-4); }
+  .msg-abas-wrap .abas > [role=tab] { flex: 1 1 0; min-width: 0; padding: 0 var(--space-2); white-space: normal; line-height: 1.2; }
+}
+
+/* ── Telas baixas (celular deitado, notebook baixo, teclado aberto) ── */
+@media (max-height: 680px) {
+  .msg-cabecalho #msg-intro { display: none; }
+  .msg-cabecalho h1 { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem) !important; }
+  .msg-ia-painel { max-height: 52%; }
+}
+@media (max-height: 560px) {
+  /* cabeçalho numa linha só (título + ações), sem rótulo nem texto */
+  #erro:empty { display: none; }
+  .msg-cabecalho { flex-wrap: nowrap; align-items: center; }
+  .msg-cabecalho > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .msg-cabecalho .pagina-rotulo { display: none; }
+  .msg-cabecalho h1 { font-size: 1.5rem !important; }
+  .msg-cabecalho .pagina-acoes { width: auto; flex: none; flex-wrap: nowrap; }
+  body.pagina-mensagens > main { padding-top: var(--space-2); gap: var(--space-2); }
+  /* teclado aberto: a barra superior também sai da frente */
+  html.msg-digitando #barra-topo { display: none; }
+  html.msg-digitando body.pagina-mensagens { --topo-h: 0px; }
+  .msg-app { min-height: 0; }
+  .msg-thread-titulo p { display: none; }
+  .msg-thread-topo { min-height: 52px; }
+  .msg-atalhos { display: none !important; }
+  .msg-dica { display: none; }
+  .msg-rolagem { padding-top: var(--space-3); }
+  .msg-compositor textarea { max-height: 96px; }
+  .msg-ia-painel { max-height: 40%; padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+  .msg-faixa { padding: 4px var(--space-3); }
+  .msg-faixa > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg-anexo-chip img, .msg-anexo-chip .msg-arquivo-icone { width: 30px; height: 30px; }
+  .msg-compositor { gap: 6px; padding-top: var(--space-2); }
+}
+@media (max-height: 480px) {
+  /* celular deitado: com uma conversa aberta, a tela inteira é dela (a seta volta à lista) */
+  html:has(.msg-app[data-vista=conversa]) #barra-topo,
+  html:has(.msg-app[data-vista=conversa]) .msg-cabecalho { display: none; }
+  html:has(.msg-app[data-vista=conversa]) body.pagina-mensagens { --topo-h: 0px; }
+  html:has(.msg-app[data-vista=conversa]) body.pagina-mensagens > main { padding-top: var(--space-2); }
+  .msg-rolagem { min-height: 64px; }
+  .msg-compositor textarea { max-height: 72px; }
+  .msg-anexo-previa { display: flex; }
+  .msg-compositor-rodape { min-height: 0; }
+}
+
+/* toque: alvos de pelo menos 36–44 px */
+@media (pointer: coarse) {
+  .msg-variaveis button { min-height: 38px !important; }
+  .msg-variaveis button:has(b), .msg-variaveis button:has(i) { width: 40px; }
+  .msg-anexo-chip button { width: 36px; min-width: 36px; min-height: 36px !important; }
+  .msg-detalhes-dados dd a { display: inline-block; padding: 8px 0; }
+  .msg-contexto-campo select { min-height: 38px !important; }
+  .msg-filtros > button { min-height: 38px !important; }
+  .msg-carregar-antigas { min-height: 40px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -80,6 +80,9 @@
   const lerRascunho = (id) => { try { return localStorage.getItem(rascunhoChave(id)) || ''; } catch (_) { return ''; } };
   const salvarRascunho = (id, v) => { try { if (v) localStorage.setItem(rascunhoChave(id), v); else localStorage.removeItem(rascunhoChave(id)); } catch (_) {} };
   const telaPequena = () => window.matchMedia('(max-width: 767.98px)').matches;
+  // um painel por vez quando a área do chat é estreita (mesmo limite da container query do CSS)
+  const umaColuna = () => (document.querySelector('body.app > main')?.clientWidth || window.innerWidth) < 820;
+  const toque = () => window.matchMedia('(pointer: coarse)').matches;
 
   // ---------------------------------------------------------------
   // Lista de conversas
@@ -183,7 +186,7 @@
     await carregarMensagens();
     ouvirConversa(id);
     marcarLida();
-    if (foco && !telaPequena()) texto.focus({ preventScroll: true });
+    if (foco && !toque()) texto.focus({ preventScroll: true });
     if (ADMIN && c.tipo === 'cliente' && !$('msg-detalhes').hidden) montarDetalhes();
   }
 
@@ -201,6 +204,7 @@
     w.hidden = !fone;
     if (fone) w.href = 'https://wa.me/' + fone;
     $('btn-detalhes').hidden = !(ADMIN && c.tipo === 'cliente');
+    $('btn-modelos-conversa').hidden = !(ADMIN && c.tipo === 'cliente');
     if ($('btn-detalhes').hidden) fecharDetalhes();
   }
 
@@ -345,6 +349,14 @@
     ligarAudios(linhas);
   }
 
+  // Nome no balão só quando há mais de uma pessoa possível do outro lado: no grupo da equipe,
+  // e nas conversas com cliente quando quem escreveu foi alguém da equipe. Numa conversa 1:1
+  // o cabeçalho já diz quem é, repetir o nome em cada balão é ruído.
+  function mostrarAutor(m) {
+    const c = estado.atual;
+    if (c.tipo === 'equipe') return !c.membros;
+    return m.autor_papel === 'admin';
+  }
   function nomeAutor(m) {
     if (m.autor_papel === 'admin') return ADMIN ? m.autor_nome : primeiroNome(m.autor_nome) + ' · Equipe CMKCOGIT';
     return m.autor_nome || 'Cliente';
@@ -404,7 +416,7 @@
       ${!eu && !junta ? `<span class="avatar msg-avatar" aria-hidden="true"${m.autor_papel === 'admin' && !ADMIN ? ' data-equipe' : ''}>${esc(iniciais(m.autor_nome))}</span>` : ''}
       <div class="msg-balao" data-tipo="${esc(m.tipo)}">
         ${m.interna ? `<span class="msg-tag-nota">${icone('nota')} Nota interna · só a equipe vê</span>` : ''}
-        ${!eu && !junta ? `<span class="msg-autor">${esc(nomeAutor(m))}</span>` : ''}
+        ${!eu && !junta && mostrarAutor(m) ? `<span class="msg-autor">${esc(nomeAutor(m))}</span>` : ''}
         ${contextoHtml(m)}
         ${conteudoHtml(m)}
         <span class="msg-meta">${m.editada_em && !m.apagada_em ? '<span>editada</span>' : ''}<time datetime="${esc(m.created_at)}" title="${esc(fmtDataHora(m.created_at))}">${esc(hora(m.created_at))}</time>${status}</span>
@@ -565,8 +577,10 @@
     atualizarBotoes();
     if (estado.atual && !estado.editando) salvarRascunho(estado.atual.id, texto.value);
   });
+  texto.addEventListener('focus', () => { if (telaPequena() && toque()) { document.documentElement.classList.add('msg-digitando'); setTimeout(() => { if (pertoDoFim()) irParaFim(false); }, 250); } });
+  texto.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== texto) document.documentElement.classList.remove('msg-digitando'); }, 150));
   texto.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !telaPequena()) { e.preventDefault(); form.requestSubmit(); return; }
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !toque()) { e.preventDefault(); form.requestSubmit(); return; }
     if (e.key === 'Escape' && estado.editando) { e.preventDefault(); cancelarEdicao(); return; }
     if (e.key === 'ArrowUp' && !texto.value && !estado.editando) {
       const ultima = [...estado.mensagens].reverse().find((m) => m.autor_id === perfil.id && m.tipo === 'texto' && !m.apagada_em && !m._pendente);
@@ -1053,6 +1067,7 @@
   dlgModelos.addEventListener('cancel', (e) => { if (construtorAlterado && !confirm('Descartar a mensagem que você está montando?')) e.preventDefault(); });
 
   $('btn-abrir-modelos').addEventListener('click', () => abrirModelos('lista'));
+  $('btn-modelos-conversa').addEventListener('click', () => abrirModelos('lista'));
   async function abrirModelos(aba) {
     dlgModelos.showModal();
     trocarAba(aba);
@@ -1331,7 +1346,7 @@
     else { await carregarConversas(); abrirConversa(r.data); }
   } else if (params.get('c')) {
     abrirConversa(params.get('c'), { foco: false });
-  } else if (!telaPequena() && estado.conversas.length) {
+  } else if (!umaColuna() && estado.conversas.length) {
     abrirConversa(estado.conversas[0].id, { foco: false });
   }
 })();

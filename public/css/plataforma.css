@@ -958,6 +958,10 @@ body.app > main {
     transition: transform 360ms var(--ease-out), width 360ms var(--ease-out);
   }
   .inferior-indicador.sem-transicao { transition: none; }
+  /* contador de não lidas no menu inferior: bolinha no canto do ícone (não um texto solto) */
+  #menu-inferior li > a { position: relative; }
+  .inferior-contador { position: absolute; top: 6px; left: calc(50% + 6px); display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border: 2px solid var(--color-navy-900); border-radius: 9999px; background: var(--color-brand-300); color: var(--color-navy-900); font-size: 0.625rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .inferior-contador[hidden] { display: none; }
   .inferior-indicador[hidden] { display: none; }
   /* toque: sem "hover preso" (o botão tocado não fica com cor de hover) e resposta imediata */
   #menu-inferior li > a, #menu-inferior li > button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
