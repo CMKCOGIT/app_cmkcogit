@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
   <link rel="stylesheet" href="/css/plataforma.css?v=cfe469304c">
   <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
+  <link rel="stylesheet" href="/css/assistente.css?v=d8513037c9">
   <link rel="stylesheet" href="/css/mensagens.css?v=73c78672d0">
 </head>
 <body class="app pagina-mensagens">
@@ -49,6 +50,7 @@
         <p id="msg-intro">Fale com a equipe CMKCOGIT sobre seus projetos. Responderemos por aqui.</p>
       </div>
       <div class="pagina-acoes" id="msg-acoes-admin" hidden>
+        <button type="button" id="btn-assistente" data-abrir-assistente hidden title="Assistente IA"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#ia"></use></svg> <span class="msg-rotulo-botao">Assistente IA</span></button>
         <button type="button" id="btn-abrir-modelos" title="Modelos e WhatsApp"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#modelos"></use></svg> <span class="msg-rotulo-botao">Modelos e WhatsApp</span></button>
         <button type="button" id="btn-nova-conversa" data-primario title="Nova conversa"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#nova-conversa"></use></svg> <span class="msg-rotulo-botao">Nova conversa</span></button>
       </div>
@@ -343,7 +345,8 @@
 
   <script src="js/vendor/supabase-2.45.4.min.js"></script>
   <script src="/config.js"></script>
-  <script src="js/app.js?v=075b92e230"></script>
+  <script src="js/app.js?v=99d5044105"></script>
+  <script src="js/assistente.js?v=1d6a15201a"></script>
   <script src="js/mensagens.js?v=46d995c2f8"></script>
 </body>
 </html>

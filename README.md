@@ -157,6 +157,15 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    mensagens e para os **Quadros** de tarefas e o cadastro de **Empresas**. O lembrete de prazo dos cartões roda na
    mesma rotina diária `/api/renovacoes`.
 
+18. Rode `29_assistente_uso.sql` para o **Assistente IA** (só admin): botão fixo em todas as telas do admin e no
+   cabeçalho de Mensagens, chat com resposta em streaming (rota `/api/assistente`, Groq `openai/gpt-oss-120b`).
+   A tabela `ia_uso` só conta pedidos e tokens para respeitar o limite da Groq (não guarda conversas; o histórico
+   fica só na aba do navegador). Ajustes em `config/assistente.config.js` (modelo, temperatura, orçamentos e limites).
+   **Base de conhecimento:** pasta `knowledge/`, um `.md` por assunto. O `00-identidade-e-regras.md` vai sempre; dos
+   outros entram só as **seções** (`## ...`) que combinam com a pergunta (palavras do cabeçalho `palavras:`), dentro do
+   orçamento de tokens. Seção só com o comentário-guia não vai para a IA, que então diz que não tem a informação.
+   Escreva só fatos reais. Chave: usa `GROQ_API_KEY`; opcional `GROQ_API_KEY_ASSISTENTE` para uma chave só dele.
+
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.
 

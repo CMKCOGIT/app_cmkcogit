@@ -160,12 +160,12 @@ test('Groq configurada: usa a Groq (modo JSON, prompt com o formato) e não o Ge
   assert.equal(pedidosGemini.length, 0);
   const p = pedidosGroq[0];
   assert.equal(p.auth, 'Bearer gsk-teste');
-  assert.equal(p.modelo, 'openai/gpt-oss-120b');
+  assert.equal(p.modelo, 'openai/gpt-oss-20b');
   assert.equal(p.corpo.reasoning_effort, 'low');
   assert.deepEqual(p.corpo.response_format, { type: 'json_object' });
   assert.match(p.corpo.messages[0].content, /JSON/);
   assert.match(p.corpo.messages[1].content, /formal e respeitoso/);
-  assert.match(r.json.sugestoes[0].texto, /Resposta via openai\/gpt-oss-120b/);
+  assert.match(r.json.sugestoes[0].texto, /Resposta via openai\/gpt-oss-20b/);
 });
 
 test('Groq: modelo aposentado tenta o próximo; limite (429) cai para o Gemini', async () => {
@@ -176,17 +176,17 @@ test('Groq: modelo aposentado tenta o próximo; limite (429) cai para o Gemini',
     : { status: 200, corpo: { choices: [{ message: { content: '{"sugestoes":[{"titulo":"A","texto":"ok"}]}' } }] } });
   let r = await chamar('tok-adm', { acao: 'construir', objetivo: 'boas-vindas' });
   assert.equal(r.status, 200);
-  assert.deepEqual(pedidosGroq.map((x) => x.modelo), ['modelo-velho', 'openai/gpt-oss-120b']);
+  assert.deepEqual(pedidosGroq.map((x) => x.modelo), ['modelo-velho', 'openai/gpt-oss-20b']);
 
   // um modelo no limite: passa para o próximo da Groq
   pedidosGroq = [];
   delete process.env.GROQ_MODEL;
-  respostaGroq = (modelo) => (modelo === 'openai/gpt-oss-120b'
+  respostaGroq = (modelo) => (modelo === 'openai/gpt-oss-20b'
     ? { status: 429, corpo: { error: { message: 'rate limit' } } }
     : { status: 200, corpo: { choices: [{ message: { content: '{"sugestoes":[{"titulo":"A","texto":"ok"}]}' } }] } });
   r = await chamar('tok-adm', { acao: 'construir', objetivo: 'boas-vindas' });
   assert.equal(r.status, 200);
-  assert.deepEqual(pedidosGroq.map((x) => x.modelo), ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b']);
+  assert.deepEqual(pedidosGroq.map((x) => x.modelo), ['openai/gpt-oss-20b', 'qwen/qwen3.6-27b']);
   assert.equal(pedidosGemini.length, 0);
 
   // todos os modelos da Groq no limite: usa o Gemini de reserva

@@ -729,6 +729,7 @@ function montarMenu(perfil) {
     if (perfil) iniciarSino(perfil);
     if (admin) contarEmValidacao();
     contarMensagensNaoLidas();
+    if (admin && window.AssistenteIA) window.AssistenteIA.montar(perfil); // js/assistente.js (só nas telas do admin)
   });
 }
 

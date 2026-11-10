@@ -107,7 +107,9 @@ with item(arquivo, o_que, nome) as (values
   ('27_quadros', 'gatilho', 'trg_quadro_do_projeto'),
   ('27_quadros', 'função', 'lembrar_prazos_cartoes'),
   ('27_quadros', 'bucket', 'quadros'),
-  ('27_quadros', 'tempo real', 'cartoes')
+  ('27_quadros', 'tempo real', 'cartoes'),
+  ('29_assistente_uso', 'tabela', 'ia_uso'),
+  ('29_assistente_uso', 'função', 'ia_reservar')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,
