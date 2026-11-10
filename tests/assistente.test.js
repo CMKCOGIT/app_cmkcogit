@@ -1,10 +1,11 @@
-// Assistente IA (/api/assistente) com Supabase e Groq SIMULADOS (sem internet) + loader da base.
+// Assistente IA (/api/mensagens-ia?modo=assistente) com Supabase e Groq SIMULADOS (sem internet) + loader da base.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import handler, { prepararConversa } from '../api/assistente.js';
+import { assistente as handler, prepararConversa } from '../lib/assistente.js';
+import rotaIa from '../api/mensagens-ia.js';
 import { lerArquivo, selecionarContexto, carregarBase } from '../lib/conhecimento.js';
 import { ASSISTENTE } from '../config/assistente.config.js';
 
@@ -158,4 +159,18 @@ test('base real: os .md existem, o núcleo cabe no orçamento e seção vazia n�
   const r = selecionarContexto('quanto custa um site?', { orcamento: ASSISTENTE.tokensBase });
   assert.ok(r.tokens <= ASSISTENTE.tokensBase);
   assert.doesNotMatch(r.texto, /<!--/);
+});
+
+test('a rota pública /api/mensagens-ia?modo=assistente chega ao assistente (cliente: 403)', async () => {
+  Object.assign(process.env, { SUPABASE_URL: SUPA, SUPABASE_SERVICE_ROLE_KEY: 'service' });
+  const req = { method: 'POST', url: '/api/mensagens-ia?modo=assistente', query: { modo: 'assistente' }, body: pergunta('oi'), headers: { authorization: 'Bearer tok-cli' } };
+  const res = { statusCode: 200, corpo: '', cab: {}, setHeader(k, v) { this.cab[k] = v; }, write(t) { this.corpo += t; }, end(t) { if (t) this.corpo += t; } };
+  await rotaIa(req, res);
+  assert.equal(res.statusCode, 403);
+  assert.equal(JSON.parse(res.corpo).codigo, 'somente_admin');
+});
+
+test('a Vercel (plano Hobby) aceita no máximo 12 funções em api/', () => {
+  const funcoes = fs.readdirSync(new URL('../api/', import.meta.url)).filter((n) => n.endsWith('.js'));
+  assert.ok(funcoes.length <= 12, `há ${funcoes.length} funções em api/: junte numa rota existente`);
 });

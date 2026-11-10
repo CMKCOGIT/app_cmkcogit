@@ -158,7 +158,8 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    mesma rotina diária `/api/renovacoes`.
 
 18. Rode `29_assistente_uso.sql` para o **Assistente IA** (só admin): botão fixo em todas as telas do admin e no
-   cabeçalho de Mensagens, chat com resposta em streaming (rota `/api/assistente`, Groq `openai/gpt-oss-120b`).
+   cabeçalho de Mensagens, chat com resposta em streaming (rota `/api/mensagens-ia?modo=assistente`, código em `lib/assistente.js`, Groq
+   `openai/gpt-oss-120b`). **Atenção:** o plano Hobby da Vercel aceita no máximo 12 arquivos em `api/` (o `npm test` confere).
    A tabela `ia_uso` só conta pedidos e tokens para respeitar o limite da Groq (não guarda conversas; o histórico
    fica só na aba do navegador). Ajustes em `config/assistente.config.js` (modelo, temperatura, orçamentos e limites).
    **Base de conhecimento:** pasta `knowledge/`, um `.md` por assunto. O `00-identidade-e-regras.md` vai sempre; dos

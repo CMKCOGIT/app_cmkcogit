@@ -1,5 +1,5 @@
 // assistente.js — Assistente IA da equipe (SÓ ADMIN): botão fixo em todas as telas do admin e
-// modal de chat estilo Claude/ChatGPT. Fala com /api/assistente (o servidor confere se é admin,
+// modal de chat estilo Claude/ChatGPT. Fala com /api/mensagens-ia?modo=assistente (o servidor confere se é admin,
 // aplica os limites e guarda a chave da Groq; nada disso fica no navegador).
 // Histórico: só nesta aba (sessionStorage). Ativado por montarMenu() em app.js: AssistenteIA.montar(perfil).
 (function () {
@@ -226,7 +226,7 @@
     try {
       const sessao = await getSessao();
       if (!sessao) throw new Error('Sua sessão expirou. Entre novamente.');
-      const r = await fetch('/api/assistente', {
+      const r = await fetch('/api/mensagens-ia?modo=assistente', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sessao.access_token },
         body: JSON.stringify({ mensagens: historico }),

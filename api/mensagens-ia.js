@@ -1,4 +1,4 @@
-// /api/mensagens-ia   (só admin) — sugestões de mensagens com IA (Groq gratuita ou Gemini, lib/ia.js)
+// /api/mensagens-ia   (só admin) — também serve o Assistente IA (?modo=assistente, lib/assistente.js) — sugestões de mensagens com IA (Groq gratuita ou Gemini, lib/ia.js)
 //   POST { acao: 'sugerir',   conversa_id, tom? }              -> 3 respostas para a conversa
 //   POST { acao: 'reescrever', texto, tom?, canal? }            -> 3 versões melhores do rascunho
 //   POST { acao: 'construir', objetivo, detalhes?, tom?, canal?, destinatario? } -> 3 mensagens prontas
@@ -7,6 +7,7 @@
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID } from '../lib/http.js';
 import { gerarJson, ErroIA } from '../lib/ia.js';
+import { assistente } from '../lib/assistente.js';
 
 export const TONS = {
   profissional: 'profissional, claro e cordial',
@@ -120,6 +121,8 @@ export function normalizarSugestoes(dados) {
 }
 
 export default async function handler(req, res) {
+  // Assistente IA (chat com streaming): mesma função, para caber no limite de 12 funções da Vercel
+  if (req.query && req.query.modo === 'assistente') return assistente(req, res);
   if (req.method !== 'POST') return erro(res, 405, 'Método não permitido.');
 
   let db;
