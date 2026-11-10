@@ -270,7 +270,7 @@ function tempoRelativo(data) {
 }
 
 // Linha do tempo agrupada por dia, com ícone por tipo de evento
-const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar', mensagem: 'mensagens', tarefa: 'quadros' };
+const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar', mensagem: 'mensagens', tarefa: 'quadros', jornada: 'criar' };
 function rotuloDia(data) {
   const d = new Date(data);
   const hoje = new Date();
@@ -607,6 +607,7 @@ function itensMenu(perfil) {
       { href: 'admin.html', texto: 'Solicitações', curto: 'Solicitações', icone: 'solicitacoes', contador: 'menu-cont-validacao' },
       { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' },
       { href: 'admin-quadros.html', texto: 'Quadros', curto: 'Quadros', icone: 'quadros' },
+      { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' },
       { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
     ] }],
     fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },
@@ -623,7 +624,8 @@ function itensMenu(perfil) {
         { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
       ] },
       { titulo: 'Crescer', itens: [
-        { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade', curto: 'Funcionalidades', icone: 'adquirir' }
+        { href: 'funcionalidades.html', texto: 'Adquirir nova funcionalidade', curto: 'Funcionalidades', icone: 'adquirir' },
+        { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' }
       ] }
     ],
     fab: { href: urlSite('monte-sua-solucao.html'), texto: 'Montar nova solução', curto: 'Nova', complemento: ' solução (abre o site)', icone: 'adicionar', externo: true },
