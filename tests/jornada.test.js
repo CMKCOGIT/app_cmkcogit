@@ -4,7 +4,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import handler from '../api/notificacoes.js';
-import { MODULOS, PARAMETROS, sanitizarRespostas, etapasPendentes, normalizarEscopo, calcularOrcamento, montarPrompt } from '../lib/jornada.js';
+import { MODULOS, PARAMETROS, moduloPorId, oportunidade, sanitizarRespostas, etapasPendentes, normalizarEscopo, calcularOrcamento, montarPrompt } from '../lib/jornada.js';
 
 const SUPA = 'https://teste.supabase.co';
 Object.assign(process.env, { SUPABASE_URL: SUPA, SUPABASE_SERVICE_ROLE_KEY: 'service', GROQ_API_KEY: 'chave-teste' });
@@ -103,7 +103,13 @@ async function chamar(token, corpo, extra = '') {
 // respostas mínimas válidas de um módulo
 function preencher(m) {
   const r = {};
-  for (const e of m.etapas) r[e.id] = e.tipo === 'multipla' ? [e.opcoes[0].id] : e.tipo === 'unica' ? e.opcoes[0].id : 'Resposta de ' + e.titulo;
+  for (const e of m.etapas) {
+    if (e.tipo === 'mapa') continue;
+    r[e.id] = e.tipo === 'multipla' ? [e.opcoes[0].id] : e.tipo === 'unica' ? e.opcoes[0].id
+      : e.tipo === 'arvore' ? [[{ texto: 'Agenda no papel', alvo: true }, { texto: 'Falta de sistema simples', alvo: false }]]
+        : e.tipo === 'segmentos' ? [{ nome: 'Donos de salão', problemas: 'Faltas', beneficios: 'Agenda cheia', foco: true, objetivos: [{ texto: 'Reduzir faltas', importancia: 9, satisfacao: 2 }] }]
+          : 'Resposta de ' + e.titulo;
+  }
   return r;
 }
 async function jornadaAprovada() {
@@ -122,7 +128,10 @@ test('a trilha é coerente: ids únicos e opções onde o tipo pede', () => {
     assert.match(m.id, /^[a-z0-9-]+$/);
     assert.equal(new Set(m.etapas.map((e) => e.id)).size, m.etapas.length, m.id);
     assert.ok(m.etapas.some((e) => !e.opcional), m.id + ' precisa de ao menos uma etapa obrigatória');
-    for (const e of m.etapas) if (e.tipo === 'multipla' || e.tipo === 'unica') assert.ok(e.opcoes.length >= 2, e.id);
+    for (const e of m.etapas) {
+      if (e.tipo === 'multipla' || e.tipo === 'unica') assert.ok(e.opcoes.length >= 2, e.id);
+      if (e.tipo === 'mapa') assert.ok(e.opcional && m.etapas.some((x) => x.id === e.fonte && x.tipo === 'segmentos'), e.id);
+    }
   }
 });
 
@@ -135,6 +144,29 @@ test('sanitizarRespostas descarta etapas e opções desconhecidas e corta o tama
   assert.equal(r.outra, undefined);
   assert.equal(r.metas, undefined);
   assert.deepEqual(etapasPendentes(m, r).map((e) => e.id), ['cobranca', 'metas']);
+});
+
+test('árvore do problema e segmentos: limites, linhas vazias fora e notas entre 0 e 10', () => {
+  const m = moduloPorId('proposta-valor');
+  const r = sanitizarRespostas(m, {
+    arvore: [[{ texto: ' Causa A ', alvo: 1 }, { texto: '' }, { texto: 'B' }, { texto: 'C' }, { texto: 'D' }, { texto: 'E' }, { texto: 'F' }], [], [{ texto: 'Z' }], [{ texto: 'quarto ramo' }]],
+    segmentos: [
+      { nome: 'Cidadão', problemas: 'p', beneficios: 'b', foco: 'sim', objetivos: [{ texto: 'Saber do clima', importancia: 99, satisfacao: -3 }, { texto: ' ' }, { texto: 'Outro', importancia: 'x' }] },
+      { nome: '  ', objetivos: [{ texto: 'sem dono' }] }
+    ],
+    mapa: 'não guarda'
+  });
+  assert.deepEqual(r.arvore, [[{ texto: 'Causa A', alvo: true }, { texto: 'B', alvo: false }, { texto: 'C', alvo: false }, { texto: 'D', alvo: false }], [{ texto: 'Z', alvo: false }]]);
+  assert.equal(r.segmentos.length, 1);
+  assert.deepEqual(r.segmentos[0].objetivos, [{ texto: 'Saber do clima', importancia: 10, satisfacao: 0 }, { texto: 'Outro', importancia: 5, satisfacao: 5 }]);
+  assert.equal(r.segmentos[0].foco, true);
+  assert.equal(r.mapa, undefined);
+  assert.equal(oportunidade({ importancia: 10, satisfacao: 0 }), 20);
+  assert.equal(oportunidade({ importancia: 4, satisfacao: 9 }), 4);
+  assert.ok(!etapasPendentes(m, r).some((e) => e.id === 'mapa' || e.id === 'arvore' || e.id === 'segmentos'));
+  const p = montarPrompt('X', [{ modulo: m.id, respostas: r }]);
+  assert.match(p, /Causa 1: Causa A \[o produto ataca\] <- porque B/);
+  assert.match(p, /Segmento Cidadão \(foco da primeira versão\).*Saber do clima \(importância 10\/10, já atendido 0\/10\)/);
 });
 
 test('normalizarEscopo e calcularOrcamento: a IA não define preço', () => {
@@ -182,7 +214,7 @@ test('cliente inicia, salva e envia; quem não é dono não vê nem mexe', async
   assert.equal(banco.jornadas.length, 1);
 
   const id = ini.jornada.id;
-  const m = MODULOS[0];
+  const m = moduloPorId('proposta-valor');
   assert.equal((await chamar('tok-bia', { acao: 'salvar', jornada_id: id, modulo: m.id, respostas: preencher(m) })).status, 404);
   assert.equal((await chamar('tok-adm', { acao: 'salvar', jornada_id: id, modulo: m.id, respostas: preencher(m) })).status, 403);
   assert.equal((await chamar('tok-ana', { acao: 'salvar', jornada_id: id, modulo: 'nao-existe', respostas: {} })).status, 400);
@@ -190,11 +222,12 @@ test('cliente inicia, salva e envia; quem não é dono não vê nem mexe', async
   await chamar('tok-ana', { acao: 'salvar', jornada_id: id, modulo: m.id, respostas: { problema: 'Fila no salão' } });
   const incompleto = await chamar('tok-ana', { acao: 'enviar', jornada_id: id, modulo: m.id });
   assert.equal(incompleto.status, 400);
-  assert.match(incompleto.erro, /Para quem/);
+  assert.match(incompleto.erro, /Árvore do problema.*Segmentos de clientes/);
+  assert.doesNotMatch(incompleto.erro, /Mapa de oportunidades/);
 
   await chamar('tok-ana', { acao: 'salvar', jornada_id: id, modulo: m.id, respostas: preencher(m) });
   const env = await chamar('tok-ana', { acao: 'enviar', jornada_id: id, modulo: m.id });
-  assert.equal(env.modulos[0].status, 'enviado');
+  assert.equal(env.modulos.find((x) => x.modulo === m.id).status, 'enviado');
   // em revisão: não edita nem reenvia
   assert.equal((await chamar('tok-ana', { acao: 'salvar', jornada_id: id, modulo: m.id, respostas: {} })).status, 409);
   assert.equal((await chamar('tok-ana', { acao: 'enviar', jornada_id: id, modulo: m.id })).status, 409);
