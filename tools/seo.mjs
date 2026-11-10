@@ -29,6 +29,7 @@ const PAGINAS = {
   'projeto.html': ['Projeto | CMKCOGIT', 'Detalhes, etapas e entregas do seu projeto com a CMKCOGIT.', 'noindex'],
   'pagamentos.html': ['Pagamentos | CMKCOGIT', 'Pagamentos e cobranças dos seus projetos com a CMKCOGIT.', 'noindex'],
   'funcionalidades.html': ['Adquirir nova funcionalidade | CMKCOGIT', 'Adicione novas funcionalidades ao seu projeto com a CMKCOGIT.', 'noindex'],
+  'jornada.html': ['Jornada MVP | CMKCOGIT', 'Estruture o seu produto digital em módulos e receba o escopo e o orçamento do MVP.', 'noindex'],
   'mensagens.html': ['Mensagens | CMKCOGIT', 'Converse com a equipe CMKCOGIT sobre os seus projetos.', 'noindex'],
   'perfil.html': ['Meu perfil | CMKCOGIT', 'Seus dados de cadastro na plataforma CMKCOGIT.', 'noindex'],
   'completar-cadastro.html': ['Concluir cadastro | CMKCOGIT', 'Conclua seu cadastro na plataforma CMKCOGIT.', 'noindex'],
