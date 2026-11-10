@@ -11,7 +11,7 @@
   "functions": {
     "api/assistente.js": {
       "maxDuration": 60,
-      "includeFiles": "{knowledge/**,config/**}"
+      "includeFiles": "knowledge/**"
     }
   },
   "headers": [
