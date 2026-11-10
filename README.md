@@ -164,7 +164,8 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    **Base de conhecimento:** pasta `knowledge/`, um `.md` por assunto. O `00-identidade-e-regras.md` vai sempre; dos
    outros entram só as **seções** (`## ...`) que combinam com a pergunta (palavras do cabeçalho `palavras:`), dentro do
    orçamento de tokens. Seção só com o comentário-guia não vai para a IA, que então diz que não tem a informação.
-   Escreva só fatos reais. Chave: usa `GROQ_API_KEY`; opcional `GROQ_API_KEY_ASSISTENTE` para uma chave só dele.
+   Escreva só fatos reais e, depois de mudar um `.md`, rode `npm run base` (gera `lib/base-conhecimento.gerada.js`,
+   que vai junto no deploy; o `npm test` avisa se esquecer). Chave: usa `GROQ_API_KEY`; opcional `GROQ_API_KEY_ASSISTENTE` para uma chave só dele.
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.

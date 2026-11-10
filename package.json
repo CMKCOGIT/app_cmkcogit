@@ -9,8 +9,9 @@
   },
   "scripts": {
     "dev": "node dev-server.mjs",
-    "test": "node tools/versionar.mjs --check && node tools/seo.mjs --check && node --test tests/*.test.js",
+    "test": "node tools/versionar.mjs --check && node tools/seo.mjs --check && node tools/base.mjs --check && node --test tests/*.test.js",
     "versionar": "node tools/versionar.mjs",
-    "seo": "node tools/seo.mjs"
+    "seo": "node tools/seo.mjs",
+    "base": "node tools/base.mjs"
   }
 }

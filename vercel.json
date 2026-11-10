@@ -8,12 +8,6 @@
       "destination": "/api/config"
     }
   ],
-  "functions": {
-    "api/assistente.js": {
-      "maxDuration": 60,
-      "includeFiles": "knowledge/**"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
