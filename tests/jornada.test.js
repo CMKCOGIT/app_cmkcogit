@@ -1,9 +1,9 @@
-// /api/jornada com o Supabase e a IA SIMULADOS (sem internet): trilha completa
+// Jornada MVP (/api/notificacoes?rota=jornada) com o Supabase e a IA SIMULADOS (sem internet): trilha completa
 // cliente responde -> envia -> equipe aprova/pede ajustes -> orçamento do MVP.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import handler from '../api/jornada.js';
+import handler from '../api/notificacoes.js';
 import { MODULOS, PARAMETROS, sanitizarRespostas, etapasPendentes, normalizarEscopo, calcularOrcamento, montarPrompt } from '../lib/jornada.js';
 
 const SUPA = 'https://teste.supabase.co';
@@ -92,8 +92,9 @@ globalThis.fetch = async (url, op = {}) => {
   throw new Error('método não simulado: ' + metodo);
 };
 
-async function chamar(token, corpo, query = '') {
-  const req = { method: corpo ? 'POST' : 'GET', url: '/api/jornada' + query, headers: { authorization: 'Bearer ' + token }, body: corpo || undefined, query: Object.fromEntries(new URLSearchParams(query.slice(1))) };
+async function chamar(token, corpo, extra = '') {
+  const query = '?rota=jornada' + extra.replace('?', '&');
+  const req = { method: corpo ? 'POST' : 'GET', url: '/api/notificacoes' + query, headers: { authorization: 'Bearer ' + token }, body: corpo || undefined, query: Object.fromEntries(new URLSearchParams(query.slice(1))) };
   const res = { statusCode: 200, setHeader() {}, end(t) { this.texto = t; } };
   await handler(req, res);
   return { status: res.statusCode, ...JSON.parse(res.texto) };
@@ -272,6 +273,11 @@ test('falha da IA não grava orçamento', async () => {
   assert.equal((await chamar('tok-ana', { acao: 'gerar_orcamento', jornada_id: j.id })).status, 502);
   assert.equal(banco.jornada_orcamentos.length, 0);
   assert.equal(banco.jornadas[0].status, 'em_andamento');
+});
+
+test('cabe no plano Hobby da Vercel: no máximo 12 funções em /api', async () => {
+  const { readdirSync } = await import('node:fs');
+  assert.ok(readdirSync(new URL('../api', import.meta.url)).length <= 12);
 });
 
 test('sem login: 401', async () => {

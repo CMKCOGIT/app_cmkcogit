@@ -6,7 +6,7 @@
 --                         (aberto -> enviado -> aprovado, ou ajustes -> enviado ...)
 --   jornada_orcamentos .. cada orçamento do MVP gerado (vale o mais recente)
 -- A trilha (módulos, perguntas) e os parâmetros de preço ficam no código: lib/jornada.js.
--- Leitura: o cliente vê o que é dele; o admin vê tudo. Escrita: só o servidor (/api/jornada),
+-- Leitura: o cliente vê o que é dele; o admin vê tudo. Escrita: só o servidor (lib/jornada-rota.js),
 -- por isso não há política de insert/update/delete.
 -- =====================================================================
 

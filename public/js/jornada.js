@@ -1,7 +1,7 @@
 // jornada.js — Jornada MVP. Cliente: responde os módulos e envia para revisão.
 // Equipe (admin): lista as jornadas, lê as respostas, aprova ou pede ajustes.
 // No fim, o orçamento do MVP (escopo lido pela IA, valores calculados no servidor).
-// A trilha (módulos e perguntas) vem de /api/jornada: a fonte é lib/jornada.js.
+// A trilha (módulos e perguntas) vem do servidor: a fonte é lib/jornada.js.
 (async function () {
   const perfil = await protegerPagina();
   if (!perfil) return;
@@ -9,6 +9,7 @@
   const raiz = document.getElementById('jornada');
   const idDaUrl = new URLSearchParams(window.location.search).get('id');
   const ORCAMENTO = 'orcamento';
+  const ROTA = 'notificacoes?rota=jornada'; // a rota mora dentro de /api/notificacoes (limite de funções da Vercel)
 
   const ROTULO = { aberto: 'Em preenchimento', enviado: 'Em revisão', ajustes: 'Ajustes pedidos', aprovado: 'Aprovado' };
   const TOM = { aberto: 'neutro', enviado: 'info', ajustes: 'atencao', aprovado: 'ok' };
@@ -26,7 +27,7 @@
   const editavel = (l) => !admin && (l.status === 'aberto' || l.status === 'ajustes');
 
   async function pedir(corpo) {
-    const dados = await api('jornada', corpo);
+    const dados = await api(ROTA, corpo);
     E = { ...E, ...dados };
     return dados;
   }
@@ -34,7 +35,7 @@
   // ------------------------------------------------------------------ entrada
   async function carregar() {
     try {
-      E = await api('jornada' + (admin && idDaUrl ? '?id=' + encodeURIComponent(idDaUrl) : ''), null, 'GET');
+      E = await api(ROTA + (admin && idDaUrl ? '&id=' + encodeURIComponent(idDaUrl) : ''), null, 'GET');
     } catch (e) {
       raiz.removeAttribute('aria-busy');
       raiz.innerHTML = '';
@@ -285,7 +286,7 @@
     fila = fila.then(async () => {
       const st = () => document.getElementById('jm-salvo');
       try {
-        await api('jornada', { acao: 'salvar', jornada_id: E.jornada.id, modulo: m.id, respostas });
+        await api(ROTA, { acao: 'salvar', jornada_id: E.jornada.id, modulo: m.id, respostas });
         if (st() && !sujo) st().textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         if (selecionado === m.id) atualizarNota(m);
       } catch (e) {
