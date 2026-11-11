@@ -62,9 +62,11 @@ test('volta perigosa vira "/" (sem domínio, sem //, sem javascript:)', async ()
   assert.match(r.url, /&volta=%2F$/);
 });
 
-test('sem login: 401; GET: 405; limite por usuário: 429', async () => {
+test('sem login: 401; GET diz se o login único está ligado; limite por usuário: 429', async () => {
   assert.equal((await chamar({ para: 'mvp' }, { token: 'roubado' })).status, 401);
-  assert.equal((await chamar(null, { method: 'GET' })).status, 405);
+  assert.equal((await chamar(null, { method: 'PUT' })).status, 405);
+  const disp = await chamar(null, { method: 'GET', origin: 'https://mvp.cmkcogit.com.br' });
+  assert.deepEqual([disp.status, disp.disponivel, disp.cab['access-control-allow-origin']], [200, true, 'https://mvp.cmkcogit.com.br']);
   limite = false;
   assert.equal((await chamar({ para: 'mvp' })).status, 429);
   assert.equal(pedidosLink.length, 0);

@@ -383,7 +383,7 @@
         </div>`).join('')}
         ${pode ? `<footer class="jm-rodape">
           <span id="jm-salvo" class="nota" role="status"></span>
-          <button type="submit">${!E.tem_mentor ? 'Concluir módulo' : l.status === 'ajustes' ? 'Reenviar para o mentor' : 'Enviar para o mentor'} ${icone('enviado')}</button>
+          <button type="submit">${!E.exige_mentor ? 'Concluir módulo' : l.status === 'ajustes' ? 'Reenviar para o mentor' : 'Enviar para o mentor'} ${icone('enviado')}</button>
         </footer>` : ''}
       </form>
       ${E.papel === 'mentor' && l.status === 'enviado' ? `

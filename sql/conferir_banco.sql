@@ -127,7 +127,9 @@ with item(arquivo, o_que, nome) as (values
   ('31_mvp_orcamento_mentor', 'função', 'mvp_reservar_geracao'),
   ('31_mvp_orcamento_mentor', 'função', 'consumir_limite'),
   ('31_mvp_orcamento_mentor', 'política', 'comments_insert'),
-  ('31_mvp_orcamento_mentor', 'bucket', 'orcamentos-mvp')
+  ('31_mvp_orcamento_mentor', 'bucket', 'orcamentos-mvp'),
+  ('32_jornada_origem', 'coluna', 'jornadas.origem'),
+  ('32_jornada_origem', 'restrição', 'jornadas_origem_check')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

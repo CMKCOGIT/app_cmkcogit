@@ -245,8 +245,16 @@ test('cliente cria vários projetos, salva e envia; sem mentor o módulo já fic
   assert.equal((await chamar('tok-adm', { acao: 'avaliar', jornada_id: id, modulo: m.id, decisao: 'aprovado' })).status, 403);
 });
 
-test('com mentor no projeto: o módulo vai para revisão e só o mentor aprova ou pede ajustes', async () => {
-  const { jornada } = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Agenda Fácil' });
+const MVP = { origin: 'https://mvp.cmkcogit.com.br' };
+
+test('projeto do mvp: cada módulo espera o mentor liberar; só ele aprova ou pede ajustes', async () => {
+  const { jornada } = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Agenda Fácil' }, '', MVP);
+  assert.equal(banco.jornadas[0].origem, 'mvp');
+  // sem mentor ainda: o módulo enviado fica esperando (não é aprovado sozinho)
+  const m0 = MODULOS[1];
+  await chamar('tok-ana', { acao: 'salvar', jornada_id: jornada.id, modulo: m0.id, respostas: preencher(m0) }, '', MVP);
+  const semMentor = await chamar('tok-ana', { acao: 'enviar', jornada_id: jornada.id, modulo: m0.id }, '', MVP);
+  assert.deepEqual([semMentor.modulos[1].status, semMentor.exige_mentor, semMentor.tem_mentor], ['enviado', true, false]);
   banco.user_roles.push({ user_id: MEN, role: 'mentor' });
   banco.mvp_project_shares.push({ project_id: jornada.id, owner_user_id: ANA, mentor_user_id: MEN });
   const m = MODULOS[0];
@@ -283,6 +291,25 @@ test('com mentor no projeto: o módulo vai para revisão e só o mentor aprova o
   // sem a permissão de mentor, o compartilhamento não vale
   banco.user_roles = [];
   assert.equal((await chamar('tok-men', null, '?id=' + jornada.id)).status, 404);
+});
+
+test('projeto do app: só o cliente; módulo concluído já aprovado mesmo se houver mentor; mentor não aprova', async () => {
+  const { jornada } = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Loja' });
+  assert.equal(banco.jornadas[0].origem, 'app');
+  banco.user_roles.push({ user_id: MEN, role: 'mentor' });
+  banco.mvp_project_shares.push({ project_id: jornada.id, owner_user_id: ANA, mentor_user_id: MEN });
+  const m = MODULOS[0];
+  await chamar('tok-ana', { acao: 'salvar', jornada_id: jornada.id, modulo: m.id, respostas: preencher(m) });
+  const env = await chamar('tok-ana', { acao: 'enviar', jornada_id: jornada.id, modulo: m.id });
+  assert.deepEqual([env.modulos[0].status, env.exige_mentor], ['aprovado', false]);
+  assert.equal((await chamar('tok-men', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'ajustes', comentario: 'x' })).status, 409);
+});
+
+test('cada site lista os próprios projetos', async () => {
+  await chamar('tok-ana', { acao: 'iniciar', titulo: 'Do app' });
+  await chamar('tok-ana', { acao: 'iniciar', titulo: 'Do mvp' }, '', MVP);
+  assert.deepEqual((await chamar('tok-ana')).projetos.map((p) => p.titulo), ['Do app']);
+  assert.deepEqual((await chamar('tok-ana', null, '', MVP)).projetos.map((p) => p.titulo), ['Do mvp']);
 });
 
 test('CORS: só o mvp.cmkcogit.com.br recebe permissão; preflight responde 204', async () => {

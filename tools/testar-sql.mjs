@@ -14,7 +14,7 @@ if (!url) { console.log('test:sql pulado: defina TEST_DATABASE_URL (Postgres loc
 if (/supabase\.(co|com)/i.test(url)) { console.error('TEST_DATABASE_URL aponta para o Supabase. Use um Postgres local.'); process.exit(1); }
 
 // ordem do README (o 00, 10, 14, 16 e 23 são opcionais/dados; tudo_01_a_09 repete o 01..09)
-const ORDEM = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '11', '12', '13', '15', '17', '18', '19', '20', '21', '22', '24', '25', '26', '27', '28', '29', '30', '31'];
+const ORDEM = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '11', '12', '13', '15', '17', '18', '19', '20', '21', '22', '24', '25', '26', '27', '28', '29', '30', '31', '32'];
 const sqlDir = path.join(raiz, 'sql');
 const arquivos = ORDEM.map((n) => readdirSync(sqlDir).find((f) => f.startsWith(n + '_'))).filter(Boolean);
 const testes = readdirSync(path.join(raiz, 'tests/sql')).filter((f) => f.endsWith('.test.sql')).sort();
@@ -32,7 +32,7 @@ try {
     try { psql(urlTeste, ['-f', path.join(sqlDir, f)]); }
     catch (e) { console.error('✗ sql/' + f + '\n' + (e.stderr || e.message)); e.mostrado = true; throw e; }
   }
-  console.log('✓ ' + arquivos.length + ' arquivos de sql/ aplicados (inclusive 2x o 31: idempotente)');
+  console.log('✓ ' + arquivos.length + ' arquivos de sql/ aplicados (o último duas vezes: idempotente)');
   psql(urlTeste, ['-f', path.join(sqlDir, arquivos[arquivos.length - 1])]);
   for (const t of testes) {
     try {
