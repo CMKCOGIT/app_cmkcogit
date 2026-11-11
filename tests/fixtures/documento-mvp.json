@@ -1,0 +1,33 @@
+{
+  "titulo": "Agenda Salão: agendamento online para salões de bairro",
+  "resumo_executivo": "A Agenda Salão permite que clientes de salões de bairro marquem horário pelo celular, sem depender do WhatsApp da recepção. A primeira versão atende salões com até 5 profissionais em Ribeirão Preto, que hoje perdem em média 6 clientes por semana por recado não respondido. O MVP cobre cadastro, agenda por profissional, confirmação automática e um painel simples para a dona do salão.",
+  "problema": "A recepção dos salões atende agendamentos pelo WhatsApp entre um atendimento e outro. Mensagens ficam sem resposta, horários são marcados em dobro e a dona do salão não sabe quantos clientes perdeu.",
+  "publico_alvo": [
+    { "segmento": "Clientes de salão (25 a 45 anos)", "necessidade": "Marcar horário fora do horário comercial, sem esperar resposta." },
+    { "segmento": "Donas de salão com até 5 profissionais", "necessidade": "Ver a agenda de todos num lugar só e reduzir faltas." }
+  ],
+  "proposta_valor": "Agendamento em menos de 1 minuto para a cliente e agenda sem conflito para o salão, com lembrete que reduz faltas.",
+  "funcionalidades": [
+    { "nome": "Cadastro e login", "detalhamento": "A cliente cria a conta com nome, celular e senha; a dona do salão cadastra os profissionais.", "criterios_aceite": ["Quando a cliente informa celular e senha válidos, então a conta é criada e ela entra direto na agenda.", "Quando o celular já tem conta, então o sistema oferece recuperar a senha."] },
+    { "nome": "Agendamento online", "detalhamento": "A cliente escolhe serviço, profissional e horário livre; o horário fica bloqueado na hora.", "criterios_aceite": ["Quando duas clientes escolhem o mesmo horário, então só a primeira confirma e a segunda vê o horário ocupado."] },
+    { "nome": "Pagamento por Pix", "detalhamento": "Sinal de 20% no agendamento para reduzir faltas, com devolução se a cliente cancelar com 24 h de antecedência.", "criterios_aceite": ["Quando o Pix é confirmado, então o agendamento muda para Confirmado e a cliente recebe aviso."] }
+  ],
+  "fora_do_escopo": [ { "item": "Programa de fidelidade", "motivo": "A dona do salão citou como ideia para depois do primeiro mês." } ],
+  "perfis_usuario": [ { "perfil": "Cliente", "pode": "Agendar, remarcar e cancelar os próprios horários." }, { "perfil": "Dona do salão", "pode": "Ver a agenda de todos, cadastrar profissionais e serviços." } ],
+  "fluxo_principal": ["A cliente abre o link do salão.", "Escolhe serviço e profissional.", "Escolhe o horário e paga o sinal por Pix.", "Recebe a confirmação e o lembrete na véspera."],
+  "dados_e_integracoes": [ { "item": "Pix", "detalhe": "Integração com o banco do salão para cobrar o sinal; precisa de conta PJ." } ],
+  "requisitos_nao_funcionais": ["Funcionar bem em celulares Android de entrada, que são a maioria das clientes."],
+  "premissas": [
+    { "premissa": "Cada salão tem uma conta PJ que permite cobrança por Pix com confirmação automática.", "base": "Modelo de Negócio: receita por assinatura do salão" },
+    { "premissa": "Os profissionais não precisam de app próprio na primeira versão: a dona gerencia a agenda.", "base": "Stakeholders: quem administra" }
+  ],
+  "pontos_de_atencao": [
+    { "titulo": "Sinal por Pix pode afastar clientes antigas", "detalhe": "As respostas dizem que parte das clientes tem mais de 50 anos e marca por telefone.", "impacto": "medio", "como_reduzir": "Deixar a dona do salão dispensar o sinal para clientes cadastradas manualmente." },
+    { "titulo": "Dados de contato de clientes", "detalhe": "O sistema guarda celular e histórico de serviços: dado pessoal sob a LGPD.", "impacto": "alto", "como_reduzir": "Termo de consentimento no cadastro e opção de apagar a conta." }
+  ],
+  "perguntas_em_aberto": [
+    { "pergunta": "O sinal é obrigatório para todos os serviços?", "por_que_importa": "Define se o Pix entra no fluxo principal ou é opcional, o que muda a complexidade." },
+    { "pergunta": "Quantos salões entram no piloto?", "por_que_importa": "Com mais de 10 salões, o cadastro passa a precisar de autoatendimento." }
+  ],
+  "proximos_passos": ["Confirmar com 3 salões se o sinal por Pix é aceitável.", "Definir o piloto e as datas."]
+}

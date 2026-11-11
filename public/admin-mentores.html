@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Mentores e orçamentos MVP | CMKCOGIT</title>
+  <!-- seo -->
+  <meta name="description" content="Painel de gestão CMKCOGIT.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Mentores e orçamentos MVP | CMKCOGIT">
+  <meta property="og:description" content="Painel de gestão CMKCOGIT.">
+  <meta property="og:url" content="https://app.cmkcogit.com.br/admin-mentores.html">
+  <meta property="og:site_name" content="CMKCOGIT">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="600">
+  <meta property="og:image:alt" content="Ícone da CMKCOGIT">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Mentores e orçamentos MVP | CMKCOGIT">
+  <meta name="twitter:description" content="Painel de gestão CMKCOGIT.">
+  <meta name="twitter:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <!-- /seo -->
+  <meta name="theme-color" content="#121314">
+  <link rel="icon" href="/assets/marca/cogit-favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/marca/cogit-icone-192.png">
+  <link rel="apple-touch-icon" href="/assets/marca/cogit-apple-touch.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="preload" href="/assets/fonts/clash-display-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
+  <link rel="stylesheet" href="/css/plataforma.css?v=adc8928ca6">
+  <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
+  <link rel="stylesheet" href="/css/assistente.css?v=d8513037c9">
+</head>
+<body class="app">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <header id="barra-topo"></header>
+  <main id="conteudo">
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Painel de gestão</p>
+        <h1>Mentores e orçamentos MVP</h1>
+        <p>Pedidos para ser mentor (feitos no mvp.cmkcogit.com.br) e os orçamentos detalhados pagos, com custo de IA e margem.</p>
+      </div>
+    </header>
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <section aria-labelledby="t-pedidos-mentor">
+      <h2 id="t-pedidos-mentor">Pedidos para ser mentor</h2>
+      <div class="filtro-pilulas" role="group" aria-label="Filtrar pedidos">
+        <button type="button" data-status="pending" aria-pressed="true">Pendentes</button>
+        <button type="button" data-status="approved" aria-pressed="false">Aprovados</button>
+        <button type="button" data-status="rejected" aria-pressed="false">Recusados</button>
+      </div>
+      <div id="lista-mentoria" class="lista-cards" aria-busy="true"><article data-esqueleto></article></div>
+    </section>
+
+    <section aria-labelledby="t-margem">
+      <h2 id="t-margem">Margem do orçamento detalhado</h2>
+      <p class="nota">Receita dos pedidos pagos (sem estornados) menos o custo real de IA gravado em cada chamada. Taxa do Mercado Pago não entra.</p>
+      <div id="tabela-margem"></div>
+    </section>
+
+    <section aria-labelledby="t-orcamentos">
+      <h2 id="t-orcamentos">Orçamentos detalhados (últimos 100)</h2>
+      <div id="lista-orcamentos" aria-busy="true"></div>
+    </section>
+  </main>
+
+  <script src="js/vendor/supabase-2.45.4.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js?v=3791c70bff"></script>
+  <script src="js/assistente.js?v=cb25ae8335"></script>
+  <script src="js/admin-mentores.js?v=f6ef46d1c0"></script>
+</body>
+</html>

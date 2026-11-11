@@ -41,9 +41,77 @@ const ERRO_RETORNO_AUTH = (function () {
   };
 })();
 
+// ---------------------------------------------------------------------
+// Login único com o mvp.cmkcogit.com.br SEM cookie compartilhado: a sessão fica só neste endereço
+// (padrão do supabase-js). "Entrar direto" usa um código de uso único entre os dois sites
+// (sso.html + /api/sso, lib/sso.js). Nenhum outro subdomínio recebe ou lê a sessão.
+// ---------------------------------------------------------------------
+const SSO = {
+  TENTADO: 'cogit_sso_tentado',  // sessionStorage: já tentou nesta aba (evita ir e voltar sem fim)
+  SAIU: 'cogit_sso_saiu',        // localStorage: a pessoa clicou em "Sair" aqui; não entra sozinha de novo
+  pode() {
+    if (!CFG.mvpUrl) return false;
+    try { return !sessionStorage.getItem(SSO.TENTADO) && !localStorage.getItem(SSO.SAIU); } catch (_) { return false; }
+  },
+  // Sem sessão aqui: pergunta ao mvp se a pessoa já está logada lá (volta sozinha nos dois casos)
+  tentar(volta) {
+    try { sessionStorage.setItem(SSO.TENTADO, '1'); } catch (_) {}
+    window.location.replace(CFG.mvpUrl + '/sso.html?para=app&volta=' + encodeURIComponent(volta || '/'));
+  },
+  entrou() { try { localStorage.removeItem(SSO.SAIU); sessionStorage.removeItem(SSO.TENTADO); } catch (_) {} },
+  saiu() { try { localStorage.setItem(SSO.SAIU, '1'); } catch (_) {} }
+};
+
 const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
+
+// ---------------------------------------------------------------------
+// Captcha (Cloudflare Turnstile) no cadastro, no login e na recuperação de senha.
+// Ligado em Supabase > Authentication > Attack Protection (a chave secreta fica só lá); aqui só a
+// chave pública (TURNSTILE_SITE_KEY). Sem a chave, os formulários funcionam como antes.
+// ---------------------------------------------------------------------
+const captcha = (function () {
+  let carregando = null;
+  const widgets = new Map();
+  function carregar() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    carregando = carregando || new Promise((ok, falha) => {
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.onload = () => ok(window.turnstile);
+      s.onerror = () => falha(new Error('Não foi possível carregar a verificação de segurança.'));
+      document.head.appendChild(s);
+    });
+    return carregando;
+  }
+  async function montar(form) {
+    if (!CFG.turnstileSiteKey || !form || widgets.has(form)) return;
+    const caixa = document.createElement('div');
+    caixa.className = 'captcha';
+    (form.querySelector('[type=submit]') || form.lastElementChild).before(caixa);
+    try {
+      const t = await carregar();
+      widgets.set(form, t.render(caixa, { sitekey: CFG.turnstileSiteKey, language: 'pt-br', appearance: 'interaction-only' }));
+    } catch (e) { console.warn(e.message); }
+  }
+  return {
+    ativo: () => Boolean(CFG.turnstileSiteKey),
+    montar,
+    // undefined = captcha desligado (o Supabase ignora); null = ainda não verificado
+    token(form) {
+      if (!CFG.turnstileSiteKey) return undefined;
+      const id = widgets.get(form);
+      return id !== undefined && window.turnstile ? window.turnstile.getResponse(id) || null : null;
+    },
+    reiniciar(form) {
+      const id = widgets.get(form);
+      if (id !== undefined && window.turnstile) window.turnstile.reset(id);
+    }
+  };
+})();
+const AVISO_CAPTCHA = 'Aguarde a verificação de segurança terminar e tente de novo.';
 
 // ---------------------------------------------------------------------
 // Formatação
@@ -298,13 +366,14 @@ function linhaDoTempoHtml(lista) {
 // O banco (RLS) e as rotas /api também bloqueiam; isto é a navegação.
 // ---------------------------------------------------------------------
 const INICIO_ADMIN = 'admin-inicio.html';
-const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html'];
-const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html', 'admin-quadros.html'];
+const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html', 'construir.html'];
+const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html', 'admin-quadros.html', 'admin-mentores.html'];
 
 function ehAdmin(perfil) {
   return Boolean(perfil && perfil.role === 'admin');
 }
 function paginaAtual() {
+  if (/^\/projeto\/[^/]+\/?$/.test(window.location.pathname)) return 'construir.html'; // vercel.json: /projeto/:id
   return window.location.pathname.split('/').pop() || 'index.html';
 }
 function paginaInicial(perfil) {
@@ -422,7 +491,12 @@ function resumoPendenteHtml(cfg) {
 }
 
 // Depois do login: continuar a solução do site ou ir para o início
+// "Construir com a CMK Cogit" (vindo do mvp) sem login: volta para /projeto/{id} depois de entrar
+const CHAVE_CONSTRUIR = 'cogit_construir_v1';
 function proximaPagina() {
+  let construir = null;
+  try { construir = localStorage.getItem(CHAVE_CONSTRUIR); } catch (_) {}
+  if (construir && /^[0-9a-f-]{36}$/i.test(construir)) return 'projeto/' + construir;
   return lerPendente() ? 'continuar.html' : 'inicio.html';
 }
 
@@ -544,6 +618,7 @@ function mostrarFalhaDeAcesso(texto) {
 
 async function sair() {
   limparPerfilCache();
+  SSO.saiu();   // o mvp continua logado; aqui não entra sozinho de novo até um login manual
   await db.auth.signOut();
   window.location.href = 'login.html';
 }
@@ -608,6 +683,7 @@ function itensMenu(perfil) {
       { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' },
       { href: 'admin-quadros.html', texto: 'Quadros', curto: 'Quadros', icone: 'quadros' },
       { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' },
+      { href: 'admin-mentores.html', texto: 'Mentores e orçamentos MVP', curto: 'Mentores', icone: 'equipe' },
       { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
     ] }],
     fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },

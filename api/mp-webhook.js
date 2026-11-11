@@ -1,6 +1,8 @@
 // POST /api/mp-webhook   (chamado pelo Mercado Pago)
-// Nunca confia no corpo da notificação: valida a assinatura (quando enviada),
-// busca o pagamento na API do Mercado Pago e só então aplica no banco.
+// Nunca confia no corpo da notificação: valida a assinatura, busca o pagamento na API do
+// Mercado Pago e só então aplica no banco (aplicar_pagamento_mp: idempotente; também libera o
+// orçamento detalhado do MVP, que só é gerado depois daqui).
+// Com MP_WEBHOOK_SECRET configurado, aviso SEM assinatura ou com assinatura errada é recusado (401).
 //
 // Painel do Mercado Pago > Suas integrações > (aplicação) > Webhooks:
 //   URL: https://app.cmkcogit.com.br/api/mp-webhook   Evento: Pagamentos
@@ -34,13 +36,12 @@ export default async function handler(req, res) {
   const dataId = String(url.searchParams.get('data.id') || (corpo.data && corpo.data.id) || url.searchParams.get('id') || '');
   if (tipo !== 'payment' || !/^\d{1,30}$/.test(dataId)) return responder(res, 200, 'ignorado');
 
-  // assinatura: se o Mercado Pago mandou, tem que bater
+  // assinatura obrigatória quando o segredo está configurado (produção)
   const segredo = process.env.MP_WEBHOOK_SECRET;
-  const xSignature = req.headers['x-signature'];
-  if (segredo && xSignature) {
-    const ok = assinaturaValida({ segredo, xSignature, xRequestId: req.headers['x-request-id'], dataId });
+  if (segredo) {
+    const ok = assinaturaValida({ segredo, xSignature: req.headers['x-signature'], xRequestId: req.headers['x-request-id'], dataId });
     if (!ok) {
-      registrarErro('mp-webhook', 'assinatura inválida para data.id ' + dataId);
+      registrarErro('mp-webhook', (req.headers['x-signature'] ? 'assinatura inválida' : 'sem assinatura') + ' para data.id ' + dataId);
       return responder(res, 401, 'assinatura inválida');
     }
   }

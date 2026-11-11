@@ -3380,3 +3380,4 @@ ul[data-itens-modal] > li[data-vazio]::before,
   .lista-planos > li > .acoes-plano { grid-column: 1 / -1; justify-content: stretch; }
   .lista-planos .acoes-plano > button { flex: 1 1 100%; }
 }
+.captcha { margin: var(--space-3, 12px) 0; min-height: 0; }

@@ -109,7 +109,27 @@ with item(arquivo, o_que, nome) as (values
   ('27_quadros', 'bucket', 'quadros'),
   ('27_quadros', 'tempo real', 'cartoes'),
   ('29_assistente_uso', 'tabela', 'ia_uso'),
-  ('29_assistente_uso', 'função', 'ia_reservar')
+  ('29_assistente_uso', 'função', 'ia_reservar'),
+  ('30_jornada_mvp', 'tabela', 'jornadas'),
+  ('30_jornada_mvp', 'tabela', 'jornada_orcamentos'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'user_roles'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'mentor_requests'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'mvp_project_shares'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'mvp_mentor_comments'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'mvp_pricing_config'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'mvp_budget_orders'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'mvp_budget_generations'),
+  ('31_mvp_orcamento_mentor', 'tabela', 'rate_limits'),
+  ('31_mvp_orcamento_mentor', 'coluna', 'pagamentos.credito_order_id'),
+  ('31_mvp_orcamento_mentor', 'coluna', 'solicitacoes.jornada_id'),
+  ('31_mvp_orcamento_mentor', 'função', 'is_mentor'),
+  ('31_mvp_orcamento_mentor', 'função', 'mentor_tem_acesso'),
+  ('31_mvp_orcamento_mentor', 'função', 'mvp_reservar_geracao'),
+  ('31_mvp_orcamento_mentor', 'função', 'consumir_limite'),
+  ('31_mvp_orcamento_mentor', 'política', 'comments_insert'),
+  ('31_mvp_orcamento_mentor', 'bucket', 'orcamentos-mvp'),
+  ('32_jornada_origem', 'coluna', 'jornadas.origem'),
+  ('32_jornada_origem', 'restrição', 'jornadas_origem_check')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,
@@ -151,7 +171,11 @@ dados as (
       ('17_codigo_plano', 'formato', 'novas solicitações nascem como PLN-AAAA-0001', 'public.solicitacoes',
        'select exists (select 1 from information_schema.columns where table_schema = ''public'' and table_name = ''solicitacoes'' and column_name = ''codigo'' and column_default like ''%PLN-%'') as ok'),
       ('17_codigo_plano', 'dados', 'nenhuma solicitação com código SOL antigo', 'public.solicitacoes',
-       'select not exists (select 1 from public.solicitacoes where codigo like ''SOL-%'') as ok')
+       'select not exists (select 1 from public.solicitacoes where codigo like ''SOL-%'') as ok'),
+      ('31_mvp_orcamento_mentor', 'dados', 'preço do orçamento detalhado configurado', 'public.mvp_pricing_config',
+       'select exists (select 1 from public.mvp_pricing_config where id = 1) as ok'),
+      ('31_mvp_orcamento_mentor', 'formato', 'vários projetos por cliente (sem índice único antigo)', 'public.jornadas',
+       'select to_regclass(''public.uq_jornadas_cliente'') is null as ok')
     ) as d(arquivo, o_que, nome, tabela, consulta)
 ),
 tudo as (

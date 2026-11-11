@@ -56,7 +56,9 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `comprovante.html?t=...` | público | Comprovante do pedido aprovado (link único e aleatório, sem login): itens, valor final, status do pagamento e a mensagem da equipe em destaque. "Baixar PDF" usa a impressão do navegador (Salvar como PDF) |
 | `mensagens.html` | cliente/admin | **Mensagens**: o cliente conversa com a equipe; o admin vê todas as conversas (clientes + equipe: grupo e diretas entre admins). Texto com *negrito*/_itálico_, áudio gravado no navegador, arquivos até 25 MB (arrastar/colar), editar e apagar a própria mensagem, "visto", tempo real e aviso no sino. Admin: **nota interna** (tag amarela, o cliente nunca vê nem é avisado), **sugestões com IA** (Gemini: sugerir resposta, melhorar o rascunho), detalhes do cliente e **Modelos e WhatsApp** (construir mensagem com IA, variáveis `{primeiro_nome}` `{projeto}` `{link}`, prévia, salvar, copiar e abrir no WhatsApp manualmente, registrando o envio como nota interna) |
 | `admin-quadros.html` | admin | **Quadros** (estilo Trello, só a equipe): seletor de quadro por **projeto** (criado sozinho para cada projeto), **empresa** ou **tema interno**; colunas com arrastar e soltar, limite e "conclui"; cartão com descrição, responsáveis, etiquetas, datas, prioridade, capa, checklists, anexos, comentários, histórico, ligação com cliente/projeto, mover entre quadros, duplicar e arquivar; visões Quadro, Lista e **Minhas tarefas**; filtros e busca; cadastro de **Empresas** (clientes e projetos por empresa); avisos no sino (marcado como responsável, comentário, prazo) |
-| `jornada.html` | cliente/admin | **Jornada MVP (em teste)**: o cliente responde 9 módulos (bases do projeto; proposta de valor com árvore do problema, segmentos de clientes com objetivos e mapa de oportunidades; concorrência, stakeholders, modelo de negócio, jornada do usuário, funcionalidades, dados e integrações, operação e prazo), com salvamento automático, e envia cada um para revisão; a equipe aprova ou pede ajustes (aviso no sino). Com tudo aprovado, a IA (`lib/ia.js`) lê as respostas e lista as funcionalidades do MVP; horas, valor e prazo são calculados no servidor pelos parâmetros de `lib/jornada.js` (valor da hora em `JORNADA_VALOR_HORA`). O cliente vê escopo, faixa de valor e prazo; horas e valor por item só a equipe. Trilha e perguntas ficam em `lib/jornada.js`; banco no `sql/30_jornada_mvp.sql`; rota `/api/notificacoes?rota=jornada` (código em `lib/jornada-rota.js`; não é um arquivo em `api/` por causa do limite de 12 funções do plano Hobby da Vercel) |
+| `jornada.html` | cliente/admin | **Jornada MVP (em teste)**: o cliente responde 9 módulos (bases do projeto; proposta de valor com árvore do problema, segmentos de clientes com objetivos e mapa de oportunidades; concorrência, stakeholders, modelo de negócio, jornada do usuário, funcionalidades, dados e integrações, operação e prazo), com salvamento automático. Pode ter vários projetos (`?id=`). Projeto criado **aqui no app**: só o cliente, cada módulo concluído já fica aprovado e o orçamento sai automático. Projeto criado **no mvp.cmkcogit.com.br**: o mentor libera cada fase (sql/32). O admin não revisa módulos, só acompanha e gera prévias. Com tudo aprovado, a IA (`lib/ia.js`) lê as respostas e lista as funcionalidades do MVP; horas, valor e prazo são calculados no servidor pelos parâmetros de `lib/jornada.js` (valor da hora em `JORNADA_VALOR_HORA`). O cliente vê escopo, faixa de valor e prazo; horas e valor por item só a equipe. Trilha e perguntas ficam em `lib/jornada.js`; banco no `sql/30_jornada_mvp.sql`; rota `/api/notificacoes?rota=jornada` (código em `lib/jornada-rota.js`; não é um arquivo em `api/` por causa do limite de 12 funções do plano Hobby da Vercel) |
+| `admin-mentores.html` | admin | **Mentores e orçamentos MVP**: aprova/recusa os pedidos "Quero ser mentor" feitos no mvp (concede a permissão pelo banco), retira a permissão, mostra a margem por mês (receita − custo de IA) e os orçamentos detalhados pagos com PDF, "gerar de novo" e estorno |
+| `construir.html` (rota `/projeto/{id}`) | cliente | "Construir com a CMK Cogit": recebe o projeto (jornada) salvo no banco, cria a solicitação a partir do orçamento salvo e leva para Minhas solicitações. Sem login, volta para cá depois de entrar |
 | `admin-clientes.html` | admin | Clientes: cards ou tabela, busca em tempo real por projeto/código/cliente, filtros rápidos (pago/pendente, em andamento/concluído, atrasado, entrega em 7 dias) e o detalhe de cada projeto, onde o admin atualiza % e status até concluir |
 
 **Cliente × admin.** O admin não compra: o menu dele é só Início (painel), Solicitações, Clientes, Meu perfil e Sair.
@@ -77,7 +79,8 @@ regras de quando avisar ainda não estão definidas**: ficam em `lib/notificacoe
 (tipo da solução, sob medida, quantidade de soluções e complementos) — função `prazo_estimado_dias` no
 `sql/09`. Ajuste os dias lá; o admin também pode mudar a previsão de cada projeto.
 
-Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 20 ou mais novo.
+Requer Node.js 20 ou mais novo. Rode `npm install` uma vez: as únicas dependências são do servidor
+(`@anthropic-ai/sdk` para o documento detalhado e `pdf-lib` + `@pdf-lib/fontkit` para o PDF). A Vercel instala sozinha.
 
 ---
 
@@ -168,6 +171,15 @@ Não precisa de `npm install`: o projeto não tem dependências. Requer Node.js 
    orçamento de tokens. Seção só com o comentário-guia não vai para a IA, que então diz que não tem a informação.
    Escreva só fatos reais e, depois de mudar um `.md`, rode `npm run base` (gera `lib/base-conhecimento.gerada.js`,
    que vai junto no deploy; o `npm test` avisa se esquecer). Chave: usa `GROQ_API_KEY`; opcional `GROQ_API_KEY_ASSISTENTE` para uma chave só dele.
+
+19. Rode `31_mvp_orcamento_mentor.sql` para o **orçamento detalhado pago (R$ 30)**, os **mentores** e o
+   **mvp.cmkcogit.com.br** (que usa este mesmo banco e não tem migrations). Veja a seção 6. Ele também passa a
+   permitir vários projetos por cliente na Jornada e troca a revisão dos módulos do admin para o mentor: os módulos que
+   estavam "enviado" esperando a equipe ficam aprovados. Teste local do banco: `npm run test:sql` (seção 6.5).
+
+20. Rode `32_jornada_origem.sql`: cada projeto da Jornada guarda de onde veio. **App:** só o cliente, cada módulo
+   concluído já fica aprovado e o orçamento sai automático. **mvp:** o mentor libera cada fase (o módulo enviado espera
+   a aprovação dele). Projetos que já existiam ficam como app.
 
 **O banco está atualizado?** Rode `sql/conferir_banco.sql` no SQL Editor (só leitura, não altera nada).
 A primeira linha diz **TUDO CERTO** ou lista o que **FALTA** e qual arquivo rodar.
@@ -304,11 +316,101 @@ Não é preciso mudar variáveis de ambiente nem o `vercel.json`.
 4. Entre com **e-mail e senha** numa conta antiga → entra normalmente.
 5. Entre como **admin** → abre o painel de gestão (menu de admin, sem as telas de compra).
 
+## 6. Orçamento detalhado do MVP (R$ 30), mentores e mvp.cmkcogit.com.br
+
+Este repositório é dono do **schema**, do **pagamento** e da **geração** do orçamento. O mvp.cmkcogit.com.br (outro
+repositório) só tem telas: lê o banco direto com a sessão do usuário (o RLS decide) e chama as rotas daqui.
+
+```
+Jornada (grátis) ──> resumo do orçamento (Groq, valor calculado no servidor) ──> "Gerar documento por R$ 30"
+   POST /api/mvp acao=pedir ──> mvp_budget_orders (pending_payment) + pagamentos + Mercado Pago (Pix/cartão)
+   webhook assinado ──> aplicar_pagamento_mp confere valor/moeda na API do MP ──> pedido "paid" (idempotente)
+   POST /api/mvp acao=gerar (tela de espera; rotina diária como reserva) ──> reserva atômica ──> Claude (JSON por schema)
+      ──> validação ──> PDF (identidade COGIT) ──> Storage privado "orcamentos-mvp" ──> "ready" ──> URL assinada (10 min)
+      falhou: nova tentativa automática até max_tentativas; depois "failed": o cliente libera 1 nova tentativa,
+      o admin reprocessa ou estorna (POST /v1/payments/{id}/refunds, com chave de idempotência)
+"Construir com a CMK Cogit" ──> app.cmkcogit.com.br/projeto/{id} ──> solicitação (origem jornada_mvp) pelo ID salvo
+   contratou em até credit_valid_days: o checkout abate o valor do orçamento (crédito consumido só no pagamento)
+```
+
+### 6.1 Rotas (todas com CORS para `MVP_ORIGENS`; login pelo cabeçalho `Authorization: Bearer`)
+
+| Rota | O que faz |
+|---|---|
+| `GET /api/jornada` · `?id=` | projetos do cliente / um projeto (dono, admin ou mentor com compartilhamento) |
+| `POST /api/jornada` | `iniciar`, `salvar`, `enviar`, `avaliar` (só o mentor do projeto), `gerar_orcamento` (resumo grátis) |
+| `GET /api/mvp?acao=config` · `status&projeto_id=` · `pdf&pedido_id=` | preço; último pedido + crédito; link do PDF (só o dono ou admin) |
+| `POST /api/mvp` `{acao}` | `pedir`, `gerar`, `tentar_novamente`, `construir`; admin: `admin_reprocessar`, `admin_estornar` (`GET admin_pedidos`) |
+| `POST /api/sso` `{para, volta}` | login único: código de uso único para o outro site (`lib/sso.js`) |
+| `POST /api/mp-webhook` | Mercado Pago. Com `MP_WEBHOOK_SECRET`, aviso sem assinatura válida é recusado (401) |
+
+`/api/jornada` e `/api/mvp` são reescritas (vercel.json) para `/api/notificacoes?rota=...`: o plano Hobby aceita 12 funções.
+A função tem `maxDuration` de 300 s (precisa do **Fluid compute**, padrão em projetos novos da Vercel; sem ele o Hobby para em 60 s).
+
+### 6.2 Banco (sql/31) e permissões
+
+- `profiles.role` continua `cliente` | `admin`. **Mentor é uma permissão adicional** em `user_roles` (`is_mentor()`): o
+  mentor continua cliente e pode comprar. O cadastro sempre cria cliente; ninguém se dá a permissão.
+- "Quero ser mentor" existe só no mvp (`pedir_mentoria`). O admin aprova na tela **Mentores** (`admin_decidir_mentoria`).
+- O dono compartilha um projeto com um mentor pelo e-mail (`compartilhar_projeto`, consentimento LGPD) e revoga quando quiser.
+  O mentor lê projeto, módulos, resumo e comentários **só** com compartilhamento e permissão ativa; nunca o pedido nem o PDF.
+- Preço, cotação US$→R$, teto de tokens, validade do crédito e tentativas: tabela `mvp_pricing_config` (uma linha; o admin
+  muda pelo SQL Editor ou pelo painel). `update mvp_pricing_config set price_brl = 35 where id = 1;`
+- Custo real de cada chamada de IA (tokens do campo `usage`, inclusive das que falharam e do resumo grátis):
+  `mvp_budget_generations`. Margem: `select * from admin_mvp_margem();` (ou a view `vw_mvp_margem`, só service_role).
+
+### 6.3 IA
+
+- **Groq** continua nas etapas baratas (resumo grátis, mensagens, assistente).
+- **Claude** (`lib/claude.js`, SDK oficial, chave só no servidor) gera o documento: saída em JSON validada pelo schema de
+  `lib/mvp-documento.js` e de novo no servidor; `max_tokens` = `mvp_pricing_config.max_output_tokens`; cache do prompt de
+  sistema; `fallbacks: "default"` (se o modelo recusar por segurança, a API tenta outro modelo, e o custo é gravado por modelo).
+  Modelo, esforço e preços vêm do ambiente (`CLAUDE_*`). A IA nunca define preço: escopo, valor e prazo são os do resumo.
+
+### 6.4 Login único, captcha e Supabase
+
+1. **Login único sem cookie compartilhado.** Cada site guarda a sessão só no próprio endereço; nenhum outro subdomínio
+   (por exemplo um site de cliente em `xxx.cmkcogit.com.br`) recebe ou lê a sessão. Quem abre um site sem estar logado
+   passa, sem digitar nada, pelo `sso.html` do outro: se lá estiver logado, o servidor do app (`/api/sso`, `lib/sso.js`)
+   gera um código de uso único (link mágico do Supabase, sem e-mail) que volta no fragmento `#` e vira uma sessão
+   própria; se não estiver, a pessoa volta para a tela de login normal (`?sso=0`). Destinos só do ambiente
+   (`APP_URL`, `MVP_URL`). "Sair" vale para o site onde a pessoa clicou (e ela não entra sozinha de novo até um login
+   manual); "Sair de todos os dispositivos" encerra todas as sessões. Em Supabase > Authentication > Email, deixe
+   **Email OTP Expiration** curto (ex.: 600 s): é a validade do código (também vale para os links de e-mail).
+2. **Supabase > Authentication > URL Configuration > Redirect URLs:** acrescente `https://mvp.cmkcogit.com.br/**` (e
+   `http://localhost:3001/**` para o mvp no computador). Os e-mails de confirmação e senha voltam para o site de onde a
+   pessoa veio.
+3. **Captcha:** crie um widget no Cloudflare Turnstile para `app.cmkcogit.com.br` e `mvp.cmkcogit.com.br`; cole a chave
+   secreta em Supabase > Authentication > Attack Protection > Captcha (Turnstile) e a chave pública em `TURNSTILE_SITE_KEY`
+   (app e mvp). **Publique o app e o mvp com a chave antes de ligar o captcha no Supabase**: ligado, o Supabase exige o
+   token em todo cadastro, login por senha e recuperação de senha (o login com Google não muda).
+4. **Rate limit do cadastro:** o cadastro vai direto ao Supabase Auth, então o limite é o dele: Authentication > Rate
+   Limits (ex.: 30 cadastros/hora por IP) + o captcha. As ações pagas e de IA têm limite por usuário no banco
+   (`consumir_limite`, valores em `lib/limite.js`).
+5. **Mercado Pago:** nada muda (mesmo webhook). Garanta `MP_WEBHOOK_SECRET` na Vercel.
+
+### 6.5 Testes
+
+- `npm test`: inclui `tests/mvp.test.js` (pedir, webhook assinado/sem assinatura/repetido, geração, custo, PDF, falhas e
+  tentativas, estorno, construir e crédito, CORS) e `tests/jornada.test.js` (mentor revisa, vários projetos, CORS, limite).
+- `npm run test:sql`: aplica **todos** os `sql/` num Postgres local com uma imitação mínima do Supabase
+  (`tests/sql/supabase-stub.sql`) e roda `tests/sql/*.test.sql` (RLS do mentor: **sem compartilhamento = sem acesso**,
+  pedidos, crédito, estorno, transições da geração). Precisa de um Postgres local:
+  `TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run test:sql` (nunca o do Supabase).
+
+### 6.6 Variáveis novas
+
+`ANTHROPIC_API_KEY`, `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CLAUDE_TIMEOUT_MS`, `CLAUDE_PRECO_ENTRADA`, `CLAUDE_PRECO_SAIDA`,
+`CLAUDE_PRECO_CACHE_LEITURA`, `CLAUDE_PRECO_CACHE_ESCRITA`, `CLAUDE_PRECOS_JSON`, `GROQ_PRECO_ENTRADA`, `GROQ_PRECO_SAIDA`,
+`USD_BRL`, `MVP_ORIGENS`, `MVP_URL` (login único; no computador `http://localhost:3001`), `TURNSTILE_SITE_KEY` (veja `.env.example`).
+
 ## Segurança — o que já está garantido
 
 - O valor cobrado vem sempre do banco (`catalogo_precos` / valor definido pelo admin); preço enviado pelo navegador é ignorado.
 - Confirmação só depois de consultar o pagamento na API do Mercado Pago, conferindo cobrança (`external_reference`), valor e moeda. Valor diferente não libera nada e fica registrado.
-- Webhook com assinatura `x-signature` validada quando enviada; avisos repetidos não duplicam nada.
+- Webhook com assinatura `x-signature` obrigatória quando `MP_WEBHOOK_SECRET` está configurado; avisos repetidos não duplicam nada.
+- Orçamento detalhado: só é gerado com o pedido pago no banco (`paid_at`, gravado por `aplicar_pagamento_mp`); reserva atômica
+  evita gerar duas vezes; PDF em bucket privado, entregue por URL assinada de 10 minutos depois de conferir o dono.
 - RLS: cada cliente só vê o que é dele; cliente não cria/altera cobranças nem projetos; ninguém vira admin pelo cadastro (nem pelo Google).
 - Cadastro concluído só pelo banco (`concluir_cadastro`); o cliente só consegue alterar nome e telefone do próprio perfil.
 - A `service_role` e o token do Mercado Pago ficam só no servidor; `/config.js` entrega apenas a chave pública (anon).

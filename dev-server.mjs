@@ -65,8 +65,16 @@ const servidor = http.createServer(async (req, res) => {
     if (pathname.startsWith('/api/')) console.log(req.method, pathname, res.statusCode, (Date.now() - inicio) + 'ms');
   });
 
-  const r = reescritas.find((x) => x.source === pathname);
-  if (r) pathname = r.destination;
+  // reescritas do vercel.json: caminho exato ou com :parâmetro; o destino pode trazer ?query
+  let queryExtra = '';
+  for (const x of reescritas) {
+    const padrao = new RegExp('^' + x.source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\:[a-z]+|:[a-z]+/gi, '[^/]+') + '$');
+    if (!padrao.test(pathname)) continue;
+    const [destino, q] = x.destination.split('?');
+    pathname = destino;
+    queryExtra = q || '';
+    break;
+  }
 
   try {
     // ---- funções /api/<nome> ----
@@ -74,7 +82,10 @@ const servidor = http.createServer(async (req, res) => {
     if (api) {
       const fn = await carregarFuncao(api[1]);
       if (!fn) { res.statusCode = 404; return res.end('Função não encontrada'); }
-      req.query = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
+      const busca = new URL(req.url, 'http://localhost').searchParams;
+      for (const [k, v] of new URLSearchParams(queryExtra)) busca.set(k, v);
+      req.query = Object.fromEntries(busca);
+      if (queryExtra) req.url = pathname + '?' + busca;
       return await fn(req, res);
     }
 

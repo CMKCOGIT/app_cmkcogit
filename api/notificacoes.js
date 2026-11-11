@@ -3,16 +3,22 @@
 //   POST { acao: 'marcar_lida', ids: [] } -> { ok, nao_lidas }
 //   POST { acao: 'marcar_todas' }         -> { ok, nao_lidas }
 // Cada um só vê e altera as próprias notificações (filtro por usuario_id no servidor).
-//   ?rota=jornada -> Jornada MVP (lib/jornada-rota.js). Fica aqui para não passar do limite de
-//   12 funções do plano Hobby da Vercel: cada arquivo de /api conta como uma função.
+//   ?rota=jornada -> Jornada MVP (lib/jornada-rota.js) · ?rota=mvp -> orçamento detalhado pago (lib/mvp-rota.js)
+//   ?rota=sso -> login único com o mvp (lib/sso.js).
+//   Ficam aqui para não passar do limite de 12 funções do plano Hobby da Vercel: cada arquivo de /api
+//   conta como uma função. O vercel.json também publica /api/jornada e /api/mvp apontando para cá.
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro } from '../lib/http.js';
 import { listarNotificacoes, marcarComoLidas, LIMITE_LISTA } from '../lib/notificacoes.js';
 import jornada from '../lib/jornada-rota.js';
+import mvp from '../lib/mvp-rota.js';
+import sso from '../lib/sso.js';
 
 export default async function handler(req, res) {
   const rota = (req.query && req.query.rota) || new URL(req.url || '/', 'http://x').searchParams.get('rota');
   if (rota === 'jornada') return jornada(req, res);
+  if (rota === 'mvp') return mvp(req, res);
+  if (rota === 'sso') return sso(req, res);
   if (req.method !== 'GET' && req.method !== 'POST') return erro(res, 405, 'Método não permitido.');
 
   let db;
