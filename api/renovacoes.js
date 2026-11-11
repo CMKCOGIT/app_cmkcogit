@@ -2,12 +2,15 @@
 // Também envia os lembretes de prazo dos quadros de tarefas (sql/27: lembrar_prazos_cartoes).
 // Cria as cobranças de renovação dos planos mensal/anual que vencem nos próximos
 // dias (sql/19: gerar_renovacoes) e avisa o cliente no sino e por e-mail.
+// Também gera os orçamentos detalhados do MVP pagos que ficaram sem documento (a pessoa fechou a
+// tela antes da geração) — lib/mvp-geracao.js.
 // Protegida por CRON_SECRET: a Vercel envia "Authorization: Bearer <CRON_SECRET>".
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, registrarErro, urlApp } from '../lib/http.js';
 import { createNotification } from '../lib/notificacoes.js';
 import { enviarEmail, emailRenovacao } from '../lib/email.js';
 import { buscarAssinaturaMp, cancelarAssinaturaMp, estadoAssinaturaMp } from '../lib/mercadopago.js';
+import { processarPendentes } from '../lib/mvp-geracao.js';
 
 const DIAS_ANTES = 7;
 const TOLERANCIA_CARTAO = 5; // dias após o vencimento sem cobrança no cartão -> volta para a cobrança manual
@@ -68,6 +71,10 @@ export default async function handler(req, res) {
   let cartoes = { registradas: 0, voltaram_manual: 0 };
   try { cartoes = await sincronizarCartoes(db); } catch (e) { registrarErro('renovacoes:cartoes', e); }
 
+  // Orçamento detalhado do MVP: pagos sem documento (poucos por rodada: cada um leva até ~2 min)
+  let orcamentos = [];
+  try { orcamentos = await processarPendentes(db, { limite: 2 }); } catch (e) { registrarErro('renovacoes:mvp', e); }
+
   let novas;
   try {
     novas = (await db.rpc('gerar_renovacoes', { p_dias_antes: DIAS_ANTES })) || [];
@@ -96,5 +103,5 @@ export default async function handler(req, res) {
       if (envio.enviado) emails += 1;
     } catch (e) { registrarErro('renovacoes:email', e); }
   }
-  return json(res, 200, { ok: true, cobrancas: novas.length, emails, cartao: cartoes, tarefas_lembradas: tarefas });
+  return json(res, 200, { ok: true, cobrancas: novas.length, emails, cartao: cartoes, tarefas_lembradas: tarefas, orcamentos_mvp: orcamentos });
 }

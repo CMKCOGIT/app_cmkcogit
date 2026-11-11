@@ -1,6 +1,7 @@
-// jornada.js — Jornada MVP. Cliente: responde os módulos e envia para revisão.
-// Equipe (admin): lista as jornadas, lê as respostas, aprova ou pede ajustes.
-// No fim, o orçamento do MVP (escopo lido pela IA, valores calculados no servidor).
+// jornada.js — Jornada MVP. Cliente: responde os módulos e envia (com mentor no projeto, ele revisa;
+// sem mentor, o módulo completo já fica aprovado). Equipe (admin): acompanha e gera prévias.
+// No fim, o resumo do orçamento do MVP (grátis: escopo lido pela IA, valores calculados no servidor) e o
+// documento detalhado em PDF (R$ 30, rota /api/mvp). O mesmo fluxo existe no mvp.cmkcogit.com.br.
 // A trilha (módulos e perguntas) vem do servidor: a fonte é lib/jornada.js.
 (async function () {
   const perfil = await protegerPagina();
@@ -45,7 +46,7 @@
   // ------------------------------------------------------------------ entrada
   async function carregar() {
     try {
-      E = await api(ROTA + (admin && idDaUrl ? '&id=' + encodeURIComponent(idDaUrl) : ''), null, 'GET');
+      E = await api(ROTA + (idDaUrl ? '&id=' + encodeURIComponent(idDaUrl) : ''), null, 'GET');
     } catch (e) {
       raiz.removeAttribute('aria-busy');
       raiz.innerHTML = '';
@@ -359,7 +360,7 @@
     const pode = editavel(l);
     if (pode) prepararEstr(m, l);
     const painel = document.getElementById('jm-painel');
-    const aviso = !admin && l.status === 'enviado' ? 'A equipe está revisando este módulo. Você recebe um aviso no sino quando houver retorno.'
+    const aviso = !admin && l.status === 'enviado' ? 'Seu mentor está revisando este módulo. Você recebe um aviso no sino quando houver retorno.'
       : !admin && l.status === 'aprovado' ? 'Módulo aprovado. As respostas ficam guardadas para consulta.'
         : admin && l.status === 'aberto' ? 'O cliente ainda está preenchendo este módulo.' : '';
     painel.innerHTML = `
@@ -367,7 +368,7 @@
         <div><h2>${esc(m.nome)}</h2><p class="nota">${esc(m.resumo)}</p></div>
         <span data-etiqueta="${TOM[l.status]}">${ROTULO[l.status]}</span>
       </header>
-      ${l.comentario ? `<blockquote class="jm-retorno" data-tom="${l.status === 'ajustes' ? 'atencao' : 'ok'}"><strong>Retorno da equipe</strong><p>${esc(l.comentario)}</p></blockquote>` : ''}
+      ${l.comentario ? `<blockquote class="jm-retorno" data-tom="${l.status === 'ajustes' ? 'atencao' : 'ok'}"><strong>Retorno do mentor</strong><p>${esc(l.comentario)}</p></blockquote>` : ''}
       ${aviso ? `<p class="jm-aviso">${icone('info')} ${esc(aviso)}</p>` : ''}
       <form id="jm-form" novalidate>
         ${m.etapas.map((e, i) => `
@@ -382,10 +383,10 @@
         </div>`).join('')}
         ${pode ? `<footer class="jm-rodape">
           <span id="jm-salvo" class="nota" role="status"></span>
-          <button type="submit">${l.status === 'ajustes' ? 'Reenviar para revisão' : 'Enviar para revisão'} ${icone('enviado')}</button>
+          <button type="submit">${!E.tem_mentor ? 'Concluir módulo' : l.status === 'ajustes' ? 'Reenviar para o mentor' : 'Enviar para o mentor'} ${icone('enviado')}</button>
         </footer>` : ''}
       </form>
-      ${admin && l.status !== 'aberto' ? `
+      ${E.papel === 'mentor' && l.status === 'enviado' ? `
       <form id="jm-revisao" class="jm-revisao">
         <label for="jm-comentario">Retorno para o cliente</label>
         <textarea id="jm-comentario" rows="3" maxlength="1000" placeholder="O que está bom, o que precisa detalhar...">${esc(l.comentario || '')}</textarea>
@@ -535,12 +536,72 @@
       ${bloco('Pontos de atenção', o.riscos)}
       ${bloco('Perguntas em aberto', o.perguntas)}
       <p class="jm-aviso">${icone('info')} Esta é uma estimativa automática. O valor final é confirmado pela equipe depois de uma conversa sobre o escopo.</p>
+      ${E.papel === 'dono' ? '<section id="jm-detalhado" class="jm-grupo jm-detalhado jm-nao-imprimir" aria-live="polite"></section>' : ''}
       <div class="pagina-acoes jm-nao-imprimir">
         ${admin ? botaoGerar('Gerar de novo') : `<a class="botao-link" href="mensagens.html">${icone('mensagens')} Conversar com a equipe</a>`}
-        <button type="button" id="jm-imprimir">${icone('pdf')} Salvar em PDF</button>
+        ${E.papel === 'dono' ? `<a class="botao" href="projeto/${esc(E.jornada.id)}">${icone('avancar')} Construir com a CMK Cogit</a>` : ''}
+        <button type="button" id="jm-imprimir">${icone('pdf')} Imprimir resumo</button>
       </div>`;
     document.getElementById('jm-imprimir').addEventListener('click', () => window.print());
     ligarGerar();
+    if (E.papel === 'dono') desenharDetalhado();
+  }
+
+  // ------------------------------------------------------------------ documento detalhado (R$ 30)
+  // Pagamento pelo Mercado Pago; o documento só é gerado depois que o pagamento é confirmado no
+  // servidor. O PDF fica num bucket privado e abre por um link temporário.
+  let esperaPagamento = 0;
+  async function desenharDetalhado() {
+    const caixa = document.getElementById('jm-detalhado');
+    if (!caixa) return;
+    let st;
+    try { st = await api('mvp?acao=status&projeto_id=' + encodeURIComponent(E.jornada.id), null, 'GET'); } catch (e) { caixa.innerHTML = ''; return; }
+    const p = st.pedido && !(st.pedido.status === 'failed' && !st.pedido.paid_at) ? st.pedido : null;
+    const preco = brl(st.preco);
+    const titulo = '<h3>Orçamento detalhado em PDF</h3>';
+    const credito = st.credito ? `<p class="nota">${icone('valor')} Você tem ${brl(st.credito.valor)} de crédito para contratar a construção até ${esc(fmtData(st.credito.valido_ate))}.</p>` : '';
+    if (!p || p.status === 'refunded') {
+      caixa.innerHTML = `${titulo}<p>Escopo detalhado com critérios de aceite de cada funcionalidade, premissas, pontos de atenção e perguntas em aberto deste projeto, em PDF para compartilhar. ${p ? 'O pagamento anterior foi estornado.' : ''}</p>
+        <div class="pagina-acoes"><button type="button" id="jm-comprar">${icone('pagamentos')} Gerar documento por ${preco}</button></div>${credito}`;
+    } else if (p.status === 'pending_payment') {
+      caixa.innerHTML = `${titulo}<p>Aguardando a confirmação do pagamento de ${preco}. Pix costuma confirmar em segundos.</p>
+        <div class="pagina-acoes"><button type="button" id="jm-comprar">${icone('pagamentos')} Abrir pagamento</button>
+        <button type="button" class="botao-secundario" id="jm-atualizar">${icone('recarregar')} Já paguei, atualizar</button></div>`;
+    } else if (p.status === 'paid' || p.status === 'generating') {
+      caixa.innerHTML = `${titulo}${carregandoCogit('Pagamento confirmado. Preparando seu documento (até 2 minutos)...')}`;
+      try { await api('mvp', { acao: 'gerar', pedido_id: p.id }); } catch (e) { toast(e.message, 'erro'); }
+      return desenharDetalhado();
+    } else if (p.status === 'ready') {
+      caixa.innerHTML = `${titulo}<p>Pronto em ${esc(fmtData(p.ready_at))}. Válido até ${esc(fmtData(p.valid_until))}.</p>
+        <div class="pagina-acoes"><button type="button" id="jm-baixar">${icone('pdf')} Baixar PDF</button></div>${credito}`;
+    } else if (p.status === 'failed') {
+      caixa.innerHTML = `${titulo}<p class="jm-aviso">${icone('alerta')} Não conseguimos gerar seu documento.${p.pode_tentar_novamente ? '' : ' Fale com a equipe: você pode pedir o estorno.'}</p>
+        ${p.pode_tentar_novamente ? `<div class="pagina-acoes"><button type="button" id="jm-tentar">${icone('recarregar')} Tentar de novo</button></div>` : ''}`;
+    }
+    caixa.querySelector('#jm-comprar')?.addEventListener('click', async (ev) => {
+      ocupado(ev.currentTarget, true, 'Abrindo pagamento...');
+      try {
+        const r = await api('mvp', { acao: 'pedir', projeto_id: E.jornada.id });
+        if (!urlMercadoPagoValida(r.url)) throw new Error('Não foi possível iniciar o pagamento.');
+        window.location.href = r.url;
+      } catch (e) { ocupado(ev.currentTarget, false); toast(e.message, 'erro'); }
+    });
+    caixa.querySelector('#jm-atualizar')?.addEventListener('click', () => desenharDetalhado());
+    caixa.querySelector('#jm-tentar')?.addEventListener('click', async (ev) => {
+      ocupado(ev.currentTarget, true, 'Gerando...');
+      try { await api('mvp', { acao: 'tentar_novamente', pedido_id: p.id }); } catch (e) { toast(e.message, 'erro'); }
+      desenharDetalhado();
+    });
+    caixa.querySelector('#jm-baixar')?.addEventListener('click', async (ev) => {
+      ocupado(ev.currentTarget, true, 'Abrindo...');
+      try { window.location.href = (await api('mvp?acao=pdf&pedido_id=' + encodeURIComponent(p.id), null, 'GET')).url; } catch (e) { toast(e.message, 'erro'); }
+      ocupado(ev.currentTarget, false);
+    });
+    // voltou do Mercado Pago: confere de novo por até 2 minutos enquanto o aviso do pagamento não chega
+    if (p && p.status === 'pending_payment' && /[?&]mp=sucesso/.test(window.location.search) && esperaPagamento < 24) {
+      esperaPagamento += 1;
+      setTimeout(desenharDetalhado, 5000);
+    }
   }
 
   function ligarGerar() {

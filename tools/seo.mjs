@@ -39,6 +39,8 @@ const PAGINAS = {
   'admin.html': ['Solicitações | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
   'admin-clientes.html': ['Clientes | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
   'admin-quadros.html': ['Quadros | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
+  'admin-mentores.html': ['Mentores e orçamentos MVP | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
+  'construir.html': ['Construir com a CMK Cogit | CMKCOGIT', 'Monte o pedido de construção do seu MVP com a CMKCOGIT a partir do orçamento.', 'noindex'],
   '404.html': ['Página não encontrada | CMKCOGIT', 'A página que você procurou não existe na plataforma CMKCOGIT.', 'noindex'],
   'styleguide.html': ['Styleguide | CMKCOGIT', 'Guia visual interno da plataforma CMKCOGIT.', 'noindex, nofollow'],
 };

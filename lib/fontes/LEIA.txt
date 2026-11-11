@@ -1,0 +1,4 @@
+Fontes em TTF usadas SÓ no servidor, para incorporar no PDF do orçamento (lib/mvp-pdf.js).
+Convertidas (descompactadas, sem alterar o desenho) dos WOFF2 de public/assets/fonts, com os nomes
+PostScript preenchidos (os WOFF2 vinham com o nome "false", que os leitores de PDF recusam).
+Licença: ITF Free Font License (FFL), Fontshare — ver public/assets/fonts/LICENCA-FONTES.txt.

@@ -285,9 +285,14 @@ test('webhook: assinatura inválida é recusada; válida confirma; repetido não
   assert.equal(de_novo.texto, 'ja_processado');
   assert.equal(banco.projetos.length, 1);
 
-  // evento de outro tipo ou id fictício do "simular" do painel: 200 sem efeito
+  // com MP_WEBHOOK_SECRET configurado, aviso SEM assinatura é recusado (antes passava)
+  const semAssinatura = await chamar('mp-webhook', { url: '/api/mp-webhook?type=payment&data.id=123', corpo: {} });
+  assert.equal(semAssinatura.status, 401);
+
+  // evento de outro tipo ou id fictício do "simular" do painel (assinado): 200 sem efeito
   assert.equal((await chamar('mp-webhook', { url: '/api/mp-webhook?type=merchant_order&data.id=1', corpo: {} })).texto, 'ignorado');
-  assert.equal((await chamar('mp-webhook', { url: '/api/mp-webhook?type=payment&data.id=123', corpo: {} })).texto, 'pagamento inexistente');
+  const v1b = crypto.createHmac('sha256', 'segredo').update(`id:123;request-id:r2;ts:${ts};`).digest('hex');
+  assert.equal((await chamar('mp-webhook', { url: '/api/mp-webhook?type=payment&data.id=123', corpo: {}, headers: { 'x-signature': `ts=${ts},v1=${v1b}`, 'x-request-id': 'r2' } })).texto, 'pagamento inexistente');
 });
 
 test('verificar: tentativa recusada mantém pendente; outro cliente não consulta', async () => {

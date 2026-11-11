@@ -201,6 +201,17 @@ select pg_temp.ok((select receita_brl = 0 and custo_brl = 0.24 from public.vw_mv
 -- limite
 select pg_temp.ok(public.consumir_limite('teste', 2, 60) and public.consumir_limite('teste', 2, 60) and not public.consumir_limite('teste', 2, 60), 'limite: 2 passam, o 3º não');
 
+
+-- pedido nunca pago (cobrança substituída) não vira "paid" nem é gerado
+reset role;
+insert into public.jornadas (id, cliente_id, titulo) values ('11111111-0000-4000-8000-000000000003', 'd0000000-0000-4000-8000-000000000004', 'Projeto da Dani');
+insert into public.mvp_budget_orders (id, user_id, project_id, price_brl, status) values
+  ('44444444-0000-4000-8000-000000000009', 'd0000000-0000-4000-8000-000000000004', '11111111-0000-4000-8000-000000000003', 30, 'failed');
+set role service_role;
+select pg_temp.ok((select count(*) from public.mvp_liberar_tentativa('44444444-0000-4000-8000-000000000009', true)) = 0, 'pedido sem pagamento não é liberado nem pelo admin');
+update public.mvp_budget_orders set status = 'paid' where id = '44444444-0000-4000-8000-000000000009';
+select pg_temp.ok((select count(*) from public.mvp_reservar_geracao('44444444-0000-4000-8000-000000000009')) = 0, 'sem paid_at não gera, mesmo com status paid');
+
 -- ---------------------------------------------------------------- revogar
 reset role;
 set role authenticated;

@@ -6,6 +6,8 @@ import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID, urlApp, urlPublica } from '../lib/http.js';
 import { criarPreferencia, linkDaPreferencia } from '../lib/mercadopago.js';
 import { texto } from '../lib/selecao.js';
+import { creditoDoProjeto } from '../lib/mvp-rota.js';
+import { configPreco } from '../lib/mvp-geracao.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return erro(res, 405, 'Método não permitido.');
@@ -93,15 +95,29 @@ export default async function handler(req, res) {
   }
 }
 
+// Crédito do orçamento detalhado do MVP (sql/31): quem pagou o documento e contrata a construção
+// do MESMO projeto dentro de credit_valid_days tem o valor abatido. O crédito só é consumido quando
+// esta cobrança for paga (aplicar_pagamento_mp) e volta se ela for estornada.
+async function creditoDaSolicitacao(db, s, clienteId) {
+  if (s.origem !== 'jornada_mvp' || !s.jornada_id) return { valor: 0, pedido_id: null };
+  const c = await creditoDoProjeto(db, clienteId, s.jornada_id, await configPreco(db)).catch((e) => { registrarErro('checkout:credito', e); return null; });
+  if (!c) return { valor: 0, pedido_id: null };
+  // nunca zera a cobrança (o Mercado Pago não cobra R$ 0)
+  return { valor: Math.min(c.valor, Math.max(Number(s.valor_final) - 1, 0)), pedido_id: c.pedido_id };
+}
+
 async function cobrancaDaSolicitacao(db, s, clienteId) {
   const filtro = { select: '*', solicitacao_id: 'eq.' + s.id, status: 'eq.pendente' };
   let pag = await db.um('pagamentos', filtro);
+  const credito = await creditoDaSolicitacao(db, s, clienteId);
+  const valor = Math.round((Number(s.valor_final) - credito.valor) * 100) / 100;
+  const camposCredito = { credito_mvp: credito.valor, credito_order_id: credito.pedido_id };
 
   if (pag) {
-    if (Number(pag.valor) !== Number(s.valor_final)) {
-      // admin mudou o valor: atualiza e descarta o link antigo
+    if (Number(pag.valor) !== valor || (pag.credito_order_id || null) !== credito.pedido_id) {
+      // admin mudou o valor (ou o crédito mudou): atualiza e descarta o link antigo
       pag = await db.atualizar('pagamentos', { id: 'eq.' + pag.id }, {
-        valor: s.valor_final, link_pagamento: null, mp_preference_id: null
+        valor, ...camposCredito, link_pagamento: null, mp_preference_id: null
       });
     }
     return pag;
@@ -113,8 +129,9 @@ async function cobrancaDaSolicitacao(db, s, clienteId) {
     return await db.inserir('pagamentos', {
       cliente_id: clienteId,
       solicitacao_id: s.id,
-      descricao: texto(s.codigo + ' — ' + titulo, 160),
-      valor: s.valor_final,
+      descricao: texto(s.codigo + ' — ' + titulo + (credito.valor ? ' (crédito do orçamento: R$ ' + credito.valor.toFixed(2).replace('.', ',') + ')' : ''), 160),
+      valor,
+      ...camposCredito,
       vencimento
     });
   } catch (e) {

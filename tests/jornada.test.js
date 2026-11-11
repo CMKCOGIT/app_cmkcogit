@@ -14,8 +14,9 @@ delete process.env.JORNADA_VALOR_HORA;
 const ANA = 'aaaaaaaa-0000-4000-8000-000000000001';
 const BIA = 'bbbbbbbb-0000-4000-8000-000000000002';
 const ADM = 'cccccccc-0000-4000-8000-000000000003';
-const TOKENS = { 'tok-ana': ANA, 'tok-bia': BIA, 'tok-adm': ADM };
-let banco, pedidosIA, respostaIA;
+const MEN = 'dddddddd-0000-4000-8000-000000000004';
+const TOKENS = { 'tok-ana': ANA, 'tok-bia': BIA, 'tok-adm': ADM, 'tok-men': MEN };
+let banco, pedidosIA, respostaIA, limiteLiberado;
 
 const ESCOPO = {
   resumo: 'Agenda online para salões.',
@@ -33,14 +34,17 @@ const ESCOPO = {
 
 beforeEach(() => {
   pedidosIA = [];
-  respostaIA = () => ({ status: 200, corpo: { choices: [{ message: { content: JSON.stringify(ESCOPO) } }] } });
+  limiteLiberado = true;
+  respostaIA = () => ({ status: 200, corpo: { choices: [{ message: { content: JSON.stringify(ESCOPO) } }], usage: { prompt_tokens: 1200, completion_tokens: 800 } } });
   banco = {
     profiles: [
       { id: ANA, nome: 'Ana Souza', email: 'ana@ex.com', role: 'cliente', cadastro_concluido_em: '2026-01-01T00:00:00Z' },
       { id: BIA, nome: 'Bia', email: 'bia@ex.com', role: 'cliente', cadastro_concluido_em: '2026-01-01T00:00:00Z' },
-      { id: ADM, nome: 'Kaike', email: 'adm@ex.com', role: 'admin', cadastro_concluido_em: '2026-01-01T00:00:00Z' }
+      { id: ADM, nome: 'Kaike', email: 'adm@ex.com', role: 'admin', cadastro_concluido_em: '2026-01-01T00:00:00Z' },
+      { id: MEN, nome: 'Marta Mentora', email: 'marta@ex.com', role: 'cliente', cadastro_concluido_em: '2026-01-01T00:00:00Z' }
     ],
     jornadas: [], jornada_modulos: [], jornada_orcamentos: [], notificacoes: [],
+    user_roles: [], mvp_project_shares: [], mvp_budget_generations: [],
     catalogo_precos: [{ id: 'mvp', preco: 3990, ativo: true }]
   };
 });
@@ -55,7 +59,7 @@ function filtrar(linhas, params) {
     if (op === 'in') return val.slice(1, -1).split(',').includes(String(l[k]));
     throw new Error('operador não simulado: ' + op);
   }));
-  if (params.get('order') === 'created_at.desc') r = r.slice().reverse();
+  if (/\.desc$/.test(params.get('order') || '')) r = r.slice().reverse();
   if (params.get('limit')) r = r.slice(0, Number(params.get('limit')));
   return r;
 }
@@ -70,6 +74,7 @@ globalThis.fetch = async (url, op = {}) => {
     return resposta(r.status, r.corpo);
   }
   if (u.origin !== SUPA) throw new Error('fetch não simulado: ' + url);
+  if (u.pathname === '/rest/v1/rpc/consumir_limite') return resposta(200, limiteLiberado);
   if (u.pathname === '/auth/v1/user') {
     const id = TOKENS[(op.headers.Authorization || '').replace('Bearer ', '')];
     return id ? resposta(200, { id }) : resposta(401, {});
@@ -80,7 +85,6 @@ globalThis.fetch = async (url, op = {}) => {
   if (metodo === 'GET') return resposta(200, filtrar(banco[tabela], u.searchParams));
   if (metodo === 'POST') {
     const nova = { id: crypto.randomUUID(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...PADRAO[tabela], ...JSON.parse(op.body) };
-    if (tabela === 'jornadas' && banco.jornadas.some((j) => j.cliente_id === nova.cliente_id)) return resposta(409, { code: '23505', message: 'duplicate' });
     banco[tabela].push(nova);
     return resposta(201, [nova]);
   }
@@ -92,12 +96,13 @@ globalThis.fetch = async (url, op = {}) => {
   throw new Error('método não simulado: ' + metodo);
 };
 
-async function chamar(token, corpo, extra = '') {
+async function chamar(token, corpo, extra = '', { method, origin } = {}) {
   const query = '?rota=jornada' + extra.replace('?', '&');
-  const req = { method: corpo ? 'POST' : 'GET', url: '/api/notificacoes' + query, headers: { authorization: 'Bearer ' + token }, body: corpo || undefined, query: Object.fromEntries(new URLSearchParams(query.slice(1))) };
-  const res = { statusCode: 200, setHeader() {}, end(t) { this.texto = t; } };
+  const headers = { authorization: 'Bearer ' + token, ...(origin ? { origin } : {}) };
+  const req = { method: method || (corpo ? 'POST' : 'GET'), url: '/api/notificacoes' + query, headers, body: corpo || undefined, query: Object.fromEntries(new URLSearchParams(query.slice(1))) };
+  const res = { statusCode: 200, cab: {}, setHeader(k, v) { this.cab[k.toLowerCase()] = v; }, end(t) { this.texto = t; } };
   await handler(req, res);
-  return { status: res.statusCode, ...JSON.parse(res.texto) };
+  return { status: res.statusCode, cab: res.cab, ...(res.texto ? JSON.parse(res.texto) : {}) };
 }
 
 // respostas mínimas válidas de um módulo
@@ -116,8 +121,7 @@ async function jornadaAprovada() {
   const { jornada } = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Agenda Fácil' });
   for (const m of MODULOS) {
     await chamar('tok-ana', { acao: 'salvar', jornada_id: jornada.id, modulo: m.id, respostas: preencher(m) });
-    await chamar('tok-ana', { acao: 'enviar', jornada_id: jornada.id, modulo: m.id });
-    await chamar('tok-adm', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' });
+    await chamar('tok-ana', { acao: 'enviar', jornada_id: jornada.id, modulo: m.id }); // sem mentor: já fica aprovado
   }
   return jornada;
 }
@@ -202,16 +206,21 @@ test('montarPrompt leva as respostas com o nome das opções', () => {
   assert.match(p, /Em até 60 dias/);
 });
 
-test('cliente inicia, salva e envia; quem não é dono não vê nem mexe', async () => {
-  assert.equal((await chamar('tok-ana')).jornada, null);
+test('cliente cria vários projetos, salva e envia; sem mentor o módulo já fica aprovado; quem não é dono não vê nem mexe', async () => {
+  const vazio = await chamar('tok-ana');
+  assert.equal(vazio.jornada, null);
+  assert.deepEqual(vazio.projetos, []);
   assert.equal((await chamar('tok-ana', { acao: 'iniciar', titulo: ' ' })).status, 400);
   const ini = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Agenda Fácil' });
   assert.equal(ini.status, 200);
+  assert.equal(ini.papel, 'dono');
   assert.equal(ini.modulos.length, MODULOS.length);
-  assert.equal(banco.notificacoes.filter((n) => n.usuario_id === ADM).length, 1);
-  // iniciar de novo não duplica
-  assert.equal((await chamar('tok-ana', { acao: 'iniciar', titulo: 'Outra' })).jornada.id, ini.jornada.id);
-  assert.equal(banco.jornadas.length, 1);
+  assert.equal(banco.notificacoes.length, 0); // o admin não revisa mais: nada de aviso para a equipe
+  const outro = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Outro projeto' });
+  assert.notEqual(outro.jornada.id, ini.jornada.id);
+  assert.equal(banco.jornadas.length, 2);
+  const lista = await chamar('tok-ana');
+  assert.equal(lista.projetos.length, 2);
 
   const id = ini.jornada.id;
   const m = moduloPorId('proposta-valor');
@@ -227,38 +236,70 @@ test('cliente inicia, salva e envia; quem não é dono não vê nem mexe', async
 
   await chamar('tok-ana', { acao: 'salvar', jornada_id: id, modulo: m.id, respostas: preencher(m) });
   const env = await chamar('tok-ana', { acao: 'enviar', jornada_id: id, modulo: m.id });
-  assert.equal(env.modulos.find((x) => x.modulo === m.id).status, 'enviado');
-  // em revisão: não edita nem reenvia
+  assert.equal(env.modulos.find((x) => x.modulo === m.id).status, 'aprovado');
   assert.equal((await chamar('tok-ana', { acao: 'salvar', jornada_id: id, modulo: m.id, respostas: {} })).status, 409);
   assert.equal((await chamar('tok-ana', { acao: 'enviar', jornada_id: id, modulo: m.id })).status, 409);
   assert.equal((await chamar('tok-bia')).jornada, null);
+  assert.equal((await chamar('tok-bia', null, '?id=' + id)).status, 404);
+  // o admin não aprova módulo
+  assert.equal((await chamar('tok-adm', { acao: 'avaliar', jornada_id: id, modulo: m.id, decisao: 'aprovado' })).status, 403);
 });
 
-test('equipe lista, pede ajustes (com motivo) e aprova; cliente é avisado', async () => {
+test('com mentor no projeto: o módulo vai para revisão e só o mentor aprova ou pede ajustes', async () => {
   const { jornada } = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Agenda Fácil' });
+  banco.user_roles.push({ user_id: MEN, role: 'mentor' });
+  banco.mvp_project_shares.push({ project_id: jornada.id, owner_user_id: ANA, mentor_user_id: MEN });
   const m = MODULOS[0];
-  assert.equal((await chamar('tok-adm', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' })).status, 409); // nem foi enviado
+  assert.equal((await chamar('tok-men', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' })).status, 409); // nem foi enviado
   await chamar('tok-ana', { acao: 'salvar', jornada_id: jornada.id, modulo: m.id, respostas: preencher(m) });
-  await chamar('tok-ana', { acao: 'enviar', jornada_id: jornada.id, modulo: m.id });
+  const env = await chamar('tok-ana', { acao: 'enviar', jornada_id: jornada.id, modulo: m.id });
+  assert.equal(env.modulos[0].status, 'enviado');
+  assert.equal((await chamar('tok-ana', { acao: 'salvar', jornada_id: jornada.id, modulo: m.id, respostas: {} })).status, 409);
 
-  const lista = await chamar('tok-adm');
-  assert.equal(lista.jornadas.length, 1);
-  assert.deepEqual([lista.jornadas[0].cliente.nome, lista.jornadas[0].para_revisar], ['Ana Souza', 1]);
-  assert.equal((await chamar('tok-adm', null, '?id=' + jornada.id)).cliente.email, 'ana@ex.com');
+  const visto = await chamar('tok-men', null, '?id=' + jornada.id);
+  assert.equal(visto.papel, 'mentor');
+  assert.equal(visto.cliente.nome, 'Ana Souza');
+  assert.equal(visto.cliente.email, null); // o mentor não recebe o e-mail do dono
+  assert.equal((await chamar('tok-men', { acao: 'salvar', jornada_id: jornada.id, modulo: m.id, respostas: {} })).status, 404); // mentor não escreve as respostas
 
+  assert.equal((await chamar('tok-adm', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' })).status, 403);
   assert.equal((await chamar('tok-ana', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' })).status, 403);
-  assert.equal((await chamar('tok-adm', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'ajustes' })).status, 400);
-  const aj = await chamar('tok-adm', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'ajustes', comentario: 'Detalhe o público.' });
+  assert.equal((await chamar('tok-bia', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' })).status, 404);
+  assert.equal((await chamar('tok-men', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'ajustes' })).status, 400);
+  const aj = await chamar('tok-men', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'ajustes', comentario: 'Detalhe o público.' });
   assert.equal(aj.modulos[0].status, 'ajustes');
   assert.equal(banco.notificacoes.at(-1).usuario_id, ANA);
-  assert.equal(banco.notificacoes.at(-1).link, 'jornada.html');
+  assert.equal(banco.notificacoes.at(-1).link, 'jornada.html?id=' + jornada.id);
 
-  // com ajustes pedidos, o cliente volta a editar e reenvia
   assert.equal((await chamar('tok-ana', { acao: 'salvar', jornada_id: jornada.id, modulo: m.id, respostas: preencher(m) })).status, 200);
   await chamar('tok-ana', { acao: 'enviar', jornada_id: jornada.id, modulo: m.id });
-  const ap = await chamar('tok-adm', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' });
+  const ap = await chamar('tok-men', { acao: 'avaliar', jornada_id: jornada.id, modulo: m.id, decisao: 'aprovado' });
   assert.equal(ap.modulos[0].status, 'aprovado');
-  assert.equal((await chamar('tok-ana', { acao: 'salvar', jornada_id: jornada.id, modulo: m.id, respostas: {} })).status, 409);
+
+  // a equipe continua vendo tudo (lista com contagem)
+  const lista = await chamar('tok-adm');
+  assert.deepEqual([lista.jornadas[0].cliente.nome, lista.jornadas[0].aprovados], ['Ana Souza', 1]);
+
+  // sem a permissão de mentor, o compartilhamento não vale
+  banco.user_roles = [];
+  assert.equal((await chamar('tok-men', null, '?id=' + jornada.id)).status, 404);
+});
+
+test('CORS: só o mvp.cmkcogit.com.br recebe permissão; preflight responde 204', async () => {
+  const pre = await chamar('tok-ana', null, '', { method: 'OPTIONS', origin: 'https://mvp.cmkcogit.com.br' });
+  assert.equal(pre.status, 204);
+  assert.equal(pre.cab['access-control-allow-origin'], 'https://mvp.cmkcogit.com.br');
+  assert.match(pre.cab['access-control-allow-headers'], /Authorization/);
+  const outro = await chamar('tok-ana', null, '', { origin: 'https://malicioso.example' });
+  assert.equal(outro.cab['access-control-allow-origin'], undefined);
+  assert.equal(outro.cab.vary, 'Origin');
+});
+
+test('limite por usuário: criar projetos em excesso devolve 429', async () => {
+  limiteLiberado = false;
+  const r = await chamar('tok-ana', { acao: 'iniciar', titulo: 'Agenda' });
+  assert.equal(r.status, 429);
+  assert.equal(banco.jornadas.length, 0);
 });
 
 test('orçamento: só com tudo aprovado, uma vez para o cliente, sem horas nem valor por item', async () => {
@@ -275,7 +316,10 @@ test('orçamento: só com tudo aprovado, uma vez para o cliente, sem horas nem v
   assert.equal(pedidosIA.length, 1);
   assert.equal(pedidosIA[0].max_tokens, 3000);
   assert.match(pedidosIA[0].messages[1].content, /Produto: Agenda Fácil/);
+  assert.match(pedidosIA[0].messages[0].content, /Proibido texto genérico/);
   assert.equal(r.jornada.status, 'concluida');
+  // tokens reais do resumo grátis ficam registrados (custo zero no plano gratuito da Groq)
+  assert.deepEqual([banco.mvp_budget_generations.length, banco.mvp_budget_generations[0].provider, banco.mvp_budget_generations[0].input_tokens, banco.mvp_budget_generations[0].order_id], [1, 'groq', 1200, null]);
 
   const o = r.orcamento;
   const horas = PARAMETROS.horas.baixa + PARAMETROS.horas.media + PARAMETROS.horas.alta;

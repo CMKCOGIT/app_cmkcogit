@@ -585,6 +585,7 @@ begin
     update public.mvp_budget_orders
        set status = 'generating', tentativas = tentativas + 1, gerando_desde = now(), erro = null
      where id = p_order
+       and paid_at is not null                      -- defesa extra: só pedido com pagamento confirmado
        and tentativas < v_max + tentativas_liberadas
        and (status = 'paid' or (status = 'generating' and gerando_desde < now() - interval '6 minutes'))
     returning *;
@@ -640,6 +641,7 @@ begin
     update public.mvp_budget_orders
        set status = 'paid', tentativas_liberadas = tentativas_liberadas + 1, erro = null
      where id = p_order and status = 'failed'
+       and paid_at is not null                      -- pedido que nunca foi pago não vira "paid"
        and (p_admin or tentativas_liberadas = 0)
     returning *;
 end;

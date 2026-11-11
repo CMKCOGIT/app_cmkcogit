@@ -33,11 +33,17 @@
     emailReenviar = email;
     if (caixaReenviar) caixaReenviar.hidden = !email;
   }
+  captcha.montar(formLogin);
+  captcha.montar(formCadastro);
+
   botaoReenviar?.addEventListener('click', async () => {
     const email = emailReenviar;
     if (!email) return;
+    const captchaToken = captcha.token(formLogin);
+    if (captchaToken === null) return mensagem(AVISO_CAPTCHA, true);
     ocupado(botaoReenviar, true, 'Reenviando...');
-    const { error } = await db.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin + '/' + proximaPagina() } });
+    const { error } = await db.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin + '/' + proximaPagina(), captchaToken } });
+    captcha.reiniciar(formLogin);
     ocupado(botaoReenviar, false);
     if (error) { mensagem(traduzirErro(error.message), true); mostrarReenviar(email); return; }
     mensagem('Enviamos um novo link de confirmação para ' + email + '. Confira também a caixa de spam.');
@@ -93,8 +99,11 @@
   }
   botaoReenviarCadastro?.addEventListener('click', async () => {
     if (!emailEnviado) return;
+    const captchaToken = captcha.token(formCadastro);
+    if (captchaToken === null) { statusEnviado.textContent = AVISO_CAPTCHA; return; }
     ocupado(botaoReenviarCadastro, true, 'Reenviando...');
-    const { error } = await db.auth.resend({ type: 'signup', email: emailEnviado, options: { emailRedirectTo: window.location.origin + '/' + proximaPagina() } });
+    const { error } = await db.auth.resend({ type: 'signup', email: emailEnviado, options: { emailRedirectTo: window.location.origin + '/' + proximaPagina(), captchaToken } });
+    captcha.reiniciar(formCadastro);
     ocupado(botaoReenviarCadastro, false);
     if (error) {
       statusEnviado.dataset.erro = '';
@@ -170,6 +179,7 @@
     if (t.includes('already registered') || t.includes('already been registered')) return 'Este e-mail já tem conta. Use "Entrar".';
     if (t.includes('password should be at least') || t.includes('weak')) return 'Escolha uma senha mais forte (mínimo 8 caracteres).';
     if (t.includes('rate limit') || t.includes('too many')) return 'Muitas tentativas. Aguarde um pouco e tente de novo.';
+    if (t.includes('captcha')) return 'A verificação de segurança falhou ou expirou. Tente de novo.';
     if (t.includes('invalid email') || t.includes('unable to validate email')) return 'E-mail inválido.';
     if (t.includes('for security purposes') || t.includes('only request this after')) return 'Por segurança, aguarde alguns segundos antes de pedir outro e-mail.';
     if (t.includes('error sending') || t.includes('smtp')) return 'Não conseguimos enviar o e-mail agora. Tente de novo em instantes ou fale com a gente pelo WhatsApp.';
@@ -247,10 +257,13 @@
     const email = document.getElementById('login-email').value.trim();
     const senha = document.getElementById('login-senha').value;
     if (!email || !senha) return mensagem('Preencha e-mail e senha.', true);
+    const captchaToken = captcha.token(formLogin);
+    if (captchaToken === null) return mensagem(AVISO_CAPTCHA, true);
     const botao = formLogin.querySelector('button[type=submit]');
     ocupado(botao, true);
     mensagem('Entrando...');
-    const { error } = await db.auth.signInWithPassword({ email, password: senha });
+    const { error } = await db.auth.signInWithPassword({ email, password: senha, options: { captchaToken } });
+    captcha.reiniciar(formLogin);
     if (error) {
       ocupado(botao, false);
       mensagem(traduzirErro(error.message), true);
@@ -275,6 +288,8 @@
     if (senha !== document.getElementById('cad-senha2').value) return mensagem('As senhas não conferem.', true);
     if (!document.getElementById('cad-aceite').checked) return mensagem('Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.', true);
 
+    const captchaToken = captcha.token(formCadastro);
+    if (captchaToken === null) return mensagem(AVISO_CAPTCHA, true);
     const botao = formCadastro.querySelector('button[type=submit]');
     ocupado(botao, true);
     mensagem('Criando conta...');
@@ -284,9 +299,11 @@
       password: senha,
       options: {
         data: { nome, telefone: fone, aceite_termos_em: new Date().toISOString(), aceite_navegador: navigator.userAgent.slice(0, 400) }, // o SQL usa nome/telefone para criar o perfil
-        emailRedirectTo: window.location.origin + '/' + proximaPagina()
+        emailRedirectTo: window.location.origin + '/' + proximaPagina(),
+        captchaToken
       }
     });
+    captcha.reiniciar(formCadastro);
     if (error) {
       ocupado(botao, false);
       return mensagem(traduzirErro(error.message), true);
@@ -310,7 +327,10 @@
   document.getElementById('esqueci-senha').addEventListener('click', async () => {
     const email = document.getElementById('login-email').value.trim();
     if (!email) return mensagem('Digite seu e-mail no campo acima e clique de novo em "Esqueci minha senha".', true);
-    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/redefinir-senha.html' });
+    const captchaToken = captcha.token(formLogin);
+    if (captchaToken === null) return mensagem(AVISO_CAPTCHA, true);
+    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/redefinir-senha.html', captchaToken });
+    captcha.reiniciar(formLogin);
     if (error) return mensagem(traduzirErro(error.message), true);
     mensagem('Se este e-mail tiver conta, você receberá um link para criar uma nova senha.');
   });

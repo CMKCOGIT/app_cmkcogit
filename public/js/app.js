@@ -41,9 +41,108 @@ const ERRO_RETORNO_AUTH = (function () {
   };
 })();
 
+// ---------------------------------------------------------------------
+// Login único entre app.cmkcogit.com.br e mvp.cmkcogit.com.br: a sessão do Supabase fica num
+// cookie do domínio pai (CFG.cookieDomain, ex.: .cmkcogit.com.br) em vez do localStorage, então
+// quem entra num site já está logado no outro. O mesmo código está no js/app.js do mvp.
+// O cookie passa de 4 KB com o token: é dividido em pedaços (<chave>.0, <chave>.1 ...).
+// Fora do domínio configurado (localhost, previews da Vercel), o cookie fica só neste endereço.
+// Sessões antigas do localStorage são movidas para o cookie na primeira visita (ninguém sai).
+// ---------------------------------------------------------------------
+const armazenamentoSessao = (function () {
+  const dominio = String(CFG.cookieDomain || '').replace(/^\.?/, '.');
+  const usarDominio = dominio.length > 1 && ('.' + window.location.hostname).endsWith(dominio);
+  const PEDACO = 3000;
+  const MAX_IDADE = 400 * 24 * 60 * 60; // o próprio Supabase renova; o refresh token decide a validade
+  const base = '; Path=/; SameSite=Lax' + (usarDominio ? '; Domain=' + dominio : '') + (location.protocol === 'https:' ? '; Secure' : '');
+  const ler = (nome) => {
+    const m = document.cookie.split('; ').find((c) => c.startsWith(nome + '='));
+    return m ? m.slice(nome.length + 1) : null;
+  };
+  const gravar = (nome, valor, idade = MAX_IDADE) => { document.cookie = nome + '=' + valor + '; Max-Age=' + idade + base; };
+  function remover(chave) {
+    const n = Number(ler(chave + '.n')) || 0;
+    for (let i = 0; i < Math.max(n, 8); i++) if (ler(chave + '.' + i) !== null) gravar(chave + '.' + i, '', 0);
+    gravar(chave + '.n', '', 0);
+  }
+  function getItem(chave) {
+    const n = Number(ler(chave + '.n')) || 0;
+    if (n > 0) {
+      let txt = '';
+      for (let i = 0; i < n; i++) {
+        const p = ler(chave + '.' + i);
+        if (p === null) return null;
+        txt += p;
+      }
+      try { return decodeURIComponent(txt); } catch (_) { return null; }
+    }
+    // migração: sessão antiga guardada no localStorage deste endereço
+    try {
+      const antigo = localStorage.getItem(chave);
+      if (antigo) { setItem(chave, antigo); localStorage.removeItem(chave); return antigo; }
+    } catch (_) {}
+    return null;
+  }
+  function setItem(chave, valor) {
+    remover(chave);
+    const cod = encodeURIComponent(valor);
+    const partes = Math.ceil(cod.length / PEDACO) || 1;
+    for (let i = 0; i < partes; i++) gravar(chave + '.' + i, cod.slice(i * PEDACO, (i + 1) * PEDACO));
+    gravar(chave + '.n', String(partes));
+  }
+  return { getItem, setItem, removeItem: remover };
+})();
+
 const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: armazenamentoSessao }
 });
+
+// ---------------------------------------------------------------------
+// Captcha (Cloudflare Turnstile) no cadastro, no login e na recuperação de senha.
+// Ligado em Supabase > Authentication > Attack Protection (a chave secreta fica só lá); aqui só a
+// chave pública (TURNSTILE_SITE_KEY). Sem a chave, os formulários funcionam como antes.
+// ---------------------------------------------------------------------
+const captcha = (function () {
+  let carregando = null;
+  const widgets = new Map();
+  function carregar() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    carregando = carregando || new Promise((ok, falha) => {
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.onload = () => ok(window.turnstile);
+      s.onerror = () => falha(new Error('Não foi possível carregar a verificação de segurança.'));
+      document.head.appendChild(s);
+    });
+    return carregando;
+  }
+  async function montar(form) {
+    if (!CFG.turnstileSiteKey || !form || widgets.has(form)) return;
+    const caixa = document.createElement('div');
+    caixa.className = 'captcha';
+    (form.querySelector('[type=submit]') || form.lastElementChild).before(caixa);
+    try {
+      const t = await carregar();
+      widgets.set(form, t.render(caixa, { sitekey: CFG.turnstileSiteKey, language: 'pt-br', appearance: 'interaction-only' }));
+    } catch (e) { console.warn(e.message); }
+  }
+  return {
+    ativo: () => Boolean(CFG.turnstileSiteKey),
+    montar,
+    // undefined = captcha desligado (o Supabase ignora); null = ainda não verificado
+    token(form) {
+      if (!CFG.turnstileSiteKey) return undefined;
+      const id = widgets.get(form);
+      return id !== undefined && window.turnstile ? window.turnstile.getResponse(id) || null : null;
+    },
+    reiniciar(form) {
+      const id = widgets.get(form);
+      if (id !== undefined && window.turnstile) window.turnstile.reset(id);
+    }
+  };
+})();
+const AVISO_CAPTCHA = 'Aguarde a verificação de segurança terminar e tente de novo.';
 
 // ---------------------------------------------------------------------
 // Formatação
@@ -298,13 +397,14 @@ function linhaDoTempoHtml(lista) {
 // O banco (RLS) e as rotas /api também bloqueiam; isto é a navegação.
 // ---------------------------------------------------------------------
 const INICIO_ADMIN = 'admin-inicio.html';
-const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html'];
-const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html', 'admin-quadros.html'];
+const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html', 'construir.html'];
+const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html', 'admin-quadros.html', 'admin-mentores.html'];
 
 function ehAdmin(perfil) {
   return Boolean(perfil && perfil.role === 'admin');
 }
 function paginaAtual() {
+  if (/^\/projeto\/[^/]+\/?$/.test(window.location.pathname)) return 'construir.html'; // vercel.json: /projeto/:id
   return window.location.pathname.split('/').pop() || 'index.html';
 }
 function paginaInicial(perfil) {
@@ -422,7 +522,12 @@ function resumoPendenteHtml(cfg) {
 }
 
 // Depois do login: continuar a solução do site ou ir para o início
+// "Construir com a CMK Cogit" (vindo do mvp) sem login: volta para /projeto/{id} depois de entrar
+const CHAVE_CONSTRUIR = 'cogit_construir_v1';
 function proximaPagina() {
+  let construir = null;
+  try { construir = localStorage.getItem(CHAVE_CONSTRUIR); } catch (_) {}
+  if (construir && /^[0-9a-f-]{36}$/i.test(construir)) return 'projeto/' + construir;
   return lerPendente() ? 'continuar.html' : 'inicio.html';
 }
 
@@ -608,6 +713,7 @@ function itensMenu(perfil) {
       { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' },
       { href: 'admin-quadros.html', texto: 'Quadros', curto: 'Quadros', icone: 'quadros' },
       { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' },
+      { href: 'admin-mentores.html', texto: 'Mentores e orçamentos MVP', curto: 'Mentores', icone: 'equipe' },
       { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
     ] }],
     fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },

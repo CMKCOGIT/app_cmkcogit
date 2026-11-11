@@ -24,6 +24,7 @@ function simular() {
     if (u.pathname === '/rest/v1/rpc/gerar_renovacoes') return ok([{ pagamento_id: 'p1', cliente_id: 'aaaaaaaa-0000-4000-8000-000000000001', descricao: 'Renovação mensal — Landing Page', valor: 30, vencimento: '2026-12-01' }]);
     if (u.pathname === '/rest/v1/notificacoes') return ok([{ id: 'n1' }], 201);
     if (u.pathname === '/rest/v1/profiles') return ok([{ nome: 'Ana Souza', email: 'ana@ex.com' }]);
+    if (u.pathname === '/rest/v1/mvp_budget_orders') return ok([]);   // nenhum orçamento do MVP pendente
     if (u.origin === 'https://api.resend.com') return ok({ id: 'e1' });
     throw new Error('não simulado: ' + url);
   };
@@ -43,7 +44,7 @@ test('gera renovação, avisa no sino e manda e-mail quando o Resend está confi
   const r = resp();
   await handler({ method: 'GET', headers: { authorization: 'Bearer segredo-cron' } }, r);
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 1, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0 });
+  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 1, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0, orcamentos_mvp: [] });
   assert.ok(chamadas.some((c) => c.url === '/rest/v1/notificacoes' && c.corpo.link === 'pagamentos.html'));
   const email = chamadas.find((c) => c.url === '/emails');
   assert.deepEqual(email.corpo.to, ['ana@ex.com']);
@@ -54,7 +55,7 @@ test('sem Resend configurado: cobrança e aviso continuam, e-mail não é enviad
   simular();
   const r = resp();
   await handler({ method: 'GET', headers: { authorization: 'Bearer segredo-cron' } }, r);
-  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 0, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0 });
+  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 0, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0, orcamentos_mvp: [] });
   assert.equal((await enviarEmail({ para: 'a@b.com', assunto: 'x', texto: 'y' })).motivo, 'sem_configuracao');
 });
 
