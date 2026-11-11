@@ -467,3 +467,24 @@ test('CORS em /api/mvp: preflight do mvp ok; outra origem sem permissão', async
   assert.equal(fora.cab['access-control-allow-origin'], undefined);
   assert.equal(fora.preco, 30);
 });
+
+test('modo de teste: só os e-mails da lista recebem sem pagar; os outros continuam pagando', async () => {
+  process.env.MVP_TESTE_SEM_PAGAMENTO = ' ANA@ex.com , outro@ex.com';
+  try {
+    const r = await api('tok-ana', 'pedir', { corpo: { projeto_id: J1 } });
+    assert.deepEqual([r.status, r.teste, r.url, r.pedido.status], [200, true, null, 'paid']);
+    assert.equal(mp.preferencias.length, 0);           // nada de Mercado Pago
+    assert.equal(banco.pagamentos.length, 0);          // nenhuma cobrança criada
+    assert.equal(banco.mvp_budget_orders[0].mp_payment_id, 'TESTE-SEM-PAGAMENTO');
+    assert.equal(banco.mvp_budget_orders[0].price_brl, 0.01);
+    const g = await api('tok-ana', 'gerar', { corpo: { pedido_id: r.pedido.id } });
+    assert.equal(g.pedido.status, 'ready');            // a geração roda normalmente
+    // fora da lista: paga
+    banco.jornadas.push({ id: '11111111-0000-4000-8000-000000000009', cliente_id: MEN, titulo: 'Da Marta' });
+    banco.jornada_orcamentos.push({ id: 'o9', jornada_id: '11111111-0000-4000-8000-000000000009', dados: ORC, created_at: '2026-11-01' });
+    const pago = await api('tok-men', 'pedir', { corpo: { projeto_id: '11111111-0000-4000-8000-000000000009' } });
+    assert.ok(pago.url && !pago.teste);
+  } finally {
+    delete process.env.MVP_TESTE_SEM_PAGAMENTO;
+  }
+});

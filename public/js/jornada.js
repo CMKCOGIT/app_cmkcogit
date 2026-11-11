@@ -583,6 +583,7 @@
       ocupado(botao, true, 'Abrindo pagamento...');
       try {
         const r = await api('mvp', { acao: 'pedir', projeto_id: E.jornada.id });
+        if (r.teste) { toast('Modo de teste: documento liberado sem pagamento.'); return desenharDetalhado(); }
         if (!urlMercadoPagoValida(r.url)) throw new Error('Não foi possível iniciar o pagamento.');
         window.location.href = r.url;
       } catch (e) { ocupado(botao, false); toast(e.message, 'erro'); }
