@@ -16,6 +16,10 @@
       "destination": "/api/notificacoes?rota=jornada"
     },
     {
+      "source": "/api/sso",
+      "destination": "/api/notificacoes?rota=sso"
+    },
+    {
       "source": "/projeto/:id",
       "destination": "/construir.html"
     }

@@ -168,7 +168,13 @@
   // Já está logado (inclusive voltando do Google)? Segue direto. As páginas internas
   // levam para "Concluir cadastro" se ainda faltar algum dado obrigatório.
   if (await getSessao()) {
+    SSO.entrou();
     window.location.replace(proximaPagina());
+    return;
+  }
+  // Login único: logado no mvp? Entra direto (o mvp devolve para cá com ?sso=0 se não estiver).
+  if (!new URLSearchParams(window.location.search).has('sso') && !ERRO_RETORNO_AUTH && SSO.pode()) {
+    SSO.tentar('/' + proximaPagina());
     return;
   }
 
@@ -270,6 +276,7 @@
       if (String(error.message).toLowerCase().includes('email not confirmed')) mostrarReenviar(email);
       return;
     }
+    SSO.entrou();
     telaCarregando('Entrando na plataforma...');
     window.location.href = proximaPagina();
   });
@@ -320,6 +327,7 @@
       mostrarEnviado(email);
       return;
     }
+    SSO.entrou();
     telaCarregando('Preparando sua conta...');
     window.location.href = proximaPagina();
   });

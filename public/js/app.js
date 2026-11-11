@@ -42,59 +42,28 @@ const ERRO_RETORNO_AUTH = (function () {
 })();
 
 // ---------------------------------------------------------------------
-// Login único entre app.cmkcogit.com.br e mvp.cmkcogit.com.br: a sessão do Supabase fica num
-// cookie do domínio pai (CFG.cookieDomain, ex.: .cmkcogit.com.br) em vez do localStorage, então
-// quem entra num site já está logado no outro. O mesmo código está no js/app.js do mvp.
-// O cookie passa de 4 KB com o token: é dividido em pedaços (<chave>.0, <chave>.1 ...).
-// Fora do domínio configurado (localhost, previews da Vercel), o cookie fica só neste endereço.
-// Sessões antigas do localStorage são movidas para o cookie na primeira visita (ninguém sai).
+// Login único com o mvp.cmkcogit.com.br SEM cookie compartilhado: a sessão fica só neste endereço
+// (padrão do supabase-js). "Entrar direto" usa um código de uso único entre os dois sites
+// (sso.html + /api/sso, lib/sso.js). Nenhum outro subdomínio recebe ou lê a sessão.
 // ---------------------------------------------------------------------
-const armazenamentoSessao = (function () {
-  const dominio = String(CFG.cookieDomain || '').replace(/^\.?/, '.');
-  const usarDominio = dominio.length > 1 && ('.' + window.location.hostname).endsWith(dominio);
-  const PEDACO = 3000;
-  const MAX_IDADE = 400 * 24 * 60 * 60; // o próprio Supabase renova; o refresh token decide a validade
-  const base = '; Path=/; SameSite=Lax' + (usarDominio ? '; Domain=' + dominio : '') + (location.protocol === 'https:' ? '; Secure' : '');
-  const ler = (nome) => {
-    const m = document.cookie.split('; ').find((c) => c.startsWith(nome + '='));
-    return m ? m.slice(nome.length + 1) : null;
-  };
-  const gravar = (nome, valor, idade = MAX_IDADE) => { document.cookie = nome + '=' + valor + '; Max-Age=' + idade + base; };
-  function remover(chave) {
-    const n = Number(ler(chave + '.n')) || 0;
-    for (let i = 0; i < Math.max(n, 8); i++) if (ler(chave + '.' + i) !== null) gravar(chave + '.' + i, '', 0);
-    gravar(chave + '.n', '', 0);
-  }
-  function getItem(chave) {
-    const n = Number(ler(chave + '.n')) || 0;
-    if (n > 0) {
-      let txt = '';
-      for (let i = 0; i < n; i++) {
-        const p = ler(chave + '.' + i);
-        if (p === null) return null;
-        txt += p;
-      }
-      try { return decodeURIComponent(txt); } catch (_) { return null; }
-    }
-    // migração: sessão antiga guardada no localStorage deste endereço
-    try {
-      const antigo = localStorage.getItem(chave);
-      if (antigo) { setItem(chave, antigo); localStorage.removeItem(chave); return antigo; }
-    } catch (_) {}
-    return null;
-  }
-  function setItem(chave, valor) {
-    remover(chave);
-    const cod = encodeURIComponent(valor);
-    const partes = Math.ceil(cod.length / PEDACO) || 1;
-    for (let i = 0; i < partes; i++) gravar(chave + '.' + i, cod.slice(i * PEDACO, (i + 1) * PEDACO));
-    gravar(chave + '.n', String(partes));
-  }
-  return { getItem, setItem, removeItem: remover };
-})();
+const SSO = {
+  TENTADO: 'cogit_sso_tentado',  // sessionStorage: já tentou nesta aba (evita ir e voltar sem fim)
+  SAIU: 'cogit_sso_saiu',        // localStorage: a pessoa clicou em "Sair" aqui; não entra sozinha de novo
+  pode() {
+    if (!CFG.mvpUrl) return false;
+    try { return !sessionStorage.getItem(SSO.TENTADO) && !localStorage.getItem(SSO.SAIU); } catch (_) { return false; }
+  },
+  // Sem sessão aqui: pergunta ao mvp se a pessoa já está logada lá (volta sozinha nos dois casos)
+  tentar(volta) {
+    try { sessionStorage.setItem(SSO.TENTADO, '1'); } catch (_) {}
+    window.location.replace(CFG.mvpUrl + '/sso.html?para=app&volta=' + encodeURIComponent(volta || '/'));
+  },
+  entrou() { try { localStorage.removeItem(SSO.SAIU); sessionStorage.removeItem(SSO.TENTADO); } catch (_) {} },
+  saiu() { try { localStorage.setItem(SSO.SAIU, '1'); } catch (_) {} }
+};
 
 const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: armazenamentoSessao }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
 // ---------------------------------------------------------------------
@@ -649,6 +618,7 @@ function mostrarFalhaDeAcesso(texto) {
 
 async function sair() {
   limparPerfilCache();
+  SSO.saiu();   // o mvp continua logado; aqui não entra sozinho de novo até um login manual
   await db.auth.signOut();
   window.location.href = 'login.html';
 }

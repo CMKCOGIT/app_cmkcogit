@@ -337,6 +337,7 @@ Jornada (grátis) ──> resumo do orçamento (Groq, valor calculado no servido
 | `POST /api/jornada` | `iniciar`, `salvar`, `enviar`, `avaliar` (só o mentor do projeto), `gerar_orcamento` (resumo grátis) |
 | `GET /api/mvp?acao=config` · `status&projeto_id=` · `pdf&pedido_id=` | preço; último pedido + crédito; link do PDF (só o dono ou admin) |
 | `POST /api/mvp` `{acao}` | `pedir`, `gerar`, `tentar_novamente`, `construir`; admin: `admin_reprocessar`, `admin_estornar` (`GET admin_pedidos`) |
+| `POST /api/sso` `{para, volta}` | login único: código de uso único para o outro site (`lib/sso.js`) |
 | `POST /api/mp-webhook` | Mercado Pago. Com `MP_WEBHOOK_SECRET`, aviso sem assinatura válida é recusado (401) |
 
 `/api/jornada` e `/api/mvp` são reescritas (vercel.json) para `/api/notificacoes?rota=...`: o plano Hobby aceita 12 funções.
@@ -364,10 +365,14 @@ A função tem `maxDuration` de 300 s (precisa do **Fluid compute**, padrão em 
 
 ### 6.4 Login único, captcha e Supabase
 
-1. **Vercel (app e mvp):** `COOKIE_DOMAIN=.cmkcogit.com.br`. A sessão do Supabase passa a ficar num cookie do domínio pai
-   (`js/app.js`, adaptador de armazenamento; o mvp tem o mesmo código), então quem entra num site já está no outro. Quem
-   estava logado continua: a sessão do localStorage é movida para o cookie. Atenção: qualquer subdomínio de
-   cmkcogit.com.br consegue ler esse cookie; publique nele só sites confiáveis.
+1. **Login único sem cookie compartilhado.** Cada site guarda a sessão só no próprio endereço; nenhum outro subdomínio
+   (por exemplo um site de cliente em `xxx.cmkcogit.com.br`) recebe ou lê a sessão. Quem abre um site sem estar logado
+   passa, sem digitar nada, pelo `sso.html` do outro: se lá estiver logado, o servidor do app (`/api/sso`, `lib/sso.js`)
+   gera um código de uso único (link mágico do Supabase, sem e-mail) que volta no fragmento `#` e vira uma sessão
+   própria; se não estiver, a pessoa volta para a tela de login normal (`?sso=0`). Destinos só do ambiente
+   (`APP_URL`, `MVP_URL`). "Sair" vale para o site onde a pessoa clicou (e ela não entra sozinha de novo até um login
+   manual); "Sair de todos os dispositivos" encerra todas as sessões. Em Supabase > Authentication > Email, deixe
+   **Email OTP Expiration** curto (ex.: 600 s): é a validade do código (também vale para os links de e-mail).
 2. **Supabase > Authentication > URL Configuration > Redirect URLs:** acrescente `https://mvp.cmkcogit.com.br/**` (e
    `http://localhost:3001/**` para o mvp no computador). Os e-mails de confirmação e senha voltam para o site de onde a
    pessoa veio.
@@ -393,7 +398,7 @@ A função tem `maxDuration` de 300 s (precisa do **Fluid compute**, padrão em 
 
 `ANTHROPIC_API_KEY`, `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CLAUDE_TIMEOUT_MS`, `CLAUDE_PRECO_ENTRADA`, `CLAUDE_PRECO_SAIDA`,
 `CLAUDE_PRECO_CACHE_LEITURA`, `CLAUDE_PRECO_CACHE_ESCRITA`, `CLAUDE_PRECOS_JSON`, `GROQ_PRECO_ENTRADA`, `GROQ_PRECO_SAIDA`,
-`USD_BRL`, `MVP_ORIGENS`, `MVP_URL`, `COOKIE_DOMAIN`, `TURNSTILE_SITE_KEY` (veja `.env.example`).
+`USD_BRL`, `MVP_ORIGENS`, `MVP_URL` (login único; no computador `http://localhost:3001`), `TURNSTILE_SITE_KEY` (veja `.env.example`).
 
 ## Segurança — o que já está garantido
 
