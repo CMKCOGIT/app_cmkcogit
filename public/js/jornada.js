@@ -579,23 +579,26 @@
         ${p.pode_tentar_novamente ? `<div class="pagina-acoes"><button type="button" id="jm-tentar">${icone('recarregar')} Tentar de novo</button></div>` : ''}`;
     }
     caixa.querySelector('#jm-comprar')?.addEventListener('click', async (ev) => {
-      ocupado(ev.currentTarget, true, 'Abrindo pagamento...');
+      const botao = ev.currentTarget;
+      ocupado(botao, true, 'Abrindo pagamento...');
       try {
         const r = await api('mvp', { acao: 'pedir', projeto_id: E.jornada.id });
         if (!urlMercadoPagoValida(r.url)) throw new Error('Não foi possível iniciar o pagamento.');
         window.location.href = r.url;
-      } catch (e) { ocupado(ev.currentTarget, false); toast(e.message, 'erro'); }
+      } catch (e) { ocupado(botao, false); toast(e.message, 'erro'); }
     });
     caixa.querySelector('#jm-atualizar')?.addEventListener('click', () => desenharDetalhado());
     caixa.querySelector('#jm-tentar')?.addEventListener('click', async (ev) => {
-      ocupado(ev.currentTarget, true, 'Gerando...');
+      const botao = ev.currentTarget;
+      ocupado(botao, true, 'Gerando...');
       try { await api('mvp', { acao: 'tentar_novamente', pedido_id: p.id }); } catch (e) { toast(e.message, 'erro'); }
       desenharDetalhado();
     });
     caixa.querySelector('#jm-baixar')?.addEventListener('click', async (ev) => {
-      ocupado(ev.currentTarget, true, 'Abrindo...');
+      const botao = ev.currentTarget;
+      ocupado(botao, true, 'Abrindo...');
       try { window.location.href = (await api('mvp?acao=pdf&pedido_id=' + encodeURIComponent(p.id), null, 'GET')).url; } catch (e) { toast(e.message, 'erro'); }
-      ocupado(ev.currentTarget, false);
+      ocupado(botao, false);
     });
     // voltou do Mercado Pago: confere de novo por até 2 minutos enquanto o aviso do pagamento não chega
     if (p && p.status === 'pending_payment' && /[?&]mp=sucesso/.test(window.location.search) && esperaPagamento < 24) {
