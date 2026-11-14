@@ -170,7 +170,7 @@
       etapa: 'editar',
       editavel: solicitacaoEditavel(s),
       itens: {
-        servicos: (sel.servicos || []).map((x) => ({ id: x.id, modelo: x.modelo || null, plano: x.plano || null })),
+        servicos: (sel.servicos || []).map((x) => ({ id: x.id, modelo: x.modelo || null, plano: x.plano || null, ...(x.variante ? { variante: x.variante } : {}) })),
         complementos: (sel.complementos || []).map((x) => ({ id: x.id, qtd: Number(x.qtd) || 1 })),
         personalizados: (sel.personalizados || []).map((x) => ({ id: x.id, nome: x.nome, descricao: x.descricao || '', valor: Number(x.valor) }))
       },
@@ -248,6 +248,11 @@
           ${s.aprovado_em ? `<div><dt>Aprovada em</dt><dd>${fmtDataHora(s.aprovado_em)}${s.comprovante && s.comprovante.aprovado_por ? ' · ' + esc(s.comprovante.aprovado_por) : ''}</dd></div>` : ''}
         </dl>
         ${s.notas ? `<details><summary>Contexto informado pelo cliente</summary><p>${esc(s.notas)}</p></details>` : ''}
+        ${s.selecao && s.selecao.personalizacao ? `
+          <div data-personalizacao>
+            <p><strong>Site personalizado pelo cliente.</strong> Baixe o arquivo e abra no modelo com <code>?equipe</code> (aba Publicar &gt; Importar configuração) para revisar, ajustar e gerar o site final.</p>
+            <p><button type="button" data-baixar-personalizacao="${esc(s.id)}">Baixar personalização (.json)</button> <small data-personalizacao-status></small></p>
+          </div>` : ''}
         ${s.status === 'cancelada' && s.motivo_cancelamento ? `<p data-motivo><small>Motivo do cancelamento:</small> ${esc(s.motivo_cancelamento)}</p>` : ''}
       </section>`;
   }
@@ -260,7 +265,7 @@
     return [
       ...(r.itens || []).map((i) => ({
         chave: (i.personalizado ? 'personalizado:' : 'servico:') + i.id, nome: i.nome,
-        detalhe: i.personalizado ? i.descricao || 'item personalizado' : formato(i.modelo), preco: preco(i.preco, i.tipo_preco),
+        detalhe: i.personalizado ? i.descricao || 'item personalizado' : formato(i.modelo) + (i.variante_nome ? ' · ' + i.variante_nome : ''), preco: preco(i.preco, i.tipo_preco),
         equipe: i.adicionado === 'equipe', personalizado: Boolean(i.personalizado)
       })),
       ...(r.mensais || []).map((m) => ({ chave: 'servico:' + m.id, nome: m.nome, detalhe: m.cobranca === 'solicitação' ? 'suporte por solicitação, após o 1º mês grátis' : 'suporte mensal, após o 1º mês grátis', preco: m.preco == null ? 'suporte' : m.cobranca === 'solicitação' ? 'a partir de ' + brl(m.preco) : brl(m.preco) + '/mês', equipe: m.adicionado === 'equipe' })),
@@ -503,11 +508,26 @@
   // =================================================================
   // Modal: eventos (delegados)
   // =================================================================
+  // Personalização do modelo pronto que o cliente enviou pelo editor (Storage: solicitacoes/<id>/personalizacao.json)
+  async function baixarPersonalizacao(b) {
+    const status = b.parentElement.querySelector('[data-personalizacao-status]');
+    status.textContent = 'Gerando link...';
+    const caminho = 'solicitacoes/' + b.dataset.baixarPersonalizacao + '/personalizacao.json';
+    const { data, error } = await db.storage.from('arquivos').createSignedUrl(caminho, 600, { download: M.s.codigo + '-personalizacao.json' });
+    if (error || !data) {
+      status.textContent = 'Arquivo ainda não recebido. O cliente precisa abrir a plataforma no mesmo navegador em que personalizou o site.';
+      return;
+    }
+    status.textContent = '';
+    window.location.href = data.signedUrl;
+  }
+
   function aoClicarNoModal(e) {
     if (!M) return;
     const b = e.target.closest('button');
     if (!b || b.disabled) return;
     if (b.dataset.ir) return irPara(b.dataset.ir);
+    if (b.dataset.baixarPersonalizacao) return baixarPersonalizacao(b);
     if (b.hasAttribute('data-fechar')) return tentarFechar();
     if (b.hasAttribute('data-limpar-selecao')) { M.selecionados.clear(); return renderModal(); }
     if (b.hasAttribute('data-remover-selecionados')) return removerSelecionados();

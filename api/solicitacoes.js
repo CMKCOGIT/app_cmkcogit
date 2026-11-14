@@ -46,21 +46,27 @@ export default async function handler(req, res) {
     const notas = [
       cfg.diagnostico && cfg.diagnostico.objetivo ? 'Objetivo (diagnóstico): ' + cfg.diagnostico.objetivo : '',
       cfg.diagnostico && cfg.diagnostico.direcao ? 'Direção sugerida: ' + cfg.diagnostico.direcao : '',
+      cfg.personalizacao ? 'Site personalizado pelo cliente no editor do modelo pronto: revisar, ajustar e enviar o orçamento.' : '',
       cfg.notas
     ].filter(Boolean).join('\n');
+
+    // Com personalização, a equipe revisa o site antes de liberar o pagamento (mesmo com preço de catálogo).
+    const direto = calc.estruturado && !cfg.personalizacao;
+    const selecao = { objetivos: cfg.objetivos, servicos: cfg.servicos, complementos: cfg.complementos };
+    if (cfg.personalizacao) selecao.personalizacao = true;
 
     const linha = {
       cliente_id: usuario.id,
       ref_site: cfg.ref,
       origem: cfg.origem,
-      selecao: { objetivos: cfg.objetivos, servicos: cfg.servicos, complementos: cfg.complementos },
+      selecao,
       resumo: calc.resumo,
       notas: notas || null,
-      estruturado: calc.estruturado,
+      estruturado: direto,
       tipo_preco: calc.tipo_preco,
       valor_calculado: calc.valor,
-      valor_final: calc.estruturado ? calc.valor : null,
-      status: calc.estruturado ? 'aguardando_pagamento' : 'em_validacao'
+      valor_final: direto ? calc.valor : null,
+      status: direto ? 'aguardando_pagamento' : 'em_validacao'
     };
 
     let nova;

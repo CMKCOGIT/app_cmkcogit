@@ -6,8 +6,10 @@
 // =====================================================================
 (async function () {
   capturarCfgDaUrl(); // ANTES do login: assim a solução não se perde
+  await receberPersonalizacao(lerPendente()); // site personalizado no editor do modelo (se houver)
   const perfil = await protegerPagina();
   if (!perfil) return;
+  enviarPersonalizacoes().catch(() => {}); // envio que ficou pendente de outra visita
 
   const lista = document.getElementById('lista-solicitacoes');
   const tentar = document.getElementById('tentar-de-novo');
@@ -17,6 +19,13 @@
     `Olá! Sou ${perfil.nome || 'cliente'} (${perfil.email || ''}) e tenho uma dúvida sobre minha solicitação na plataforma COGIT.`
   );
   document.getElementById('btn-tentar').addEventListener('click', async () => {
+    if (!lerPendente()) {
+      // a solicitação já existe: falta só reenviar o site personalizado
+      const ok = await enviarPersonalizacoes().catch(() => false);
+      tentar.hidden = ok;
+      avisar(ok ? 'Recebemos o seu site! Nossa equipe vai revisar e enviar o orçamento aqui.' : '');
+      if (!ok) mostrarErro('Ainda não foi possível enviar o site personalizado. Verifique a conexão e tente de novo.');
+    }
     await registrarPendente();
     await carregar();
   });
@@ -31,6 +40,17 @@
       limparPendente();
       tentar.hidden = true;
       destaque = r.solicitacao.id;
+      if (cfg.personalizacao) {
+        const enviada = await vincularPersonalizacao(cfg.ref, r.solicitacao.id).catch(() => false);
+        avisar(enviada
+          ? 'Recebemos o seu site! Nossa equipe vai revisar, fazer os ajustes necessários e enviar o orçamento aqui. Depois do pagamento, entregamos o site publicado.'
+          : '');
+        if (!enviada) {
+          mostrarErro('Solicitação salva, mas o envio do site personalizado não terminou. Clique em "Tentar de novo".');
+          tentar.hidden = false;
+        }
+        return;
+      }
       avisar(r.solicitacao.estruturado
         ? 'Solução salva! O preço já está fechado: é só clicar em "Pagar com Mercado Pago".'
         : 'Solução salva! Nossa equipe vai validar o escopo e liberar o pagamento aqui. Avisaremos pelo seu contato.');

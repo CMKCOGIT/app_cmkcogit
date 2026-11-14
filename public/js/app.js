@@ -412,6 +412,81 @@ function lerPendente() {
 function limparPendente() {
   try { localStorage.removeItem(CHAVE_PENDENTE); } catch (_) {}
 }
+
+// ---------------------------------------------------------------------
+// Personalização de modelo pronto: o cliente monta o site no editor do modelo
+// (cmkcogit.com.br/templates/...) e clica em "Enviar para a CMKCOGIT". O editor abre
+// esta página com #cfg (personalizacao: true) e entrega cores, textos e imagens por
+// postMessage. Guardamos NESTE navegador (IndexedDB, por 7 dias) até existir a
+// solicitação; aí o arquivo vai para o Storage em solicitacoes/<id>/personalizacao.json.
+// ---------------------------------------------------------------------
+const PERS_LIMITE = 15 * 1024 * 1024; // imagens já chegam reduzidas pelo editor
+function persDb(modo, fn) {
+  return new Promise((ok, falha) => {
+    let req;
+    try { req = indexedDB.open('cogit_personalizacao', 1); } catch (e) { return falha(e); }
+    req.onupgradeneeded = () => req.result.createObjectStore('envios', { keyPath: 'ref' });
+    req.onerror = () => falha(req.error);
+    req.onsuccess = () => {
+      const tx = req.result.transaction('envios', modo);
+      const r = fn(tx.objectStore('envios'));
+      tx.oncomplete = () => ok(r && r.result);
+      tx.onerror = () => falha(tx.error);
+    };
+  });
+}
+const persSalvar = (registro) => persDb('readwrite', (s) => s.put(registro));
+const persApagar = (ref) => persDb('readwrite', (s) => s.delete(ref));
+const persListar = () => persDb('readonly', (s) => s.getAll()).then((l) => (l || []).filter((x) => x.expira > Date.now()));
+
+// Espera o editor entregar a personalização (só quando o #cfg pede e a aba veio do editor).
+function receberPersonalizacao(cfg) {
+  if (!cfg || cfg.personalizacao !== true || !window.opener) return Promise.resolve(false);
+  return new Promise((resolver) => {
+    const origens = origensDoSite();
+    const fim = (v) => { window.removeEventListener('message', aoReceber); clearTimeout(prazo); resolver(v); };
+    const prazo = setTimeout(() => fim(false), 12000);
+    async function aoReceber(e) {
+      const m = e.data;
+      if (e.source !== window.opener || !origens.has(e.origin) || !m || m.type !== 'cmk:personalizacao' || m.ref !== cfg.ref) return;
+      try {
+        const dados = m.dados;
+        const tamanho = JSON.stringify(dados).length;
+        if (!dados || typeof dados !== 'object' || typeof dados.modelo !== 'string' || tamanho > PERS_LIMITE) throw new Error('inválida');
+        await persSalvar({ ref: cfg.ref, dados, solicitacaoId: null, expira: Date.now() + VALIDADE_PENDENTE });
+        e.source.postMessage({ type: 'cmk:personalizacao:recebida', ref: cfg.ref }, e.origin);
+        fim(true);
+      } catch (_) {
+        e.source.postMessage({ type: 'cmk:personalizacao:erro', ref: cfg.ref }, e.origin);
+        fim(false);
+      }
+    }
+    window.addEventListener('message', aoReceber);
+    // avisa o editor (a origem dele é uma das do site) que esta aba está pronta para receber
+    origens.forEach((o) => { try { window.opener.postMessage({ type: 'cmk:personalizacao:pronto', ref: cfg.ref }, o); } catch (_) {} });
+  });
+}
+
+// Depois que a solicitação existe: liga a personalização a ela e envia ao Storage.
+async function vincularPersonalizacao(ref, solicitacaoId) {
+  const lista = await persListar().catch(() => []);
+  const reg = lista.find((x) => x.ref === ref);
+  if (reg) await persSalvar({ ...reg, solicitacaoId });
+  return enviarPersonalizacoes();
+}
+async function enviarPersonalizacoes() {
+  const lista = await persListar().catch(() => []);
+  let falhas = 0;
+  for (const reg of lista.filter((x) => x.solicitacaoId)) {
+    const caminho = 'solicitacoes/' + reg.solicitacaoId + '/personalizacao.json';
+    const blob = new Blob([JSON.stringify(reg.dados)], { type: 'application/json' });
+    const { error } = await db.storage.from('arquivos').upload(caminho, blob, { contentType: 'application/json', upsert: false });
+    if (!error || /exist|duplicate/i.test(error.message || '') || String(error.statusCode) === '409') await persApagar(reg.ref).catch(() => {});
+    else falhas += 1;
+  }
+  return falhas === 0;
+}
+
 function resumoPendenteHtml(cfg) {
   const itens = (cfg.servicos || []).map((s) => {
     const formato = s.modelo === 'sob-medida' ? ' — sob medida' : s.modelo === 'modelos-prontos' ? ' — modelo pronto' : '';

@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Clash Display e Satoshi, identidade 2026) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config`, `mensagens-ia` (Gemini) |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20` e `21` (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20`, `21` e, para receber sites personalizados nos modelos prontos, o `31` (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 

@@ -263,6 +263,21 @@ test('sob medida: fica em validação e não abre pagamento até o admin liberar
   assert.equal(banco.solicitacoes[0].status, 'aguardando_pagamento');
 });
 
+test('modelo pronto personalizado no editor: vai para validação (a equipe revisa e manda o orçamento), sem pagamento direto', async () => {
+  const cfg = { ...cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos', variante: 'landing-page-basica' }], 'personalizadoref12345'), personalizacao: true };
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
+  assert.equal(r.status, 201);
+  assert.equal(r.json.solicitacao.status, 'em_validacao');
+  const s = banco.solicitacoes.find((x) => x.id === r.json.solicitacao.id);
+  assert.equal(s.valor_final, null);
+  assert.equal(s.valor_calculado, 600); // sugestão do catálogo para o admin
+  assert.equal(s.selecao.personalizacao, true);
+  assert.equal(s.selecao.servicos[0].variante, 'landing-page-basica');
+  assert.match(s.notas, /personalizado pelo cliente/);
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  assert.equal(c.status, 409);
+});
+
 test('webhook: assinatura inválida é recusada; válida confirma; repetido não duplica', async () => {
   const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'webhookref1234567890') } });
   const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });

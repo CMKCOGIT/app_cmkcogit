@@ -105,3 +105,27 @@ test('planos mensal/anual não existem mais: links antigos com plano pagam o pre
     assert.doesNotMatch(r.resumo.itens[0].nome, /plano/);
   }
 });
+
+test('modelo pronto com variante: mantém o preço do catálogo e mostra o nível no resumo', () => {
+  const r = calc([{ id: 'landing-page', modelo: 'modelos-prontos', variante: 'landing-page-basica' }]);
+  assert.equal(r.valor, 600);
+  assert.equal(r.estruturado, true);
+  assert.equal(r.resumo.itens[0].variante, 'landing-page-basica');
+  assert.match(r.resumo.itens[0].variante_nome, /Básico/);
+});
+
+test('variante inválida, de outro serviço ou com sob medida é descartada', () => {
+  const ruim = (s) => sanitizarCfg({ v: 1, ref: REF, servicos: [s] }).cfg.servicos[0].variante;
+  assert.equal(ruim({ id: 'landing-page', modelo: 'modelos-prontos', variante: 'nao-existe' }), undefined);
+  assert.equal(ruim({ id: 'portfolio', modelo: 'modelos-prontos', variante: 'landing-page-basica' }), undefined);
+  assert.equal(ruim({ id: 'landing-page', modelo: 'sob-medida', variante: 'landing-page-basica' }), undefined);
+});
+
+test('personalização só vale com variante de modelo pronto', () => {
+  const com = sanitizarCfg({ v: 1, ref: REF, personalizacao: true, servicos: [{ id: 'landing-page', modelo: 'modelos-prontos', variante: 'landing-page-profissional' }] });
+  assert.equal(com.cfg.personalizacao, true);
+  const sem = sanitizarCfg({ v: 1, ref: REF, personalizacao: true, servicos: [{ id: 'landing-page', modelo: 'modelos-prontos' }] });
+  assert.equal(sem.cfg.personalizacao, false);
+  const texto = sanitizarCfg({ v: 1, ref: REF, personalizacao: 'sim', servicos: [{ id: 'landing-page', modelo: 'modelos-prontos', variante: 'landing-page-basica' }] });
+  assert.equal(texto.cfg.personalizacao, false);
+});
