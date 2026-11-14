@@ -129,3 +129,11 @@ test('personalização só vale com variante de modelo pronto', () => {
   const texto = sanitizarCfg({ v: 1, ref: REF, personalizacao: 'sim', servicos: [{ id: 'landing-page', modelo: 'modelos-prontos', variante: 'landing-page-basica' }] });
   assert.equal(texto.cfg.personalizacao, false);
 });
+
+test('os três níveis da landing page são aceitos (básico, intermediário e formal)', () => {
+  for (const [variante, nome] of [['landing-page-basica', 'Básico'], ['landing-page-profissional', 'Intermediário'], ['landing-page-formal', 'Formal']]) {
+    const r = calc([{ id: 'landing-page', modelo: 'modelos-prontos', variante }]);
+    assert.equal(r.resumo.itens[0].variante, variante);
+    assert.ok(r.resumo.itens[0].variante_nome.startsWith(nome), variante);
+  }
+});
