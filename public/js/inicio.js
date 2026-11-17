@@ -14,7 +14,7 @@
   );
 
   const [sol, pag, proj, pend] = await Promise.all([
-    db.from('solicitacoes').select('id, status').eq('cliente_id', perfil.id),
+    db.from('solicitacoes').select('id, status, codigo').eq('cliente_id', perfil.id),
     db.from('pagamentos').select('id, status, valor, descricao, created_at').eq('cliente_id', perfil.id),
     db.from('projetos').select('*, projeto_etapas(ordem, nome, status)')
       .eq('cliente_id', perfil.id).order('created_at', { ascending: false }),
@@ -28,7 +28,9 @@
 
   const conta = (lista, st) => lista.filter((x) => x.status === st).length;
   const aPagar = conta(sol.data, 'aguardando_pagamento');
-  const emValidacao = conta(sol.data, 'em_validacao');
+  // antes da aprovação da CMK; "ajustes" e "proposta" esperam o cliente
+  const emValidacao = sol.data.filter((x) => ['em_validacao', 'em_analise'].includes(x.status)).length;
+  const comVoce = sol.data.filter((x) => ['ajustes_solicitados', 'aguardando_cliente'].includes(x.status));
   const emAndamento = proj.data.filter((p) => p.status_projeto !== 'concluido' && p.status_projeto !== 'cancelado');
   const ativos = emAndamento.length;
 
@@ -36,7 +38,7 @@
   const resumo = document.getElementById('resumo');
   resumo.innerHTML = [
     { rotulo: 'Aguardando pagamento', valor: aPagar, icone: 'pagamentos', href: 'continuar.html?filtro=aguardando_pagamento', nota: aPagar ? 'soluções prontas para pagar' : 'nada para pagar agora', destaque: true },
-    { rotulo: 'Em validação pela equipe', valor: emValidacao, icone: 'em-validacao', href: 'continuar.html?filtro=em_validacao', nota: 'a equipe confirma o valor' },
+    { rotulo: 'Em análise pela CMK', valor: emValidacao, icone: 'em-validacao', href: 'continuar.html?filtro=em_validacao', nota: 'o pagamento é liberado após a aprovação' },
     { rotulo: 'Cobranças pendentes', valor: pendentes.length, icone: 'recibo', href: 'pagamentos.html?filtro=pendente', nota: pendentes.length ? brl(pendentes.reduce((t, x) => t + Number(x.valor || 0), 0)) + ' no total' : 'tudo em dia' },
     { rotulo: 'Projetos em andamento', valor: ativos, icone: 'projetos', href: 'projetos.html', nota: proj.data.length ? proj.data.length + ' no total' : 'nenhum ainda' },
     { rotulo: 'Aguardando sua decisão', valor: pend.data.length, icone: 'alerta', href: pend.data.length ? 'projeto.html?id=' + encodeURIComponent(pend.data[0].projeto_id) : 'projetos.html', nota: pend.data.length ? 'a equipe precisa de você' : 'nenhuma pendência', alerta: pend.data.length ? 'atencao' : '' }
@@ -47,8 +49,11 @@
   const passo = (ic, titulo, texto, acoes) => `<div class="passo"><span class="passo-icone" aria-hidden="true">${icone(ic)}</span>
     <div><h3>${titulo}</h3><p>${texto}</p><div class="pagina-acoes">${acoes}</div></div></div>`;
   const alvo = document.getElementById('proximo-passo');
-  if (aPagar) alvo.innerHTML = passo('pagamentos', 'Sua solução está pronta para pagar', 'A equipe liberou o pagamento. Pague por Pix, cartão ou boleto e o projeto começa.', '<a href="continuar.html?filtro=aguardando_pagamento">Ir para o pagamento</a>');
-  else if (emValidacao) alvo.innerHTML = passo('em-validacao', 'A equipe está validando sua solução', 'Confirmamos o escopo e o valor. Quando o pagamento for liberado, ele aparece em Minhas solicitações.', '<a href="continuar.html?filtro=em_validacao">Ver solicitação</a>');
+  if (comVoce.length) alvo.innerHTML = passo('editar', comVoce[0].status === 'ajustes_solicitados' ? 'A CMK pediu ajustes no seu projeto' : 'Revise a proposta da CMK',
+    comVoce[0].status === 'ajustes_solicitados' ? 'Veja o que a equipe pediu, edite e reenvie para uma nova análise.' : 'A equipe ajustou o projeto. Aprove para liberar o pagamento ou peça uma revisão.',
+    '<a href="continuar.html?abrir=' + encodeURIComponent(comVoce[0].id) + '">Abrir ' + esc(comVoce[0].codigo) + '</a>');
+  else if (aPagar) alvo.innerHTML = passo('pagamentos', 'Sua solução está pronta para pagar', 'A equipe liberou o pagamento. Pague por Pix, cartão ou boleto e o projeto começa.', '<a href="continuar.html?filtro=aguardando_pagamento">Ir para o pagamento</a>');
+  else if (emValidacao) alvo.innerHTML = passo('em-validacao', 'A CMK está analisando o seu projeto', 'Revisamos o projeto e confirmamos o valor. Quando o pagamento for liberado, ele aparece em Minhas solicitações.', '<a href="continuar.html?filtro=em_validacao">Ver solicitação</a>');
   else if (pend.data.length) alvo.innerHTML = passo('alerta', 'A equipe precisa de uma decisão sua', esc(pend.data[0].titulo) + (pend.data[0].prazo ? ' · até ' + fmtData(pend.data[0].prazo) : ''), '<a href="projeto.html?id=' + encodeURIComponent(pend.data[0].projeto_id) + '">Ver o que falta</a>');
   else if (ativos) alvo.innerHTML = passo('projetos', 'Tudo certo, seu projeto está com a equipe', 'Acompanhe as etapas e envie documentos pelo repositório do projeto.', '<a href="projetos.html">Acompanhar projetos</a>');
   else alvo.innerHTML = passo('adicionar', 'Comece montando sua solução', 'Escolha o que sua empresa precisa no site; o valor aparece na hora.', `<a href="${esc(urlSite('monte-sua-solucao.html'))}">Montar solução</a><a href="${esc(urlSite('index.html'))}">Fazer o diagnóstico</a>`);

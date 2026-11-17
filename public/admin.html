@@ -33,7 +33,7 @@
   <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
-  <link rel="stylesheet" href="/css/plataforma.css?v=cfe469304c">
+  <link rel="stylesheet" href="/css/plataforma.css?v=8d58631ae0">
   <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
   <link rel="stylesheet" href="/css/assistente.css?v=d8513037c9">
 </head>
@@ -68,7 +68,10 @@
               <option value="90">Últimos 90 dias</option>
             </select></p>
           <div class="filtro-pilulas" id="filtro" role="group" aria-label="Status">
-            <button type="button" data-status="em_validacao" aria-pressed="true">Em validação</button>
+            <button type="button" data-status="em_validacao" aria-pressed="true">Aguardando análise</button>
+            <button type="button" data-status="em_analise" aria-pressed="false">Em análise</button>
+            <button type="button" data-status="ajustes_solicitados" aria-pressed="false">Ajustes solicitados</button>
+            <button type="button" data-status="aguardando_cliente" aria-pressed="false">Aguardando cliente</button>
             <button type="button" data-status="aguardando_pagamento" aria-pressed="false">Pagamento liberado</button>
             <button type="button" data-status="paga" aria-pressed="false">Pagas</button>
             <button type="button" data-status="cancelada" aria-pressed="false">Canceladas</button>
@@ -127,9 +130,9 @@
     <footer id="modal-sol-rodape"></footer>
   </dialog>
 
-  <script src="js/app.js?v=7468863755"></script>
+  <script src="js/app.js?v=4b3dbf7e81"></script>
   <script src="js/assistente.js?v=cb25ae8335"></script>
   <script src="js/comprovante-render.js?v=d05864c895"></script>
-  <script src="js/admin.js?v=4cafa59988"></script>
+  <script src="js/admin.js?v=ac9eacf0fd"></script>
 </body>
 </html>

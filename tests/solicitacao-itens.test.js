@@ -20,7 +20,7 @@ let corrida = null; // simula outra edição entre a leitura e a gravação
 beforeEach(() => {
   corrida = null;
   const perfil = (id, role) => ({ id, role, nome: id.slice(0, 3), email: id.slice(0, 3) + '@ex.com', cadastro_concluido_em: '2026-01-01T00:00:00Z' });
-  banco = { profiles: [perfil(ANA, 'cliente'), perfil(BIA, 'cliente'), perfil(ADM, 'admin')], solicitacoes: [], pagamentos: [], notificacoes: [], catalogo_precos: catalogo };
+  banco = { profiles: [perfil(ANA, 'cliente'), perfil(BIA, 'cliente'), perfil(ADM, 'admin')], solicitacoes: [], pagamentos: [], notificacoes: [], solicitacao_eventos: [], catalogo_precos: catalogo };
 });
 
 function criarSolicitacao(servicos, complementos = [], extra = {}) {
@@ -79,31 +79,33 @@ async function remover(token, corpo) {
   return { status: res.statusCode, json: JSON.parse(res.corpo || 'null') };
 }
 
-test('cliente tira a Landing Page e fica só com o Portfólio: novo preço e cobrança atualizada', async () => {
+test('cliente tira a Landing Page: preço recalculado, volta para a análise da CMK e a cobrança liberada é cancelada', async () => {
   const s = criarSolicitacao([{ id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'portfolio', modelo: 'modelos-prontos' }]);
   assert.equal(s.valor_final, 1100);
   banco.pagamentos.push({ id: 'pg1', solicitacao_id: s.id, status: 'pendente', valor: 1100, link_pagamento: 'https://www.mercadopago.com.br/x', mp_preference_id: 'p1' });
 
   const r = await remover('tok-ana', { solicitacao_id: s.id, tipo: 'servico', id: 'landing-page' });
   assert.equal(r.status, 200);
-  assert.equal(r.json.solicitacao.valor_final, 500);
-  assert.equal(s.status, 'aguardando_pagamento');
+  assert.equal(r.json.solicitacao.valor_calculado, 500);
+  assert.equal(r.json.solicitacao.valor_final, null); // só um admin libera o pagamento
+  assert.equal(s.status, 'em_validacao');
   assert.deepEqual(s.selecao.servicos.map((x) => x.id), ['portfolio']);
   assert.equal(s.resumo.itens.length, 1);
   assert.equal(s.resumo.removidos[0].por, 'cliente');
-  assert.equal(banco.pagamentos[0].valor, 500);
+  assert.equal(banco.pagamentos[0].status, 'cancelado');
   assert.equal(banco.pagamentos[0].link_pagamento, null); // link antigo (R$ 1.100) descartado
   assert.deepEqual(banco.notificacoes.map((n) => n.usuario_id), [ADM]); // a equipe é avisada
+  assert.equal(banco.solicitacao_eventos[0].tipo, 'item_removido');
 });
 
-test('admin tira um item: sob medida volta para validação, cobrança pendente cancelada, cliente avisado', async () => {
+test('admin tira um item de uma aprovada: sem preço fechado volta para "Em análise", cobrança pendente cancelada, cliente avisado', async () => {
   const s = criarSolicitacao([{ id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'site-institucional', modelo: 'sob-medida' }],
     [], { status: 'aguardando_pagamento', valor_final: 2000 });
   banco.pagamentos.push({ id: 'pg1', solicitacao_id: s.id, status: 'pendente', valor: 2000 });
 
   const r = await remover('tok-adm', { solicitacao_id: s.id, tipo: 'servico', id: 'landing-page' });
   assert.equal(r.status, 200);
-  assert.equal(s.status, 'em_validacao');
+  assert.equal(s.status, 'em_analise');
   assert.equal(s.valor_final, null);
   assert.equal(banco.pagamentos[0].status, 'cancelado');
   assert.equal(s.resumo.removidos[0].por, 'equipe');
@@ -116,7 +118,8 @@ test('complemento que dependia da solução removida sai junto', async () => {
   assert.equal(r.status, 200);
   assert.deepEqual(s.selecao.complementos, []);
   assert.equal(r.json.removidos_junto.length, 1);
-  assert.equal(s.valor_final, 500);
+  assert.equal(s.valor_calculado, 500);
+  assert.equal(s.valor_final, null);
 });
 
 test('recusas: última solução, outra pessoa, já paga, item inexistente, edição simultânea', async () => {

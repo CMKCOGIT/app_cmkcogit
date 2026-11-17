@@ -6,6 +6,12 @@
 //                                                   gera o comprovante e devolve o link do WhatsApp
 //   cancelar  { motivo, mensagem }               -> cancela (cobrança pendente cancelada)
 //   reenviar  {}                                 -> link do comprovante + WhatsApp de novo
+//   analisar   {}                                -> "Em análise" (registra quem assumiu)
+//   ajustes    { mensagem }                      -> "Ajustes solicitados": o cliente edita e reenvia
+//   observacao { mensagem }                      -> mensagem ao cliente, sem mudar o status
+// aprovar: sem mudança nos itens -> "Aprovado pela CMK — aguardando pagamento" (pagamento liberado);
+//          com itens adicionados/retirados pela equipe -> "Aguardando aprovação do cliente".
+// Toda ação entra no histórico (solicitacao_eventos) com o admin e a data.
 // itens = { servicos: [{id, modelo}], complementos: [{id, qtd}], personalizados: [{id, nome, descricao, valor}] }
 // updated_at: o que o modal leu; se a solicitação mudou depois disso, responde 409.
 import { criarDb } from '../lib/supabase.js';
@@ -13,9 +19,10 @@ import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarE
 import { calcular, validarItensAdmin, texto } from '../lib/selecao.js';
 import { novoToken, montarComprovante, textoWhatsApp } from '../lib/comprovante.js';
 import { createNotification } from '../lib/notificacoes.js';
+import { ABERTOS, registrarEvento } from '../lib/fluxo-solicitacao.js';
 
-const ACOES = ['simular', 'salvar', 'aprovar', 'cancelar', 'reenviar'];
-const EDITAVEIS = ['em_validacao', 'aguardando_pagamento'];
+const ACOES = ['simular', 'salvar', 'aprovar', 'cancelar', 'reenviar', 'analisar', 'ajustes', 'observacao'];
+const EDITAVEIS = ABERTOS;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return erro(res, 405, 'Método não permitido.');
@@ -52,6 +59,34 @@ export default async function handler(req, res) {
     }
 
     if (acao === 'cancelar') return await cancelar(res, db, { s, admin, cliente, corpo });
+    const quem = { autorId: admin.id, autorNome: admin.nome || admin.email, papel: 'admin', versao: s.versao_atual || 1 };
+
+    if (acao === 'analisar') {
+      if (!['em_validacao', 'ajustes_solicitados', 'aguardando_cliente'].includes(s.status)) return erro(res, 409, 'Esta solicitação não está aguardando análise.');
+      const agoraA = new Date().toISOString();
+      const nova = await gravar(db, s, { status: 'em_analise', analise_por: admin.id, analise_em: agoraA });
+      if (!nova) return conflito(res);
+      await registrarEvento(db, { solicitacaoId: s.id, tipo: 'analise_iniciada', de: s.status, para: 'em_analise', mensagem: 'Análise iniciada por ' + quem.autorNome + '.', ...quem });
+      await avisarCliente(db, s, { tipo: 'solicitacao_em_analise', titulo: 'Seu projeto ' + s.codigo + ' está em análise', mensagem: 'A equipe da CMK começou a analisar. Avisaremos quando terminar.', metadados: { solicitacao_id: s.id } });
+      return json(res, 200, { ok: true, solicitacao: nova });
+    }
+
+    if (acao === 'ajustes' || acao === 'observacao') {
+      const msg = texto(corpo.mensagem, 2000);
+      if (!msg) return erro(res, 400, acao === 'ajustes' ? 'Explique o que o cliente precisa ajustar.' : 'Escreva a mensagem para o cliente.');
+      if (acao === 'observacao') {
+        await registrarEvento(db, { solicitacaoId: s.id, tipo: 'observacao', de: s.status, para: s.status, mensagem: msg, ...quem });
+        await avisarCliente(db, s, { tipo: 'solicitacao_mensagem', titulo: 'Mensagem da equipe sobre ' + s.codigo, mensagem: msg, metadados: { solicitacao_id: s.id } });
+        return json(res, 200, { ok: true, solicitacao: s });
+      }
+      const nova = await gravar(db, s, { status: 'ajustes_solicitados', valor_final: null, observacao_admin: msg });
+      if (!nova) return conflito(res);
+      await ajustarCobranca(db, s.id, null);
+      await registrarEvento(db, { solicitacaoId: s.id, tipo: 'ajustes_solicitados', de: s.status, para: 'ajustes_solicitados', mensagem: msg, ...quem });
+      await avisarCliente(db, s, { tipo: 'solicitacao_ajustes', titulo: 'A CMK pediu ajustes em ' + s.codigo, mensagem: msg + ' Abra a solicitação para editar e reenviar.', metadados: { solicitacao_id: s.id } });
+      const w = cliente.telefone ? urlWhatsApp(cliente.telefone, `Olá${cliente.nome ? ', ' + String(cliente.nome).split(' ')[0] : ''}! Aqui é da CMKCOGIT, sobre o seu pedido ${s.codigo}.\n\nPrecisamos de alguns ajustes: ${msg}\n\nÉ só abrir a solicitação na plataforma, editar e reenviar.`) : null;
+      return json(res, 200, { ok: true, solicitacao: nova, whatsapp_url: w });
+    }
 
     // simular / salvar / aprovar: itens recalculados pelo catálogo
     const v = validarItensAdmin(corpo.itens, s.selecao || {});
@@ -75,7 +110,11 @@ export default async function handler(req, res) {
     };
 
     if (acao === 'salvar') {
-      const campos = { ...base, valor_final: calc.estruturado ? calc.valor : null, status: calc.estruturado ? 'aguardando_pagamento' : 'em_validacao' };
+      // salvar NÃO libera pagamento: só "aprovar". Já aprovada: acompanha o novo preço fechado ou volta para análise.
+      const aprovada = s.status === 'aguardando_pagamento';
+      const campos = aprovada && calc.estruturado
+        ? { ...base, valor_final: calc.valor, status: 'aguardando_pagamento' }
+        : { ...base, valor_final: null, status: aprovada ? 'em_analise' : s.status };
       const nova = await gravar(db, s, campos);
       if (!nova) return conflito(res);
       await ajustarCobranca(db, s.id, campos.status === 'aguardando_pagamento' ? campos.valor_final : null);
@@ -90,11 +129,14 @@ export default async function handler(req, res) {
     const comprovante = montarComprovante({
       solicitacao: s, resumo, valorFinal, mensagem, cliente, aprovadoPor: admin.nome || admin.email, emitidoEm: agora
     });
+    // a equipe mudou os itens que o cliente pediu? então o cliente confirma antes de pagar
+    const alterou = equipeAlterou(s, v.itens, resumo);
     const campos = {
       ...base,
       valor_final: valorFinal,
       observacao_admin: mensagem,
-      status: 'aguardando_pagamento',
+      status: alterou ? 'aguardando_cliente' : 'aguardando_pagamento',
+      versao_aprovada: s.versao_atual || 1,
       aprovado_em: agora,
       aprovado_por: admin.id,
       comprovante_token: token,
@@ -104,8 +146,16 @@ export default async function handler(req, res) {
     if (!nova) return conflito(res);
     await ajustarCobranca(db, s.id, valorFinal);
 
-    await avisarCliente(db, s, {
-      tipo: 'solicitacao_aprovada', titulo: 'Pedido ' + s.codigo + ' aprovado',
+    await registrarEvento(db, {
+      solicitacaoId: s.id, tipo: alterou ? 'aguardando_cliente' : 'aprovada', de: s.status, para: campos.status, ...quem,
+      mensagem: (alterou ? 'Projeto aprovado com alterações da equipe; aguardando a confirmação do cliente. ' : 'Projeto aprovado. Pagamento liberado: ') + brl(valorFinal) + (mensagem ? '. ' + mensagem : '.')
+    });
+    await avisarCliente(db, s, alterou ? {
+      tipo: 'solicitacao_proposta', titulo: 'Revise a proposta da CMK para ' + s.codigo,
+      mensagem: 'A equipe ajustou o projeto (' + brl(valorFinal) + '). Confira e aprove para liberar o pagamento.' + (mensagem ? ' ' + mensagem : ''),
+      metadados: { solicitacao_id: s.id, valor_final: valorFinal }
+    } : {
+      tipo: 'solicitacao_aprovada', titulo: 'Projeto ' + s.codigo + ' aprovado: pagamento liberado',
       mensagem: 'Pagamento liberado: ' + brl(valorFinal) + '. ' + (mensagem || 'É só pagar em Minhas solicitações.'),
       metadados: { solicitacao_id: s.id, valor_final: valorFinal }
     });
@@ -131,6 +181,7 @@ async function cancelar(res, db, { s, admin, cliente, corpo }) {
   });
   if (!nova) return conflito(res);
   await db.atualizar('pagamentos', { solicitacao_id: 'eq.' + s.id, status: 'eq.pendente' }, { status: 'cancelado', link_pagamento: null });
+  await registrarEvento(db, { solicitacaoId: s.id, tipo: 'cancelada', de: s.status, para: 'cancelada', autorId: admin.id, autorNome: admin.nome || admin.email, papel: 'admin', mensagem: [motivo, mensagem].filter(Boolean).join(' · ') || 'Cancelada pela equipe.' });
   await avisarCliente(db, s, {
     tipo: 'solicitacao_cancelada', titulo: 'Pedido ' + s.codigo + ' cancelado',
     mensagem: mensagem || 'Fale com a equipe se quiser montar outra solução.', metadados: { solicitacao_id: s.id }
@@ -188,9 +239,17 @@ function urlWhatsApp(telefone, msg) {
   return 'https://wa.me/' + (fone || '') + '?text=' + encodeURIComponent(msg);
 }
 
+// A equipe adicionou (marca "adicionado: equipe") ou retirou algo da seleção do cliente?
+function equipeAlterou(s, itens, resumo) {
+  const antes = (s.resumo && Array.isArray(s.resumo.removidos)) ? s.resumo.removidos.length : 0;
+  const removeuAgora = (resumo.removidos || []).length > antes;
+  const adicionou = [...itens.servicos, ...itens.complementos].some((x) => x.adicionado === 'equipe') || itens.personalizados.length > 0;
+  return removeuAgora || adicionou;
+}
+
 async function avisarCliente(db, s, { tipo, titulo, mensagem, metadados }) {
   try {
-    await createNotification(db, { destinatarioId: s.cliente_id, tipo, titulo, mensagem, link: 'continuar.html', metadados });
+    await createNotification(db, { destinatarioId: s.cliente_id, tipo, titulo, mensagem, link: 'continuar.html?abrir=' + s.id, metadados });
   } catch (e) {
     registrarErro('admin-solicitacao:avisar', e);
   }

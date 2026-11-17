@@ -89,9 +89,9 @@
   // Painel lateral: quantas solicitações há em cada status (contagem no banco)
   async function contarPorStatus() {
     const ul = document.getElementById('contagem-status');
-    const status = ['em_validacao', 'aguardando_pagamento', 'paga', 'cancelada'];
-    const NOMES = { em_validacao: 'Em validação', aguardando_pagamento: 'Pagamento liberado', paga: 'Pagas', cancelada: 'Canceladas' };
-    const icones = { em_validacao: 'em-validacao', aguardando_pagamento: 'pagamentos', paga: 'aprovar', cancelada: 'cancelado' };
+    const status = ['em_validacao', 'em_analise', 'ajustes_solicitados', 'aguardando_cliente', 'aguardando_pagamento', 'paga', 'cancelada'];
+    const NOMES = { em_validacao: 'Aguardando análise', em_analise: 'Em análise', ajustes_solicitados: 'Ajustes solicitados', aguardando_cliente: 'Aguardando cliente', aguardando_pagamento: 'Pagamento liberado', paga: 'Pagas', cancelada: 'Canceladas' };
+    const icones = { em_validacao: 'em-validacao', em_analise: 'em-validacao', ajustes_solicitados: 'editar', aguardando_cliente: 'clientes', aguardando_pagamento: 'pagamentos', paga: 'aprovar', cancelada: 'cancelado' };
     const res = await Promise.all(status.map((st) => db.from('solicitacoes').select('id', { count: 'exact', head: true }).eq('status', st)));
     ul.innerHTML = status.map((st, i) => `<li><button type="button" class="widget-item" data-ir-status="${st}">${icone(icones[st])}
       <span><strong>${esc(NOMES[st])}</strong></span><span class="widget-valor">${res[i].error ? '—' : Number(res[i].count) || 0}</span></button></li>`).join('');
@@ -105,13 +105,16 @@
     const r = s.resumo || {};
     const itens = [...(r.itens || []), ...(r.mensais || []), ...(r.complementos || [])];
     const editavel = solicitacaoEditavel(s);
-    const acao = s.status === 'em_validacao' ? 'Validar' : editavel ? 'Abrir e editar' : 'Ver detalhes';
+    const acao = editavel ? 'Itens e valor' : 'Ver itens';
+    const sel = s.selecao || {};
+    const pers = 'personalizacao' in sel ? `<span data-etiqueta="${sel.personalizacao ? 'ok' : 'neutro'}">${sel.personalizacao ? 'Site personalizado' : 'Sem personalização'}</span>` : '';
     return `
       <article data-solicitacao="${esc(s.id)}">
         <header>
           <h2>${esc(s.codigo)}</h2>
           ${etiquetaStatus(s)}
           <span data-etiqueta="neutro">${s.estruturado ? 'Preço fechado' : 'Sob medida'}</span>
+          ${pers}
           <span data-valores>
             <small>Estimativa</small> <strong>${s.tipo_preco === 'from' ? 'a partir de ' : ''}${brl(s.valor_calculado)}</strong>
             <small>· Final</small> <strong>${s.valor_final != null ? brl(s.valor_final) : '—'}</strong>
@@ -125,6 +128,7 @@
         </ul>
         ${s.status === 'cancelada' && s.motivo_cancelamento ? `<p data-motivo><small>Motivo do cancelamento:</small> ${esc(s.motivo_cancelamento)}</p>` : ''}
         <p data-acoes-card>
+          <a class="botao-link" href="admin-solicitacao.html?id=${encodeURIComponent(s.id)}">${s.status === 'em_validacao' ? 'Analisar projeto' : 'Abrir projeto'}</a>
           <button type="button" data-abrir="${esc(s.id)}">${acao}</button>
           ${s.comprovante_token ? `<button type="button" data-reenviar="${esc(s.id)}">${icone('whatsapp')} Reenviar comprovante</button>
             <a href="comprovante.html?t=${encodeURIComponent(s.comprovante_token)}" target="_blank" rel="noopener">${icone('comprovante')} Ver comprovante</a>` : ''}
@@ -138,7 +142,7 @@
       return s.aprovado_em ? '<span data-etiqueta="ok">Aprovada · pagamento liberado</span>'
         : '<span data-etiqueta="info">Aguardando pagamento (preço fechado)</span>';
     }
-    const tipo = { em_validacao: 'atencao', paga: 'ok', cancelada: 'neutro' }[s.status] || 'neutro';
+    const tipo = (TOM_STATUS.solicitacao || {})[s.status] || 'neutro';
     return `<span data-etiqueta="${tipo}">${esc(rotulo('solicitacao', s.status))}</span>`;
   }
 
@@ -170,7 +174,7 @@
       etapa: 'editar',
       editavel: solicitacaoEditavel(s),
       itens: {
-        servicos: (sel.servicos || []).map((x) => ({ id: x.id, modelo: x.modelo || null, plano: x.plano || null })),
+        servicos: (sel.servicos || []).map((x) => ({ id: x.id, modelo: x.modelo || null, plano: x.plano || null, ...(x.variante ? { variante: x.variante } : {}) })),
         complementos: (sel.complementos || []).map((x) => ({ id: x.id, qtd: Number(x.qtd) || 1 })),
         personalizados: (sel.personalizados || []).map((x) => ({ id: x.id, nome: x.nome, descricao: x.descricao || '', valor: Number(x.valor) }))
       },
@@ -248,6 +252,11 @@
           ${s.aprovado_em ? `<div><dt>Aprovada em</dt><dd>${fmtDataHora(s.aprovado_em)}${s.comprovante && s.comprovante.aprovado_por ? ' · ' + esc(s.comprovante.aprovado_por) : ''}</dd></div>` : ''}
         </dl>
         ${s.notas ? `<details><summary>Contexto informado pelo cliente</summary><p>${esc(s.notas)}</p></details>` : ''}
+        ${s.selecao && s.selecao.personalizacao ? `
+          <div data-personalizacao>
+            <p><strong>Site personalizado pelo cliente.</strong> Baixe o arquivo e abra no modelo com <code>?equipe</code> (aba Publicar &gt; Importar configuração) para revisar, ajustar e gerar o site final.</p>
+            <p><button type="button" data-baixar-personalizacao="${esc(s.id)}">Baixar personalização (.json)</button> <small data-personalizacao-status></small></p>
+          </div>` : ''}
         ${s.status === 'cancelada' && s.motivo_cancelamento ? `<p data-motivo><small>Motivo do cancelamento:</small> ${esc(s.motivo_cancelamento)}</p>` : ''}
       </section>`;
   }
@@ -260,7 +269,7 @@
     return [
       ...(r.itens || []).map((i) => ({
         chave: (i.personalizado ? 'personalizado:' : 'servico:') + i.id, nome: i.nome,
-        detalhe: i.personalizado ? i.descricao || 'item personalizado' : formato(i.modelo), preco: preco(i.preco, i.tipo_preco),
+        detalhe: i.personalizado ? i.descricao || 'item personalizado' : formato(i.modelo) + (i.variante_nome ? ' · ' + i.variante_nome : ''), preco: preco(i.preco, i.tipo_preco),
         equipe: i.adicionado === 'equipe', personalizado: Boolean(i.personalizado)
       })),
       ...(r.mensais || []).map((m) => ({ chave: 'servico:' + m.id, nome: m.nome, detalhe: m.cobranca === 'solicitação' ? 'suporte por solicitação, após o 1º mês grátis' : 'suporte mensal, após o 1º mês grátis', preco: m.preco == null ? 'suporte' : m.cobranca === 'solicitação' ? 'a partir de ' + brl(m.preco) : brl(m.preco) + '/mês', equipe: m.adicionado === 'equipe' })),
@@ -503,11 +512,26 @@
   // =================================================================
   // Modal: eventos (delegados)
   // =================================================================
+  // Personalização do modelo pronto que o cliente enviou pelo editor (Storage: solicitacoes/<id>/personalizacao.json)
+  async function baixarPersonalizacao(b) {
+    const status = b.parentElement.querySelector('[data-personalizacao-status]');
+    status.textContent = 'Gerando link...';
+    const caminho = 'solicitacoes/' + b.dataset.baixarPersonalizacao + '/personalizacao.json';
+    const { data, error } = await db.storage.from('arquivos').createSignedUrl(caminho, 600, { download: M.s.codigo + '-personalizacao.json' });
+    if (error || !data) {
+      status.textContent = 'Arquivo ainda não recebido. O cliente precisa abrir a plataforma no mesmo navegador em que personalizou o site.';
+      return;
+    }
+    status.textContent = '';
+    window.location.href = data.signedUrl;
+  }
+
   function aoClicarNoModal(e) {
     if (!M) return;
     const b = e.target.closest('button');
     if (!b || b.disabled) return;
     if (b.dataset.ir) return irPara(b.dataset.ir);
+    if (b.dataset.baixarPersonalizacao) return baixarPersonalizacao(b);
     if (b.hasAttribute('data-fechar')) return tentarFechar();
     if (b.hasAttribute('data-limpar-selecao')) { M.selecionados.clear(); return renderModal(); }
     if (b.hasAttribute('data-remover-selecionados')) return removerSelecionados();

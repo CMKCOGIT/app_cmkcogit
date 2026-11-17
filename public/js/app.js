@@ -107,9 +107,12 @@ function fmtDataHora(data) {
 
 const ROTULOS = {
   solicitacao: {
-    em_validacao: 'Em validação pela equipe',
-    aguardando_pagamento: 'Aguardando pagamento',
-    paga: 'Paga',
+    em_validacao: 'Aguardando análise da CMK',
+    em_analise: 'Em análise',
+    ajustes_solicitados: 'Ajustes solicitados',
+    aguardando_cliente: 'Aguardando aprovação do cliente',
+    aguardando_pagamento: 'Aprovado pela CMK — aguardando pagamento',
+    paga: 'Pagamento confirmado',
     cancelada: 'Cancelada'
   },
   pagamento: { pendente: 'Pendente', pago: 'Pago', falhou: 'Falhou', cancelado: 'Cancelado', reembolsado: 'Reembolsado' },
@@ -234,12 +237,13 @@ function itensHtml(resumo) {
 
 // Itens podem sair de uma solicitação (cliente dono ou admin) até ela ser paga.
 // O servidor recalcula o preço; quem remove a última solução precisa cancelar a solicitação.
+const STATUS_ABERTOS = ['em_validacao', 'em_analise', 'ajustes_solicitados', 'aguardando_cliente', 'aguardando_pagamento'];
 function solicitacaoEditavel(s) {
-  return s.status === 'em_validacao' || s.status === 'aguardando_pagamento';
+  return STATUS_ABERTOS.includes(s.status);
 }
 // Pílula de status: texto + cor (nunca só cor)
 const TOM_STATUS = {
-  solicitacao: { em_validacao: 'atencao', aguardando_pagamento: 'info', paga: 'ok', cancelada: 'neutro' },
+  solicitacao: { em_validacao: 'atencao', em_analise: 'info', ajustes_solicitados: 'perigo', aguardando_cliente: 'atencao', aguardando_pagamento: 'info', paga: 'ok', cancelada: 'neutro' },
   pagamento: { pendente: 'atencao', pago: 'ok', falhou: 'perigo', cancelado: 'neutro', reembolsado: 'neutro' },
   projeto: { em_andamento: 'info', aguardando_cliente: 'atencao', pausado: 'neutro', concluido: 'ok', cancelado: 'neutro' }
 };
@@ -250,8 +254,8 @@ function etiquetaStatus(grupo, valor) {
 function valorSolicitacao(s) {
   if (s.valor_final != null) return brl(s.valor_final);
   if (s.tipo_preco === 'free') return 'Gratuito';
-  if (Number(s.valor_calculado) > 0) return 'A partir de ' + brl(s.valor_calculado) + ' (confirmado na validação)';
-  return 'Definido na validação';
+  if (Number(s.valor_calculado) > 0) return 'A partir de ' + brl(s.valor_calculado) + ' (confirmado na análise da CMK)';
+  return 'Definido na análise da CMK';
 }
 
 // Só links da própria plataforma (as notificações são geradas pelo banco)
@@ -299,7 +303,7 @@ function linhaDoTempoHtml(lista) {
 // ---------------------------------------------------------------------
 const INICIO_ADMIN = 'admin-inicio.html';
 const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html'];
-const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html', 'admin-quadros.html'];
+const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-solicitacao.html', 'admin-clientes.html', 'admin-quadros.html'];
 
 function ehAdmin(perfil) {
   return Boolean(perfil && perfil.role === 'admin');
@@ -412,6 +416,81 @@ function lerPendente() {
 function limparPendente() {
   try { localStorage.removeItem(CHAVE_PENDENTE); } catch (_) {}
 }
+
+// ---------------------------------------------------------------------
+// Personalização de modelo pronto: o cliente monta o site no editor do modelo
+// (cmkcogit.com.br/templates/...) e clica em "Enviar para a CMKCOGIT". O editor abre
+// esta página com #cfg (personalizacao: true) e entrega cores, textos e imagens por
+// postMessage. Guardamos NESTE navegador (IndexedDB, por 7 dias) até existir a
+// solicitação; aí o arquivo vai para o Storage em solicitacoes/<id>/personalizacao.json.
+// ---------------------------------------------------------------------
+const PERS_LIMITE = 15 * 1024 * 1024; // imagens já chegam reduzidas pelo editor
+function persDb(modo, fn) {
+  return new Promise((ok, falha) => {
+    let req;
+    try { req = indexedDB.open('cogit_personalizacao', 1); } catch (e) { return falha(e); }
+    req.onupgradeneeded = () => req.result.createObjectStore('envios', { keyPath: 'ref' });
+    req.onerror = () => falha(req.error);
+    req.onsuccess = () => {
+      const tx = req.result.transaction('envios', modo);
+      const r = fn(tx.objectStore('envios'));
+      tx.oncomplete = () => ok(r && r.result);
+      tx.onerror = () => falha(tx.error);
+    };
+  });
+}
+const persSalvar = (registro) => persDb('readwrite', (s) => s.put(registro));
+const persApagar = (ref) => persDb('readwrite', (s) => s.delete(ref));
+const persListar = () => persDb('readonly', (s) => s.getAll()).then((l) => (l || []).filter((x) => x.expira > Date.now()));
+
+// Espera o editor entregar a personalização (só quando o #cfg pede e a aba veio do editor).
+function receberPersonalizacao(cfg) {
+  if (!cfg || cfg.personalizacao !== true || !window.opener) return Promise.resolve(false);
+  return new Promise((resolver) => {
+    const origens = origensDoSite();
+    const fim = (v) => { window.removeEventListener('message', aoReceber); clearTimeout(prazo); resolver(v); };
+    const prazo = setTimeout(() => fim(false), 12000);
+    async function aoReceber(e) {
+      const m = e.data;
+      if (e.source !== window.opener || !origens.has(e.origin) || !m || m.type !== 'cmk:personalizacao' || m.ref !== cfg.ref) return;
+      try {
+        const dados = m.dados;
+        const tamanho = JSON.stringify(dados).length;
+        if (!dados || typeof dados !== 'object' || typeof dados.modelo !== 'string' || tamanho > PERS_LIMITE) throw new Error('inválida');
+        await persSalvar({ ref: cfg.ref, dados, solicitacaoId: null, expira: Date.now() + VALIDADE_PENDENTE });
+        e.source.postMessage({ type: 'cmk:personalizacao:recebida', ref: cfg.ref }, e.origin);
+        fim(true);
+      } catch (_) {
+        e.source.postMessage({ type: 'cmk:personalizacao:erro', ref: cfg.ref }, e.origin);
+        fim(false);
+      }
+    }
+    window.addEventListener('message', aoReceber);
+    // avisa o editor (a origem dele é uma das do site) que esta aba está pronta para receber
+    origens.forEach((o) => { try { window.opener.postMessage({ type: 'cmk:personalizacao:pronto', ref: cfg.ref }, o); } catch (_) {} });
+  });
+}
+
+// Depois que a solicitação existe: liga a personalização a ela e envia ao Storage.
+async function vincularPersonalizacao(ref, solicitacaoId) {
+  const lista = await persListar().catch(() => []);
+  const reg = lista.find((x) => x.ref === ref);
+  if (reg) await persSalvar({ ...reg, solicitacaoId });
+  return enviarPersonalizacoes();
+}
+async function enviarPersonalizacoes() {
+  const lista = await persListar().catch(() => []);
+  let falhas = 0;
+  for (const reg of lista.filter((x) => x.solicitacaoId)) {
+    const caminho = 'solicitacoes/' + reg.solicitacaoId + '/personalizacao.json';
+    const blob = new Blob([JSON.stringify(reg.dados)], { type: 'application/json' });
+    const { error } = await db.storage.from('arquivos').upload(caminho, blob, { contentType: 'application/json', upsert: false });
+    if (!error || /exist|duplicate/i.test(error.message || '') || String(error.statusCode) === '409') await persApagar(reg.ref).catch(() => {});
+    else falhas += 1;
+  }
+  return falhas === 0;
+}
+
 function resumoPendenteHtml(cfg) {
   const itens = (cfg.servicos || []).map((s) => {
     const formato = s.modelo === 'sob-medida' ? ' — sob medida' : s.modelo === 'modelos-prontos' ? ' — modelo pronto' : '';
@@ -610,7 +689,7 @@ function itensMenu(perfil) {
       { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' },
       { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
     ] }],
-    fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },
+    fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações aguardando análise', curto: 'Analisar', complemento: ' solicitações aguardando análise', icone: 'aprovar' },
     inferior: [INICIO_ADMIN, 'admin.html', 'fab', 'mensagens.html'],
     ajuda
   } : {
@@ -745,7 +824,7 @@ async function contarEmValidacao() {
   const { count, error } = await db.from('solicitacoes').select('id', { count: 'exact', head: true }).eq('status', 'em_validacao');
   if (error || typeof count !== 'number') return;
   const cont = document.getElementById('menu-cont-validacao');
-  if (cont) { cont.hidden = !count; cont.textContent = count > 99 ? '99+' : String(count); cont.setAttribute('aria-label', count + ' em validação'); }
+  if (cont) { cont.hidden = !count; cont.textContent = count > 99 ? '99+' : String(count); cont.setAttribute('aria-label', count + ' aguardando análise'); }
   const texto = document.getElementById('menu-destaque-texto');
   if (texto) texto.textContent = count ? `${count} ${count === 1 ? 'solicitação espera' : 'solicitações esperam'} revisão.` : 'Nenhuma solicitação esperando revisão.';
 }

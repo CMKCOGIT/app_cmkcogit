@@ -3380,3 +3380,50 @@ ul[data-itens-modal] > li[data-vazio]::before,
   .lista-planos > li > .acoes-plano { grid-column: 1 / -1; justify-content: stretch; }
   .lista-planos .acoes-plano > button { flex: 1 1 100%; }
 }
+
+/* =====================================================================
+   Projeto da solicitação (admin-solicitacao.html) e personalização no
+   painel do cliente (continuar.html)
+   ===================================================================== */
+.coluna-principal > .cartao + .cartao { margin-top: var(--space-5); }
+.cartao-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.cartao-topo h2 { margin: 0; }
+.dados-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3) var(--space-5); margin: 0 0 var(--space-3); }
+.dados-grade dt { color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; }
+.dados-grade dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.texto-livre { white-space: pre-line; overflow-wrap: anywhere; }
+.aviso-destaque { padding: var(--space-3) var(--space-4); border-left: 3px solid var(--purple, #1A2C52); background: var(--lilac-bg, #eef1f8); }
+.pers-bloco { margin-top: var(--space-4); }
+.pers-bloco h3 { margin: 0 0 var(--space-2); font-size: var(--text-base); }
+.pers-bloco summary { cursor: pointer; list-style: none; }
+.pers-bloco summary h3 { display: inline; }
+.pers-cores { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; }
+.pers-cores li { display: flex; align-items: center; gap: 8px; padding: 0 !important; border: 0 !important; }
+.pers-cores span { width: 28px; height: 28px; border: 1px solid rgb(0 0 0 / .15); }
+.pers-cores code { color: var(--text-secondary); font-size: var(--text-xs); }
+.pers-imagens { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.pers-imagens li { display: grid; gap: 4px; padding: 0 !important; border: 0 !important; font-size: var(--text-xs); color: var(--text-secondary); }
+.pers-imagens img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid rgb(0 0 0 / .1); background: #f4f4f2; }
+.pers-textos { display: grid; gap: var(--space-2); margin: var(--space-2) 0 0; }
+.pers-textos div { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid rgb(0 0 0 / .06); }
+.pers-textos dt { color: var(--text-secondary); font-size: var(--text-xs); }
+.pers-textos dd { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.lista-simples li { overflow-wrap: anywhere; }
+.botao-texto { min-height: 32px; padding: 0 6px; border: 0; background: none; color: var(--purple, #1A2C52); text-decoration: underline; cursor: pointer; }
+.form-acao { display: grid; gap: var(--space-2); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid rgb(0 0 0 / .08); }
+.form-acao h3 { margin: 0; font-size: var(--text-sm); }
+.form-acao .campo { display: grid; gap: 4px; margin: 0; }
+.form-acao textarea, .form-acao input { width: 100%; }
+.historico-lista { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.historico-lista li { padding: 0 0 var(--space-3) var(--space-3) !important; border-left: 2px solid var(--lilac-bg, #e4e8f0); border-bottom: 0 !important; }
+.historico-lista p { margin: 0 0 2px; }
+.historico-lista small { color: var(--text-secondary); }
+@media (max-width: 640px) { .pers-textos div { grid-template-columns: 1fr; gap: 2px; } }
+/* linha do tempo do cliente: 7 etapas (do envio à entrega) */
+.linha-status { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+/* as listas de dados desta tela não usam a grade genérica de <dl> */
+dl.dados-grade, dl.pers-textos { border-top: 0; }
+dl.dados-grade dt, dl.dados-grade dd { padding: 0; border: 0; }
+dl.pers-textos { display: grid; grid-template-columns: 1fr; gap: 0; }
+dl.pers-textos > div { min-width: 0; }
+dl.pers-textos dt, dl.pers-textos dd { padding: 0; border: 0; }

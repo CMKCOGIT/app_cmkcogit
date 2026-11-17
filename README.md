@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Clash Display e Satoshi, identidade 2026) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config`, `mensagens-ia` (Gemini) |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20` e `21` (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20`, `21` e, para receber sites personalizados nos modelos prontos, o `31` e o `32` (análise e aprovação da CMK antes do pagamento) (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -52,6 +52,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `projeto.html?id=...#repositorio` | cliente/admin | Repositório do projeto: a equipe envia código e entregas, o cliente envia documentação (até 50 MB por arquivo); cada lado é avisado |
 | `perfil.html` | cliente | Nome, WhatsApp, CPF/CNPJ (mascarado), troca de e-mail (com confirmação), troca de senha e "sair de todos os dispositivos" |
 | `funcionalidades.html` | cliente | Adquirir nova funcionalidade para um projeto e pagar no Mercado Pago |
+| `admin-solicitacao.html?id=...` | admin | **Projeto da solicitação**: cliente (contato e CPF/CNPJ), formato, modelo, data, status, personalização completa (cores, imagens, todos os textos e links, seções ocultas), **Visualizar projeto** (abre o modelo no site com os dados do cliente, sem salvar nada), versões enviadas (baixar cada uma) e histórico com quem fez cada ação. Ações: **Iniciar análise**, **Aprovar projeto** (libera o pagamento), **Solicitar ajustes** e **Enviar observação** |
 | `admin.html` | admin | Solicitações: cada card abre o **modal de validação** — itens com checkbox ("Remover selecionados"), "+ Adicionar funcionalidade" (catálogo ou item personalizado, marcados como "adicionado pela equipe"), valor sugerido recalculado + valor final editável, mensagem ao cliente, resumo com prévia do comprovante, aprovação (quem/quando) e envio pelo WhatsApp; cancelar com motivo. Também os avisos do Mercado Pago |
 | `comprovante.html?t=...` | público | Comprovante do pedido aprovado (link único e aleatório, sem login): itens, valor final, status do pagamento e a mensagem da equipe em destaque. "Baixar PDF" usa a impressão do navegador (Salvar como PDF) |
 | `mensagens.html` | cliente/admin | **Mensagens**: o cliente conversa com a equipe; o admin vê todas as conversas (clientes + equipe: grupo e diretas entre admins). Texto com *negrito*/_itálico_, áudio gravado no navegador, arquivos até 25 MB (arrastar/colar), editar e apagar a própria mensagem, "visto", tempo real e aviso no sino. Admin: **nota interna** (tag amarela, o cliente nunca vê nem é avisado), **sugestões com IA** (Gemini: sugerir resposta, melhorar o rascunho), detalhes do cliente e **Modelos e WhatsApp** (construir mensagem com IA, variáveis `{primeiro_nome}` `{projeto}` `{link}`, prévia, salvar, copiar e abrir no WhatsApp manualmente, registrando o envio como nota interna) |
@@ -318,3 +319,21 @@ Não é preciso mudar variáveis de ambiente nem o `vercel.json`.
 
 - O `Content-Security-Policy` do `vercel.json` libera `*.supabase.co`. Se usar domínio próprio no Supabase, acrescente-o em `connect-src`.
 - O supabase-js é carregado do jsDelivr com versão fixa (`2.45.4`).
+
+## Análise e aprovação da CMK antes do pagamento
+
+Toda solicitação começa em **Aguardando análise da CMK** e o pagamento só é liberado quando um administrador aprova. O checkout (`api/checkout.js`) recusa qualquer status diferente de `aguardando_pagamento`, inclusive acessado direto pela URL.
+
+| Status (`solicitacoes.status`) | Rótulo | Quem muda |
+|---|---|---|
+| `em_validacao` | Aguardando análise da CMK | criação, reenvio do cliente, pedido de revisão da proposta |
+| `em_analise` | Em análise | admin: Iniciar análise |
+| `ajustes_solicitados` | Ajustes solicitados | admin: Solicitar ajustes (com mensagem) |
+| `aguardando_cliente` | Aguardando aprovação do cliente | admin aprova **mudando itens** do cliente; o cliente aprova ou pede revisão |
+| `aguardando_pagamento` | Aprovado pela CMK — aguardando pagamento | admin: Aprovar projeto (sem mudar itens) ou cliente aprova a proposta |
+| `paga` | Pagamento confirmado | Mercado Pago (`sql/09`). Depois disso o **projeto** mostra "Em desenvolvimento" e, concluído, "Site entregue" |
+
+- Rotas (sem criar funções novas na Vercel): ações do admin em `api/admin-solicitacao.js` (`analisar`, `ajustes`, `observacao`, `aprovar`), ações do cliente em `api/solicitacoes.js` (`reenviar`, `aprovar_proposta`, `recusar_proposta`). Regras em `lib/fluxo-solicitacao.js`.
+- Histórico em `solicitacao_eventos` (autor, papel e data de cada ação) e versões da personalização em `solicitacao_versoes`; arquivo em `arquivos/solicitacoes/<id>/[vN/]personalizacao.json`. A versão aprovada fica em `versao_aprovada`.
+- O cliente edita em **Minhas solicitações**: "Editar e reenviar" (ou "Personalizar agora") abre o editor do modelo no site, que devolve os dados; a nova versão vai para o Storage e a solicitação volta para a análise. Mudança depois da aprovação cancela a cobrança aberta e exige nova análise.
+- Notificações: a CMK recebe "Nova solicitação" e "Cliente reenviou com alterações"; o cliente recebe recebida, em análise, ajustes, proposta, aprovado/pagamento liberado e mensagens da equipe (o "pagamento confirmado" já vem do projeto criado).

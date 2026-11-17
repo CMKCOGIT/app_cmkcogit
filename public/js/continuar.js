@@ -6,8 +6,10 @@
 // =====================================================================
 (async function () {
   capturarCfgDaUrl(); // ANTES do login: assim a solução não se perde
+  await receberPersonalizacao(lerPendente()); // site personalizado no editor do modelo (se houver)
   const perfil = await protegerPagina();
   if (!perfil) return;
+  enviarPersonalizacoes().catch(() => {}); // envio que ficou pendente de outra visita
 
   const lista = document.getElementById('lista-solicitacoes');
   const tentar = document.getElementById('tentar-de-novo');
@@ -17,6 +19,13 @@
     `Olá! Sou ${perfil.nome || 'cliente'} (${perfil.email || ''}) e tenho uma dúvida sobre minha solicitação na plataforma COGIT.`
   );
   document.getElementById('btn-tentar').addEventListener('click', async () => {
+    if (!lerPendente()) {
+      // a solicitação já existe: falta só reenviar o site personalizado
+      const ok = await enviarPersonalizacoes().catch(() => false);
+      tentar.hidden = ok;
+      avisar(ok ? 'Recebemos o seu site! Nossa equipe vai revisar e enviar o orçamento aqui.' : '');
+      if (!ok) mostrarErro('Ainda não foi possível enviar o site personalizado. Verifique a conexão e tente de novo.');
+    }
     await registrarPendente();
     await carregar();
   });
@@ -31,6 +40,17 @@
       limparPendente();
       tentar.hidden = true;
       destaque = r.solicitacao.id;
+      if (cfg.personalizacao) {
+        const enviada = await vincularPersonalizacao(cfg.ref, r.solicitacao.id).catch(() => false);
+        avisar(enviada
+          ? 'Recebemos o seu site! Nossa equipe vai revisar, fazer os ajustes necessários e enviar o orçamento aqui. Depois do pagamento, entregamos o site publicado.'
+          : '');
+        if (!enviada) {
+          mostrarErro('Solicitação salva, mas o envio do site personalizado não terminou. Clique em "Tentar de novo".');
+          tentar.hidden = false;
+        }
+        return;
+      }
       avisar(r.solicitacao.estruturado
         ? 'Solução salva! O preço já está fechado: é só clicar em "Pagar com Mercado Pago".'
         : 'Solução salva! Nossa equipe vai validar o escopo e liberar o pagamento aqui. Avisaremos pelo seu contato.');
@@ -51,6 +71,10 @@
   let todas = [];
   const params = new URLSearchParams(window.location.search);
   let filtro = ['em_validacao', 'aguardando_pagamento', 'paga', 'cancelada'].includes(params.get('filtro')) ? params.get('filtro') : 'todas';
+  // "Em análise" agrupa tudo antes da aprovação da CMK
+  const GRUPO = { em_validacao: ['em_validacao', 'em_analise', 'ajustes_solicitados', 'aguardando_cliente'] };
+  const noFiltro = (s, f) => f === 'todas' || (GRUPO[f] || [f]).includes(s.status);
+  let projetosPorId = {};
   const campoBusca = document.getElementById('busca');
   campoBusca.value = params.get('busca') || '';
   document.getElementById('btn-nova-solucao').href = urlSite('monte-sua-solucao.html');
@@ -70,9 +94,18 @@
       return;
     }
     todas = data || [];
+    // projeto (depois do pagamento): "Em desenvolvimento" ou "Site entregue"
+    const idsProjeto = todas.map((x) => x.projeto_id).filter(Boolean);
+    if (idsProjeto.length) {
+      const pr = await db.from('projetos').select('id,status_projeto').in('id', idsProjeto);
+      projetosPorId = Object.fromEntries((pr.data || []).map((x) => [x.id, x]));
+    }
     renderLista();
     const aberta = painel.open && painel.dataset.sol && todas.find((x) => x.id === painel.dataset.sol);
     if (aberta) abrirPainel(aberta, false);
+    // link das notificações: continuar.html?abrir=<id>
+    const pedir = params.get('abrir');
+    if (pedir && !painel.open) { const alvo = todas.find((x) => x.id === pedir); if (alvo) abrirPainel(alvo, true); params.delete('abrir'); }
   }
 
   const nomesItens = (s) => {
@@ -83,12 +116,12 @@
 
   function renderLista() {
     document.querySelectorAll('#filtro-status > button').forEach((b) => {
-      const n = b.dataset.status === 'todas' ? todas.length : todas.filter((x) => x.status === b.dataset.status).length;
+      const n = todas.filter((x) => noFiltro(x, b.dataset.status)).length;
       b.setAttribute('aria-pressed', String(b.dataset.status === filtro));
       b.innerHTML = esc(b.textContent.replace(/\s*\d+$/, '')) + ` <span class="menu-contador" aria-label="${n}">${n}</span>`;
     });
     const q = normal(campoBusca.value.trim());
-    const visiveis = todas.filter((s) => (filtro === 'todas' || s.status === filtro)
+    const visiveis = todas.filter((s) => noFiltro(s, filtro)
       && (!q || normal(s.codigo).includes(q) || nomesItens(s).some((n) => normal(n).includes(q))));
     document.getElementById('contagem').textContent = todas.length
       ? `${visiveis.length} de ${todas.length} ${todas.length === 1 ? 'solicitação' : 'solicitações'}` : '';
@@ -152,11 +185,15 @@
   painel.addEventListener('click', (e) => { if (e.target === painel) painel.close(); });
   painel.addEventListener('close', () => { quemAbriu?.focus(); });
 
-  const ETAPAS = ['Enviada', 'Em validação', 'Aguardando pagamento', 'Paga', 'Em desenvolvimento'];
+  const ETAPAS = ['Enviada', 'Aguardando análise da CMK', 'Em análise', 'Aprovado pela CMK', 'Pagamento confirmado', 'Em desenvolvimento', 'Site entregue'];
   function etapaAtual(s) {
     if (s.status === 'em_validacao') return 1;
-    if (s.status === 'aguardando_pagamento') return 2;
-    if (s.status === 'paga') return 3;
+    if (['em_analise', 'ajustes_solicitados', 'aguardando_cliente'].includes(s.status)) return 2;
+    if (s.status === 'aguardando_pagamento') return 3;
+    if (s.status === 'paga') {
+      const p = projetosPorId[s.projeto_id];
+      return p && p.status_projeto === 'concluido' ? 6 : 5;
+    }
     return -1;
   }
 
@@ -201,27 +238,153 @@
       ${linhaStatus}
       <section aria-labelledby="painel-itens-titulo">
         <h3 id="painel-itens-titulo">Itens</h3>
-        ${solicitacaoEditavel(s) ? '<p class="nota">Marque o que quer tirar. O valor é recalculado; se for sob medida, a solicitação volta para a validação.</p>' : ''}
+        ${solicitacaoEditavel(s) ? '<p class="nota">Marque o que quer tirar. O valor é recalculado e a solicitação volta para a análise da CMK antes do pagamento.</p>' : ''}
         ${itensSelecionaveis(s)}
       </section>
       <section class="resumo-investimento" aria-label="Investimento">
         <p><small>Investimento</small><strong>${esc(valorSolicitacao(s))}</strong></p>
       </section>
-      ${s.observacao_admin ? `<section class="mensagem-equipe" aria-labelledby="painel-msg-titulo"><h3 id="painel-msg-titulo">${icone('mensagem')} Mensagem da equipe</h3><p>${esc(s.observacao_admin)}</p></section>` : ''}
+      ${blocoSituacao(s)}
+      ${blocoPersonalizacao(s)}
+      <section aria-labelledby="painel-hist-titulo" id="painel-historico"><h3 id="painel-hist-titulo">${icone('mensagem')} Mensagens e histórico</h3><p data-esqueleto-linha></p></section>
       ${s.notas ? `<p class="nota">Seu contexto: ${esc(s.notas)}</p>` : ''}
       ${s.comprovante_token ? `<p><a href="comprovante.html?t=${encodeURIComponent(s.comprovante_token)}" target="_blank" rel="noopener">${icone('comprovante')} Ver comprovante do pedido</a></p>` : ''}`;
 
     const falar = `<a class="botao-link" data-secundario href="${esc(linkWhatsApp('Olá! Sobre a solicitação ' + s.codigo + ' na plataforma COGIT.'))}" target="_blank" rel="noopener noreferrer">${icone('whatsapp')} Falar conosco</a>`;
     const cancelar = solicitacaoEditavel(s) ? `<button type="button" data-cancelar="${esc(s.id)}">Cancelar solicitação</button>` : '';
     const pagar = s.status === 'aguardando_pagamento' ? `<button type="button" data-pagar="${esc(s.id)}">${icone('pagamentos')} Pagar com Mercado Pago</button>` : '';
-    const projeto = s.status === 'paga' ? '<a class="botao-link" href="projetos.html">Ver meu projeto</a>' : '';
+    const projeto = s.status === 'paga' ? `<a class="botao-link" href="${s.projeto_id ? 'projeto.html?id=' + encodeURIComponent(s.projeto_id) : 'projetos.html'}">Ver meu projeto</a>` : '';
     document.getElementById('painel-sol-rodape').innerHTML = `${cancelar}<span data-espaco></span>${falar}${pagar}${projeto}`;
 
     painel.querySelectorAll('[data-pagar]').forEach(ligarPagar);
     const btnCancelar = painel.querySelector('#painel-sol-rodape [data-cancelar]');
     if (btnCancelar) btnCancelar.addEventListener('click', () => cancelarSolicitacao(btnCancelar));
     ligarSelecao(s);
+    ligarPersonalizacao(s);
+    carregarHistorico(s);
     if (abrir && !painel.open) painel.showModal();
+  }
+
+  // ---------------------------------------------------------------
+  // Situação, proposta da CMK, personalização e histórico
+  // ---------------------------------------------------------------
+  function blocoSituacao(s) {
+    const msg = s.observacao_admin ? `<p class="texto-livre">${esc(s.observacao_admin)}</p>` : '';
+    if (s.status === 'em_validacao') return '<p class="aviso-destaque">A equipe da CMK vai analisar o seu projeto. O pagamento é liberado aqui depois da aprovação.</p>';
+    if (s.status === 'em_analise') return '<p class="aviso-destaque">A equipe está analisando o seu projeto agora. Avisaremos assim que terminar.</p>';
+    if (s.status === 'ajustes_solicitados') return `<section class="mensagem-equipe" aria-labelledby="t-ajustes"><h3 id="t-ajustes">${icone('editar')} A CMK pediu ajustes</h3>${msg}<p>Edite o projeto abaixo e reenvie para uma nova análise.</p></section>`;
+    if (s.status === 'aguardando_cliente') return `<section class="mensagem-equipe" aria-labelledby="t-proposta"><h3 id="t-proposta">${icone('aprovar')} Proposta da CMK</h3>
+      <p>A equipe ajustou o projeto. Valor proposto: <strong>${esc(brl(s.valor_final))}</strong>.</p>${msg}
+      <p class="pagina-acoes"><button type="button" data-aprovar-proposta>${icone('aprovar')} Aprovar e liberar o pagamento</button> <button type="button" data-revisar-proposta data-secundario>Pedir revisão</button></p></section>`;
+    if (s.status === 'aguardando_pagamento') return `<section class="mensagem-equipe" aria-labelledby="t-aprov"><h3 id="t-aprov">${icone('aprovar')} Projeto aprovado pela CMK</h3>${msg}<p>O pagamento está liberado. Se precisar mudar algo no projeto, ele passa por uma nova análise antes do pagamento.</p></section>`;
+    return msg ? `<section class="mensagem-equipe"><h3>${icone('mensagem')} Mensagem da equipe</h3>${msg}</section>` : '';
+  }
+
+  const VARIANTE_NOME = { 'landing-page-basica': 'Landing Page Básica', 'landing-page-profissional': 'Landing Page Profissional', 'landing-page-formal': 'Landing Page Corporativa' };
+  function varianteDe(s) {
+    const it = ((s.selecao || {}).servicos || []).find((x) => x.variante);
+    return it ? it.variante : null;
+  }
+  function blocoPersonalizacao(s) {
+    const variante = varianteDe(s);
+    if (!variante) return '';
+    const sel = s.selecao || {};
+    const pode = ['em_validacao', 'ajustes_solicitados', 'aguardando_cliente', 'aguardando_pagamento'].includes(s.status);
+    return `<section aria-labelledby="t-pers" id="painel-pers">
+      <h3 id="t-pers">${icone('imagem')} Seu site · ${esc(VARIANTE_NOME[variante] || variante)}</h3>
+      <p>${sel.personalizacao ? `Personalizado por você (versão ${Number(s.versao_atual) || 1}).` : 'Enviado sem personalização. Você pode personalizar agora: cores, textos e imagens.'}</p>
+      <p class="pagina-acoes">
+        ${sel.personalizacao ? '<button type="button" data-ver-pers data-secundario>Ver o que enviei</button>' : ''}
+        ${pode ? `<button type="button" data-editar-pers>${icone('editar')} ${sel.personalizacao ? 'Editar e reenviar' : 'Personalizar agora'}</button>` : ''}
+        ${s.status === 'em_analise' ? '<small>Em análise: aguarde o retorno da equipe para editar.</small>' : ''}
+      </p>
+      <div data-pers-detalhe hidden></div>
+    </section>`;
+  }
+
+  function ligarPersonalizacao(s) {
+    const ver = painel.querySelector('[data-ver-pers]');
+    const editar = painel.querySelector('[data-editar-pers]');
+    const detalhe = painel.querySelector('[data-pers-detalhe]');
+    if (ver) ver.addEventListener('click', async () => {
+      if (!detalhe.hidden) { detalhe.hidden = true; return; }
+      detalhe.hidden = false;
+      detalhe.innerHTML = '<p data-esqueleto-linha></p>';
+      detalhe.innerHTML = personalizacaoHtml(await baixarPersonalizacao(s.id, Number(s.versao_atual) || 1), { completo: false });
+    });
+    if (editar) editar.addEventListener('click', async () => {
+      mostrarErro('');
+      ocupado(editar, true, 'Abrindo o editor...');
+      const sel = s.selecao || {};
+      const versao = Number(s.versao_atual) || 1;
+      const dados = sel.personalizacao ? await baixarPersonalizacao(s.id, versao) : null;
+      ocupado(editar, false);
+      const pasta = (dados && pastaDoModelo(dados)) || PASTA_POR_VARIANTE[varianteDe(s)];
+      abrirNoEditor({
+        pasta, dados, modo: 'editar', aoErro: mostrarErro,
+        aoSalvar: (novos) => reenviar(s, novos)
+      });
+      avisar('Edite o site na nova aba e clique em "Salvar e reenviar para análise".');
+    });
+    const aprovar = painel.querySelector('[data-aprovar-proposta]');
+    const revisar = painel.querySelector('[data-revisar-proposta]');
+    if (aprovar) aprovar.addEventListener('click', async () => {
+      ocupado(aprovar, true, 'Aprovando...');
+      try { await api('solicitacoes', { acao: 'aprovar_proposta', solicitacao_id: s.id }); toast('Proposta aprovada. O pagamento está liberado.'); }
+      catch (e) { mostrarErro(e.message); }
+      ocupado(aprovar, false);
+      await carregar();
+    });
+    if (revisar) revisar.addEventListener('click', async () => {
+      const mensagem = window.prompt('O que precisa mudar na proposta?');
+      if (!mensagem || !mensagem.trim()) return;
+      ocupado(revisar, true, 'Enviando...');
+      try { await api('solicitacoes', { acao: 'recusar_proposta', solicitacao_id: s.id, mensagem }); toast('Pedido de revisão enviado à equipe.'); }
+      catch (e) { mostrarErro(e.message); }
+      ocupado(revisar, false);
+      await carregar();
+    });
+  }
+
+  // Nova versão: arquivo no Storage e depois a solicitação volta para a análise da CMK
+  async function reenviar(s, dados) {
+    const versao = (Number(s.versao_atual) || 1) + 1;
+    avisar('Enviando a nova versão do seu site...');
+    const blob = new Blob([JSON.stringify(dados)], { type: 'application/json' });
+    const up = await db.storage.from('arquivos').upload(PERS_PASTA(s.id, versao), blob, { contentType: 'application/json', upsert: false });
+    if (up.error && !/exist|duplicate/i.test(up.error.message || '')) {
+      avisar('');
+      mostrarErro('Não foi possível enviar o site: ' + up.error.message);
+      return;
+    }
+    try {
+      await api('solicitacoes', { acao: 'reenviar', solicitacao_id: s.id, personalizada: true });
+      avisar('');
+      toast('Site reenviado. O projeto voltou para a análise da CMK.');
+    } catch (e) {
+      avisar('');
+      mostrarErro(e.message);
+    }
+    await carregar();
+  }
+
+  const TIPOS_EVENTO = {
+    criada: 'Solicitação enviada', analise_iniciada: 'A CMK começou a análise', ajustes_solicitados: 'A CMK pediu ajustes',
+    observacao: 'Mensagem da CMK', reenviada: 'Você reenviou com alterações', aprovada: 'Projeto aprovado · pagamento liberado',
+    aguardando_cliente: 'Proposta da CMK', cliente_aprovou: 'Você aprovou a proposta', cliente_pediu_revisao: 'Você pediu revisão',
+    cancelada: 'Cancelada', pagamento_confirmado: 'Pagamento confirmado', item_removido: 'Item retirado'
+  };
+  async function carregarHistorico(s) {
+    const alvo = painel.querySelector('#painel-historico');
+    if (!alvo) return;
+    const { data, error } = await db.from('solicitacao_eventos').select('*').eq('solicitacao_id', s.id).order('created_at', { ascending: false });
+    if (painel.dataset.sol !== s.id) return;
+    const h3 = alvo.querySelector('h3').outerHTML;
+    if (error) { alvo.innerHTML = h3 + '<p class="nota">Histórico indisponível no momento.</p>'; return; }
+    alvo.innerHTML = h3 + (data && data.length ? `<ol class="historico-lista">${data.map((e) => `<li>
+        <p><strong>${esc(TIPOS_EVENTO[e.tipo] || e.tipo)}</strong></p>
+        ${e.mensagem && e.autor_papel !== 'cliente' ? `<p class="texto-livre">${esc(e.mensagem)}</p>` : ''}
+        <small>${fmtDataHora(e.created_at)}${e.autor_papel === 'admin' ? ' · Equipe CMK' : ''}${e.versao ? ' · versão ' + e.versao : ''}</small></li>`).join('')}</ol>` : '<p class="nota">Sem mensagens ainda.</p>');
   }
 
   function ligarSelecao(s) {
@@ -244,7 +407,7 @@
     botao.addEventListener('click', async () => {
       const marcadas = caixas.filter((c) => c.checked);
       const nomes = marcadas.map((c) => c.dataset.nome);
-      if (!window.confirm(`Tirar ${nomes.length === 1 ? '"' + nomes[0] + '"' : nomes.length + ' itens'} desta solicitação?\n\nO valor é recalculado. Se a solicitação for sob medida, ela volta para a validação da equipe.`)) return;
+      if (!window.confirm(`Tirar ${nomes.length === 1 ? '"' + nomes[0] + '"' : nomes.length + ' itens'} desta solicitação?\n\nO valor é recalculado e a solicitação volta para a análise da CMK.`)) return;
       ocupado(botao, true, 'Removendo...');
       mostrarErro('');
       // complementos primeiro: alguns dependem de uma solução e sairiam junto
@@ -258,7 +421,7 @@
           saidos.push(c.dataset.nome, ...(ultima.removidos_junto || []));
         }
         toast(`${saidos.length === 1 ? '"' + saidos[0] + '" foi retirado' : saidos.length + ' itens foram retirados'}. ` + (ultima.solicitacao.valor_final != null
-          ? 'Novo valor: ' + brl(ultima.solicitacao.valor_final) + '.' : 'A solicitação voltou para a validação da equipe.'));
+          ? 'Novo valor: ' + brl(ultima.solicitacao.valor_final) + '.' : 'A solicitação voltou para a análise da CMK.'));
       } catch (e) {
         mostrarErro(e.message);
         toast(e.message, 'erro');
