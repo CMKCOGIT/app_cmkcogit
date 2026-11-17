@@ -255,7 +255,7 @@
         ${s.selecao && s.selecao.personalizacao ? `
           <div data-personalizacao>
             <p><strong>Site personalizado pelo cliente.</strong> Baixe o arquivo e abra no modelo com <code>?equipe</code> (aba Publicar &gt; Importar configuração) para revisar, ajustar e gerar o site final.</p>
-            <p><button type="button" data-baixar-personalizacao="${esc(s.id)}">Baixar personalização (.json)</button> <small data-personalizacao-status></small></p>
+            <p><button type="button" data-baixar-personalizacao="${esc(s.id)}" data-versao="${Number(s.versao_atual) || 1}">Baixar personalização (.json)</button> <small data-personalizacao-status></small></p>
           </div>` : ''}
         ${s.status === 'cancelada' && s.motivo_cancelamento ? `<p data-motivo><small>Motivo do cancelamento:</small> ${esc(s.motivo_cancelamento)}</p>` : ''}
       </section>`;
@@ -516,10 +516,11 @@
   async function baixarPersonalizacao(b) {
     const status = b.parentElement.querySelector('[data-personalizacao-status]');
     status.textContent = 'Gerando link...';
-    const caminho = 'solicitacoes/' + b.dataset.baixarPersonalizacao + '/personalizacao.json';
+    const versao = Number(b.dataset.versao) || 1;
+    const caminho = 'solicitacoes/' + b.dataset.baixarPersonalizacao + '/' + (versao > 1 ? 'v' + versao + '/' : '') + 'personalizacao.json';
     const { data, error } = await db.storage.from('arquivos').createSignedUrl(caminho, 600, { download: M.s.codigo + '-personalizacao.json' });
     if (error || !data) {
-      status.textContent = 'Arquivo ainda não recebido. O cliente precisa abrir a plataforma no mesmo navegador em que personalizou o site.';
+      status.innerHTML = 'O arquivo não chegou à plataforma (o envio não terminou no navegador do cliente). <a href="admin-solicitacao.html?id=' + encodeURIComponent(b.dataset.baixarPersonalizacao) + '">Abra o projeto</a> para ver outras versões ou pedir ao cliente para reenviar.';
       return;
     }
     status.textContent = '';

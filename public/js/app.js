@@ -472,11 +472,13 @@ function receberPersonalizacao(cfg) {
 }
 
 // Depois que a solicitação existe: liga a personalização a ela e envia ao Storage.
+// 'enviado' | 'sem-dados' (o site não entregou a personalização a esta aba) | 'falhou' (dá para tentar de novo)
 async function vincularPersonalizacao(ref, solicitacaoId) {
   const lista = await persListar().catch(() => []);
   const reg = lista.find((x) => x.ref === ref);
-  if (reg) await persSalvar({ ...reg, solicitacaoId });
-  return enviarPersonalizacoes();
+  if (!reg) return 'sem-dados';
+  await persSalvar({ ...reg, solicitacaoId });
+  return (await enviarPersonalizacoes()) ? 'enviado' : 'falhou';
 }
 async function enviarPersonalizacoes() {
   const lista = await persListar().catch(() => []);

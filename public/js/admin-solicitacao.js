@@ -15,6 +15,8 @@
   const historico = document.getElementById('sol-historico');
   let s = null;
   let versoes = [];
+  let versaoMostrada = 1;
+  const MSG_REENVIO = 'O arquivo do seu site personalizado não chegou até a plataforma. Abra esta solicitação em "Minhas solicitações", clique em "Enviar meu site" e depois em "Concluir" no editor. Use o mesmo navegador em que você personalizou: o que você fez continua salvo nele.';
   let dadosAtuais = null;
 
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
@@ -43,7 +45,16 @@
     const versaoAtual = Number(s.versao_atual) || 1;
     const atual = versoes.find((v) => v.numero === versaoAtual);
     const personalizada = atual ? atual.personalizada : sel.personalizacao === true;
-    dadosAtuais = personalizada ? await baixarPersonalizacao(s.id, versaoAtual) : null;
+    dadosAtuais = null;
+    versaoMostrada = versaoAtual;
+    if (personalizada) {
+      // versão atual primeiro; se o arquivo dela não chegou, a mais recente que chegou
+      const candidatas = [versaoAtual, ...versoes.filter((v) => v.personalizada && v.numero !== versaoAtual).map((v) => v.numero)];
+      for (const n of candidatas) {
+        dadosAtuais = await baixarPersonalizacao(s.id, n);
+        if (dadosAtuais) { versaoMostrada = n; break; }
+      }
+    }
     render(ev.error ? [] : (ev.data || []), personalizada);
   }
 
@@ -87,7 +98,11 @@
           ${personalizada && dadosAtuais ? '<button type="button" id="btn-visualizar">' + icone('externo') + ' Visualizar projeto</button>' : ''}
         </div>
         ${'personalizacao' in sel || modelo ? (personalizada
-          ? personalizacaoHtml(dadosAtuais)
+          ? (dadosAtuais
+            ? (versaoMostrada !== (Number(s.versao_atual) || 1) ? `<p class="aviso-destaque">O arquivo da versão ${Number(s.versao_atual) || 1} não chegou. Mostrando a versão ${versaoMostrada}, a mais recente recebida.</p>` : '') + personalizacaoHtml(dadosAtuais)
+            : `<div class="aviso-destaque"><p><strong>O arquivo do site personalizado não chegou à plataforma.</strong> O cliente personalizou o modelo, mas o envio não terminou no navegador dele (a aba fechou, a conexão caiu ou ele trocou de navegador). Nada foi perdido do lado dele: o editor guarda o rascunho no navegador em que ele personalizou.</p>
+              <p>Peça para ele abrir <strong>Minhas solicitações → Enviar meu site → Concluir</strong>. A nova versão aparece aqui.</p>
+              <p><button type="button" id="btn-pedir-reenvio">${icone('mensagem')} Pedir ao cliente para reenviar</button></p></div>`)
           : '<p class="aviso-destaque"><strong>Enviada sem personalização.</strong> O cliente escolheu o modelo e não personalizou o site. Os textos e as imagens precisam ser combinados com ele.</p>')
           : '<p data-vazio>Esta solicitação não usa modelo pronto com editor.</p>'}
       </section>
@@ -100,6 +115,8 @@
 
     const vis = document.getElementById('btn-visualizar');
     if (vis) vis.addEventListener('click', () => abrirNoEditor({ pasta: pastaDoModelo(dadosAtuais), dados: dadosAtuais, modo: 'preview', aoErro: mostrarErro }));
+    const pedir = document.getElementById('btn-pedir-reenvio');
+    if (pedir) pedir.addEventListener('click', () => executar(pedir, { acao: 'observacao', mensagem: MSG_REENVIO }, 'Pedido enviado. O cliente recebe a notificação e o link para reenviar.'));
     principal.querySelectorAll('[data-baixar-versao]').forEach((b) => b.addEventListener('click', () => baixarVersao(Number(b.dataset.baixarVersao))));
 
     historico.innerHTML = eventos.length ? eventos.map((e) => `

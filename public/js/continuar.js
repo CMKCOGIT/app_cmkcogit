@@ -14,6 +14,7 @@
   const lista = document.getElementById('lista-solicitacoes');
   const tentar = document.getElementById('tentar-de-novo');
   let destaque = null;
+  let abrirAoCarregar = null; // solicitação recém-criada cujo site personalizado falta enviar
 
   document.getElementById('falar-conosco').href = linkWhatsApp(
     `Olá! Sou ${perfil.nome || 'cliente'} (${perfil.email || ''}) e tenho uma dúvida sobre minha solicitação na plataforma COGIT.`
@@ -41,13 +42,17 @@
       tentar.hidden = true;
       destaque = r.solicitacao.id;
       if (cfg.personalizacao) {
-        const enviada = await vincularPersonalizacao(cfg.ref, r.solicitacao.id).catch(() => false);
-        avisar(enviada
+        const envio = await vincularPersonalizacao(cfg.ref, r.solicitacao.id).catch(() => 'falhou');
+        avisar(envio === 'enviado'
           ? 'Recebemos o seu site! Nossa equipe vai revisar, fazer os ajustes necessários e enviar o orçamento aqui. Depois do pagamento, entregamos o site publicado.'
           : '');
-        if (!enviada) {
+        if (envio === 'falhou') {
           mostrarErro('Solicitação salva, mas o envio do site personalizado não terminou. Clique em "Tentar de novo".');
           tentar.hidden = false;
+        } else if (envio === 'sem-dados') {
+          // o site não entregou a personalização a esta aba: o cliente reenvia pelo editor
+          mostrarErro('Solicitação salva, mas o seu site personalizado não chegou até aqui. Clique em "Enviar meu site" na solicitação e depois em "Concluir" no editor: o que você fez continua salvo neste navegador.');
+          abrirAoCarregar = r.solicitacao.id;
         }
         return;
       }
@@ -104,6 +109,7 @@
     const aberta = painel.open && painel.dataset.sol && todas.find((x) => x.id === painel.dataset.sol);
     if (aberta) abrirPainel(aberta, false);
     // link das notificações: continuar.html?abrir=<id>
+    if (abrirAoCarregar && !painel.open) { const alvo = todas.find((x) => x.id === abrirAoCarregar); abrirAoCarregar = null; if (alvo) abrirPainel(alvo, true); }
     const pedir = params.get('abrir');
     if (pedir && !painel.open) { const alvo = todas.find((x) => x.id === pedir); if (alvo) abrirPainel(alvo, true); params.delete('abrir'); }
   }
@@ -306,6 +312,16 @@
     const ver = painel.querySelector('[data-ver-pers]');
     const editar = painel.querySelector('[data-editar-pers]');
     const detalhe = painel.querySelector('[data-pers-detalhe]');
+    // personalizada, mas o arquivo da versão atual não chegou ao Storage: avisa e oferece o reenvio
+    if (ver && editar) baixarPersonalizacao(s.id, Number(s.versao_atual) || 1).then((d) => {
+      if (d || !painel.contains(ver)) return;
+      ver.hidden = true;
+      editar.innerHTML = icone('enviado') + ' Enviar meu site';
+      const aviso = document.createElement('p');
+      aviso.className = 'aviso-destaque';
+      aviso.innerHTML = '<strong>O seu site personalizado ainda não chegou até a CMK.</strong> Clique em "Enviar meu site": o editor abre com o que você fez neste navegador. Confira e clique em "Concluir".';
+      ver.closest('p').before(aviso);
+    });
     if (ver) ver.addEventListener('click', async () => {
       if (!detalhe.hidden) { detalhe.hidden = true; return; }
       detalhe.hidden = false;
