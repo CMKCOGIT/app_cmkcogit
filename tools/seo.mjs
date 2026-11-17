@@ -37,6 +37,7 @@ const PAGINAS = {
   'comprovante.html': ['Comprovante de pedido | CMKCOGIT', 'Comprovante de pedido CMKCOGIT.', 'noindex, nofollow'],
   'admin-inicio.html': ['Painel de gestão | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
   'admin.html': ['Solicitações | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
+  'admin-solicitacao.html': ['Projeto da solicitação | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
   'admin-clientes.html': ['Clientes | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
   'admin-quadros.html': ['Quadros | CMKCOGIT', 'Painel de gestão CMKCOGIT.', 'noindex, nofollow'],
   '404.html': ['Página não encontrada | CMKCOGIT', 'A página que você procurou não existe na plataforma CMKCOGIT.', 'noindex'],

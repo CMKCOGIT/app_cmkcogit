@@ -89,9 +89,9 @@
   // Painel lateral: quantas solicitações há em cada status (contagem no banco)
   async function contarPorStatus() {
     const ul = document.getElementById('contagem-status');
-    const status = ['em_validacao', 'aguardando_pagamento', 'paga', 'cancelada'];
-    const NOMES = { em_validacao: 'Em validação', aguardando_pagamento: 'Pagamento liberado', paga: 'Pagas', cancelada: 'Canceladas' };
-    const icones = { em_validacao: 'em-validacao', aguardando_pagamento: 'pagamentos', paga: 'aprovar', cancelada: 'cancelado' };
+    const status = ['em_validacao', 'em_analise', 'ajustes_solicitados', 'aguardando_cliente', 'aguardando_pagamento', 'paga', 'cancelada'];
+    const NOMES = { em_validacao: 'Aguardando análise', em_analise: 'Em análise', ajustes_solicitados: 'Ajustes solicitados', aguardando_cliente: 'Aguardando cliente', aguardando_pagamento: 'Pagamento liberado', paga: 'Pagas', cancelada: 'Canceladas' };
+    const icones = { em_validacao: 'em-validacao', em_analise: 'em-validacao', ajustes_solicitados: 'editar', aguardando_cliente: 'clientes', aguardando_pagamento: 'pagamentos', paga: 'aprovar', cancelada: 'cancelado' };
     const res = await Promise.all(status.map((st) => db.from('solicitacoes').select('id', { count: 'exact', head: true }).eq('status', st)));
     ul.innerHTML = status.map((st, i) => `<li><button type="button" class="widget-item" data-ir-status="${st}">${icone(icones[st])}
       <span><strong>${esc(NOMES[st])}</strong></span><span class="widget-valor">${res[i].error ? '—' : Number(res[i].count) || 0}</span></button></li>`).join('');
@@ -105,13 +105,16 @@
     const r = s.resumo || {};
     const itens = [...(r.itens || []), ...(r.mensais || []), ...(r.complementos || [])];
     const editavel = solicitacaoEditavel(s);
-    const acao = s.status === 'em_validacao' ? 'Validar' : editavel ? 'Abrir e editar' : 'Ver detalhes';
+    const acao = editavel ? 'Itens e valor' : 'Ver itens';
+    const sel = s.selecao || {};
+    const pers = 'personalizacao' in sel ? `<span data-etiqueta="${sel.personalizacao ? 'ok' : 'neutro'}">${sel.personalizacao ? 'Site personalizado' : 'Sem personalização'}</span>` : '';
     return `
       <article data-solicitacao="${esc(s.id)}">
         <header>
           <h2>${esc(s.codigo)}</h2>
           ${etiquetaStatus(s)}
           <span data-etiqueta="neutro">${s.estruturado ? 'Preço fechado' : 'Sob medida'}</span>
+          ${pers}
           <span data-valores>
             <small>Estimativa</small> <strong>${s.tipo_preco === 'from' ? 'a partir de ' : ''}${brl(s.valor_calculado)}</strong>
             <small>· Final</small> <strong>${s.valor_final != null ? brl(s.valor_final) : '—'}</strong>
@@ -125,6 +128,7 @@
         </ul>
         ${s.status === 'cancelada' && s.motivo_cancelamento ? `<p data-motivo><small>Motivo do cancelamento:</small> ${esc(s.motivo_cancelamento)}</p>` : ''}
         <p data-acoes-card>
+          <a class="botao-link" href="admin-solicitacao.html?id=${encodeURIComponent(s.id)}">${s.status === 'em_validacao' ? 'Analisar projeto' : 'Abrir projeto'}</a>
           <button type="button" data-abrir="${esc(s.id)}">${acao}</button>
           ${s.comprovante_token ? `<button type="button" data-reenviar="${esc(s.id)}">${icone('whatsapp')} Reenviar comprovante</button>
             <a href="comprovante.html?t=${encodeURIComponent(s.comprovante_token)}" target="_blank" rel="noopener">${icone('comprovante')} Ver comprovante</a>` : ''}
@@ -138,7 +142,7 @@
       return s.aprovado_em ? '<span data-etiqueta="ok">Aprovada · pagamento liberado</span>'
         : '<span data-etiqueta="info">Aguardando pagamento (preço fechado)</span>';
     }
-    const tipo = { em_validacao: 'atencao', paga: 'ok', cancelada: 'neutro' }[s.status] || 'neutro';
+    const tipo = (TOM_STATUS.solicitacao || {})[s.status] || 'neutro';
     return `<span data-etiqueta="${tipo}">${esc(rotulo('solicitacao', s.status))}</span>`;
   }
 

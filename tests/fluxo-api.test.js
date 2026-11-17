@@ -20,12 +20,17 @@ let banco, mp, seq;
 
 beforeEach(() => {
   const perfis = Object.values(USUARIOS).map((u) => ({ id: u.id, cadastro_concluido_em: '2026-01-01T00:00:00Z', documento: '52998224725' }));
-  banco = { solicitacoes: [], pagamentos: [], projetos: [], profiles: perfis, catalogo_precos: catalogo, pagamento_eventos: [] };
+  banco = { solicitacoes: [], pagamentos: [], projetos: [], profiles: perfis, catalogo_precos: catalogo, pagamento_eventos: [], notificacoes: [], solicitacao_eventos: [], solicitacao_versoes: [] };
   mp = { prefs: [], pagamentos: [] };
   seq = 0;
 });
 
 const uuid = () => crypto.randomUUID();
+// aprovação pela CMK (no app real: api/admin-solicitacao.js, coberta em admin-solicitacao.test.js)
+function aprovarPelaCmk(id) {
+  const s = banco.solicitacoes.find((x) => x.id === id);
+  Object.assign(s, { status: 'aguardando_pagamento', valor_final: s.valor_final || Number(s.valor_calculado) });
+}
 function resposta(status, corpo) {
   return new Response(corpo === undefined ? '' : JSON.stringify(corpo), { status, headers: { 'Content-Type': 'application/json' } });
 }
@@ -175,6 +180,7 @@ test('sem CPF/CNPJ (conta antiga): checkout recusado (409 documento_pendente) e 
   const cfg = cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos', nome: 'Landing', preco: 1 }]);
   const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
   assert.equal(r.status, 201);
+  aprovarPelaCmk(r.json.solicitacao.id);
   const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
   assert.equal(c.status, 409);
   assert.equal(c.json.codigo, 'documento_pendente');
@@ -194,18 +200,26 @@ test('logado sem perfil: 403 (não libera por falta de dado)', async () => {
   assert.equal(banco.solicitacoes.length, 0);
 });
 
-test('modelo pronto: salva com preço do servidor, recarregar não duplica, paga e confirma pela volta do checkout', async () => {
+test('modelo pronto: salva com preço do servidor, recarregar não duplica, só paga depois da aprovação da CMK e confirma pela volta do checkout', async () => {
   const cfg = cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos', nome: 'Landing', preco: 1 }]);
   const r1 = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
   assert.equal(r1.status, 201);
   assert.equal(r1.json.solicitacao.estruturado, true);
-  assert.equal(r1.json.solicitacao.status, 'aguardando_pagamento');
-  assert.equal(banco.solicitacoes[0].valor_final, 600);
+  assert.equal(r1.json.solicitacao.status, 'em_validacao'); // Aguardando análise da CMK
+  assert.equal(banco.solicitacoes[0].valor_calculado, 600);
+  assert.equal(banco.solicitacoes[0].valor_final, null);
+  // pagamento bloqueado no servidor antes da aprovação (não adianta chamar o checkout direto)
+  const antes = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r1.json.solicitacao.id } });
+  assert.equal(antes.status, 409);
+  assert.equal(mp.prefs.length, 0);
+  assert.equal(banco.solicitacao_eventos[0].tipo, 'criada');
+  assert.ok(banco.notificacoes.some((n) => n.usuario_id === USUARIOS['tok-ana'].id && n.tipo === 'solicitacao_recebida'));
 
   const r2 = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
   assert.equal(r2.status, 200);
   assert.equal(r2.json.nova, false);
   assert.equal(banco.solicitacoes.length, 1);
+  aprovarPelaCmk(r1.json.solicitacao.id);
 
   // outra pessoa não paga a solicitação da Ana
   const alheio = await chamar('checkout', { token: 'tok-bia', corpo: { solicitacao_id: r1.json.solicitacao.id } });
@@ -280,6 +294,7 @@ test('modelo pronto personalizado no editor: vai para validação (a equipe revi
 
 test('webhook: assinatura inválida é recusada; válida confirma; repetido não duplica', async () => {
   const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'webhookref1234567890') } });
+  aprovarPelaCmk(r.json.solicitacao.id);
   const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
   const pago = mpPagou(c.json.pagamento_id, 500, 'approved', 777);
 
@@ -307,6 +322,7 @@ test('webhook: assinatura inválida é recusada; válida confirma; repetido não
 
 test('verificar: tentativa recusada mantém pendente; outro cliente não consulta', async () => {
   const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'identidade-essencial' }], 'recusadoref123456789') } });
+  aprovarPelaCmk(r.json.solicitacao.id);
   const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
   mpPagou(c.json.pagamento_id, 500, 'rejected');
   const v = await chamar('verificar-pagamento', { token: 'tok-ana', corpo: { pagamento_id: c.json.pagamento_id } });
@@ -320,6 +336,7 @@ test('localhost: sem auto_return e sem webhook (confirmação pela verificação
   process.env.APP_URL = 'http://localhost:3000';
   try {
     const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }], 'localhostref12345678') } });
+    aprovarPelaCmk(r.json.solicitacao.id);
     await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
     assert.equal(mp.prefs[0].auto_return, undefined);
     assert.equal(mp.prefs[0].notification_url, undefined);
@@ -336,4 +353,66 @@ test('/config.js entrega só as chaves públicas', async () => {
   assert.match(res.t, /window\.COGIT_CONFIG/);
   assert.match(res.t, /"supabaseAnonKey":"anon"/);
   assert.doesNotMatch(res.t, /service|APP_USR|segredo/);
+});
+
+test('cliente reenvia com alterações: nova versão, volta para "Aguardando análise da CMK", cobrança liberada é cancelada e a CMK é avisada', async () => {
+  banco.profiles.push({ id: 'cccccccc-0000-4000-8000-0000000000ad', role: 'admin', cadastro_concluido_em: '2026-01-01T00:00:00Z' });
+  const cfg = { ...cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos', variante: 'landing-page-formal' }], 'reenvioref1234567890'), personalizacao: true };
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
+  const id = r.json.solicitacao.id;
+  const s = banco.solicitacoes.find((x) => x.id === id);
+  assert.equal(banco.solicitacao_versoes[0].numero, 1);
+  assert.equal(banco.solicitacao_versoes[0].storage_path, 'solicitacoes/' + id + '/personalizacao.json');
+  assert.ok(banco.notificacoes.some((n) => n.usuario_id === 'cccccccc-0000-4000-8000-0000000000ad' && n.tipo === 'solicitacao_nova'));
+
+  // em análise: o cliente espera a equipe terminar
+  s.status = 'em_analise';
+  assert.equal((await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'reenviar', solicitacao_id: id, personalizada: true } })).status, 409);
+
+  // aprovada e com cobrança aberta: mudar exige nova análise
+  Object.assign(s, { status: 'aguardando_pagamento', valor_final: 600 });
+  banco.pagamentos.push({ id: uuid(), solicitacao_id: id, status: 'pendente', valor: 600, link_pagamento: 'https://www.mercadopago.com.br/x' });
+  assert.equal((await chamar('solicitacoes', { token: 'tok-bia', corpo: { acao: 'reenviar', solicitacao_id: id } })).status, 404); // outra pessoa
+  const re = await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'reenviar', solicitacao_id: id, personalizada: true, mensagem: 'Troquei o logotipo.' } });
+  assert.equal(re.status, 200);
+  assert.equal(s.status, 'em_validacao');
+  assert.equal(s.versao_atual, 2);
+  assert.equal(s.valor_final, null);
+  assert.equal(banco.pagamentos.at(-1).status, 'cancelado');
+  assert.equal(banco.solicitacao_versoes.at(-1).storage_path, 'solicitacoes/' + id + '/v2/personalizacao.json');
+  assert.equal(banco.solicitacao_eventos.at(-1).tipo, 'reenviada');
+  assert.ok(banco.notificacoes.some((n) => n.tipo === 'solicitacao_reenviada'));
+  assert.equal((await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: id } })).status, 409);
+});
+
+test('proposta da CMK com alterações: o cliente aprova (libera o pagamento) ou pede revisão (volta para a análise)', async () => {
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }], 'propostaref123456789') } });
+  const id = r.json.solicitacao.id;
+  const s = banco.solicitacoes.find((x) => x.id === id);
+  assert.equal((await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'aprovar_proposta', solicitacao_id: id } })).status, 409); // sem proposta
+  Object.assign(s, { status: 'aguardando_cliente', valor_final: 750 });
+  assert.equal((await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: id } })).status, 409);
+  assert.equal((await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'recusar_proposta', solicitacao_id: id } })).status, 400); // precisa dizer o quê
+  const rec = await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'recusar_proposta', solicitacao_id: id, mensagem: 'Quero manter a seção de serviços.' } });
+  assert.equal(rec.status, 200);
+  assert.equal(s.status, 'em_validacao');
+
+  Object.assign(s, { status: 'aguardando_cliente', valor_final: 750 });
+  const ok = await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'aprovar_proposta', solicitacao_id: id } });
+  assert.equal(ok.status, 200);
+  assert.equal(s.status, 'aguardando_pagamento');
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: id } });
+  assert.equal(c.status, 200);
+  assert.equal(mp.prefs[0].items[0].unit_price, 750);
+});
+
+test('sem personalização: fica registrado na solicitação e no histórico', async () => {
+  const cfg = cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos', variante: 'landing-page-basica' }], 'semperso1234567890ab');
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } });
+  const s = banco.solicitacoes.find((x) => x.id === r.json.solicitacao.id);
+  assert.equal(s.selecao.personalizacao, false);
+  assert.match(s.notas, /SEM personalização/);
+  assert.equal(banco.solicitacao_versoes[0].personalizada, false);
+  assert.equal(banco.solicitacao_versoes[0].storage_path, null);
+  assert.match(banco.solicitacao_eventos[0].mensagem, /sem personalização/);
 });

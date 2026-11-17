@@ -21,7 +21,7 @@ beforeEach(() => {
       { id: ANA, role: 'cliente', nome: 'Ana Souza', email: 'ana@ex.com', telefone: '17981568889', cadastro_concluido_em: '2026-01-01T00:00:00Z' },
       { id: ADM, role: 'admin', nome: 'Kaike', email: 'adm@ex.com', cadastro_concluido_em: '2026-01-01T00:00:00Z' }
     ],
-    solicitacoes: [], pagamentos: [], notificacoes: [], catalogo_precos: catalogo
+    solicitacoes: [], pagamentos: [], notificacoes: [], solicitacao_eventos: [], catalogo_precos: catalogo
   };
 });
 
@@ -104,7 +104,7 @@ test('simular: remover e adicionar (catálogo + personalizado) recalcula sem gra
   assert.equal(JSON.stringify(s), antes); // nada gravado
 });
 
-test('aprovar: grava itens, valor manual, quem/quando, comprovante com mensagem e link do WhatsApp', async () => {
+test('aprovar com itens retirados pela equipe: vai para "Aguardando aprovação do cliente"; grava valor, quem/quando, comprovante e WhatsApp', async () => {
   const s = criar([{ id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'portfolio', modelo: 'sob-medida' }]);
   banco.pagamentos.push({ id: 'pg', solicitacao_id: s.id, status: 'pendente', valor: 1, link_pagamento: 'x', mp_preference_id: 'y' });
   const r = await admin({
@@ -112,8 +112,10 @@ test('aprovar: grava itens, valor manual, quem/quando, comprovante com mensagem 
     itens: { servicos: [{ id: 'portfolio', modelo: 'sob-medida' }], complementos: [], personalizados: [] }
   });
   assert.equal(r.status, 200);
-  assert.equal(s.status, 'aguardando_pagamento');
+  assert.equal(s.status, 'aguardando_cliente'); // a equipe tirou a Landing Page: o cliente confirma antes de pagar
   assert.equal(s.valor_final, 950);
+  assert.equal(banco.solicitacao_eventos.at(-1).tipo, 'aguardando_cliente');
+  assert.equal(banco.solicitacao_eventos.at(-1).autor_id, ADM);
   assert.equal(s.aprovado_por, ADM);
   assert.ok(s.aprovado_em);
   assert.match(s.comprovante_token, /^[A-Za-z0-9_-]{32}$/);
@@ -138,7 +140,7 @@ test('aprovar: grava itens, valor manual, quem/quando, comprovante com mensagem 
   const c = await chamar('comprovante', { metodo: 'GET', query: { t: s.comprovante_token } });
   assert.equal(c.status, 200);
   assert.equal(c.json.comprovante.codigo, 'PLN-2026-0013');
-  assert.equal(c.json.pagamento.codigo, 'liberado');
+  assert.equal(c.json.pagamento.codigo, 'aguardando_cliente');
   assert.equal((await chamar('comprovante', { metodo: 'GET', query: { t: 'x'.repeat(32) } })).status, 404);
   assert.equal((await chamar('comprovante', { metodo: 'GET', query: { t: 'curto' } })).status, 404);
 
@@ -156,7 +158,34 @@ test('aprovar: valor zero, sem itens ou com o modal desatualizado é recusado', 
   assert.equal(s.status, 'em_validacao');
 });
 
-test('salvar: sob medida fica em validação; preço fechado libera com o valor do catálogo', async () => {
+test('aprovar sem mudar os itens libera o pagamento direto', async () => {
+  const s = criar([{ id: 'landing-page', modelo: 'modelos-prontos' }]);
+  const r = await admin({ acao: 'aprovar', solicitacao_id: s.id, updated_at: s.updated_at, valor_final: 600, itens: { servicos: [{ id: 'landing-page', modelo: 'modelos-prontos' }], complementos: [], personalizados: [] } });
+  assert.equal(r.status, 200);
+  assert.equal(s.status, 'aguardando_pagamento');
+  assert.equal(banco.solicitacao_eventos.at(-1).tipo, 'aprovada');
+  assert.match(banco.notificacoes.at(-1).titulo, /pagamento liberado/);
+});
+
+test('analisar, solicitar ajustes e observação: status, histórico com o admin e aviso ao cliente', async () => {
+  const s = criar([{ id: 'landing-page', modelo: 'modelos-prontos' }], { status: 'em_validacao', valor_final: null });
+  const a = await admin({ acao: 'analisar', solicitacao_id: s.id });
+  assert.equal(a.status, 200);
+  assert.equal(s.status, 'em_analise');
+  assert.equal(s.analise_por, ADM);
+  assert.equal((await admin({ acao: 'ajustes', solicitacao_id: s.id })).status, 400); // precisa da mensagem
+  const aj = await admin({ acao: 'ajustes', solicitacao_id: s.id, mensagem: 'Troque a foto do banner.' });
+  assert.equal(aj.status, 200);
+  assert.equal(s.status, 'ajustes_solicitados');
+  const ob = await admin({ acao: 'observacao', solicitacao_id: s.id, mensagem: 'Pode usar fotos do celular.' });
+  assert.equal(ob.status, 200);
+  assert.equal(s.status, 'ajustes_solicitados');
+  assert.deepEqual(banco.solicitacao_eventos.map((e) => e.tipo), ['analise_iniciada', 'ajustes_solicitados', 'observacao']);
+  assert.ok(banco.solicitacao_eventos.every((e) => e.autor_id === ADM && e.autor_papel === 'admin'));
+  assert.equal(banco.notificacoes.filter((n) => n.usuario_id === ANA).length, 3);
+});
+
+test('salvar não libera pagamento: o status só muda pela aprovação', async () => {
   const s = criar([{ id: 'portfolio', modelo: 'sob-medida' }, { id: 'landing-page', modelo: 'modelos-prontos' }]);
   const r1 = await admin({ acao: 'salvar', solicitacao_id: s.id, itens: { servicos: [{ id: 'portfolio', modelo: 'sob-medida' }], complementos: [], personalizados: [] } });
   assert.equal(r1.status, 200);
@@ -164,8 +193,8 @@ test('salvar: sob medida fica em validação; preço fechado libera com o valor 
   assert.equal(s.valor_final, null);
   const r2 = await admin({ acao: 'salvar', solicitacao_id: s.id, itens: { servicos: [{ id: 'landing-page', modelo: 'modelos-prontos' }], complementos: [], personalizados: [] } });
   assert.equal(r2.status, 200);
-  assert.equal(s.status, 'aguardando_pagamento');
-  assert.equal(s.valor_final, 600);
+  assert.equal(s.status, 'em_validacao');
+  assert.equal(s.valor_final, null);
 });
 
 test('cancelar: motivo, quem/quando, cobrança cancelada e WhatsApp só com mensagem', async () => {
@@ -188,9 +217,10 @@ test('cancelar: motivo, quem/quando, cobrança cancelada e WhatsApp só com mens
 test('cliente tira um item personalizado que a equipe adicionou', async () => {
   const s = criar([{ id: 'portfolio', modelo: 'modelos-prontos' }]);
   await admin({ acao: 'salvar', solicitacao_id: s.id, itens: { servicos: s.selecao.servicos, complementos: [], personalizados: [{ id: 'custom-zz99zz99', nome: 'Página extra', valor: 250 }] } });
-  assert.equal(s.valor_final, 750);
+  assert.equal(s.valor_final, 750); // já estava aprovada: acompanha o novo preço fechado
   const r = await chamar('solicitacao-itens', { token: 'tok-ana', corpo: { solicitacao_id: s.id, tipo: 'servico', id: 'custom-zz99zz99' } });
   assert.equal(r.status, 200);
-  assert.equal(s.valor_final, 500);
+  assert.equal(s.valor_calculado, 500);
+  assert.equal(s.status, 'em_validacao'); // o cliente mudou: volta para a análise da CMK
   assert.equal(s.selecao.personalizados.length, 0);
 });

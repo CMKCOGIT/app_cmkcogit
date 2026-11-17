@@ -107,9 +107,12 @@ function fmtDataHora(data) {
 
 const ROTULOS = {
   solicitacao: {
-    em_validacao: 'Em validação pela equipe',
-    aguardando_pagamento: 'Aguardando pagamento',
-    paga: 'Paga',
+    em_validacao: 'Aguardando análise da CMK',
+    em_analise: 'Em análise',
+    ajustes_solicitados: 'Ajustes solicitados',
+    aguardando_cliente: 'Aguardando aprovação do cliente',
+    aguardando_pagamento: 'Aprovado pela CMK — aguardando pagamento',
+    paga: 'Pagamento confirmado',
     cancelada: 'Cancelada'
   },
   pagamento: { pendente: 'Pendente', pago: 'Pago', falhou: 'Falhou', cancelado: 'Cancelado', reembolsado: 'Reembolsado' },
@@ -234,12 +237,13 @@ function itensHtml(resumo) {
 
 // Itens podem sair de uma solicitação (cliente dono ou admin) até ela ser paga.
 // O servidor recalcula o preço; quem remove a última solução precisa cancelar a solicitação.
+const STATUS_ABERTOS = ['em_validacao', 'em_analise', 'ajustes_solicitados', 'aguardando_cliente', 'aguardando_pagamento'];
 function solicitacaoEditavel(s) {
-  return s.status === 'em_validacao' || s.status === 'aguardando_pagamento';
+  return STATUS_ABERTOS.includes(s.status);
 }
 // Pílula de status: texto + cor (nunca só cor)
 const TOM_STATUS = {
-  solicitacao: { em_validacao: 'atencao', aguardando_pagamento: 'info', paga: 'ok', cancelada: 'neutro' },
+  solicitacao: { em_validacao: 'atencao', em_analise: 'info', ajustes_solicitados: 'perigo', aguardando_cliente: 'atencao', aguardando_pagamento: 'info', paga: 'ok', cancelada: 'neutro' },
   pagamento: { pendente: 'atencao', pago: 'ok', falhou: 'perigo', cancelado: 'neutro', reembolsado: 'neutro' },
   projeto: { em_andamento: 'info', aguardando_cliente: 'atencao', pausado: 'neutro', concluido: 'ok', cancelado: 'neutro' }
 };
@@ -250,8 +254,8 @@ function etiquetaStatus(grupo, valor) {
 function valorSolicitacao(s) {
   if (s.valor_final != null) return brl(s.valor_final);
   if (s.tipo_preco === 'free') return 'Gratuito';
-  if (Number(s.valor_calculado) > 0) return 'A partir de ' + brl(s.valor_calculado) + ' (confirmado na validação)';
-  return 'Definido na validação';
+  if (Number(s.valor_calculado) > 0) return 'A partir de ' + brl(s.valor_calculado) + ' (confirmado na análise da CMK)';
+  return 'Definido na análise da CMK';
 }
 
 // Só links da própria plataforma (as notificações são geradas pelo banco)
@@ -299,7 +303,7 @@ function linhaDoTempoHtml(lista) {
 // ---------------------------------------------------------------------
 const INICIO_ADMIN = 'admin-inicio.html';
 const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html'];
-const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-clientes.html', 'admin-quadros.html'];
+const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-solicitacao.html', 'admin-clientes.html', 'admin-quadros.html'];
 
 function ehAdmin(perfil) {
   return Boolean(perfil && perfil.role === 'admin');
@@ -685,7 +689,7 @@ function itensMenu(perfil) {
       { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' },
       { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
     ] }],
-    fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações em validação', curto: 'Validar', complemento: ' solicitações em validação', icone: 'aprovar' },
+    fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações aguardando análise', curto: 'Analisar', complemento: ' solicitações aguardando análise', icone: 'aprovar' },
     inferior: [INICIO_ADMIN, 'admin.html', 'fab', 'mensagens.html'],
     ajuda
   } : {
@@ -820,7 +824,7 @@ async function contarEmValidacao() {
   const { count, error } = await db.from('solicitacoes').select('id', { count: 'exact', head: true }).eq('status', 'em_validacao');
   if (error || typeof count !== 'number') return;
   const cont = document.getElementById('menu-cont-validacao');
-  if (cont) { cont.hidden = !count; cont.textContent = count > 99 ? '99+' : String(count); cont.setAttribute('aria-label', count + ' em validação'); }
+  if (cont) { cont.hidden = !count; cont.textContent = count > 99 ? '99+' : String(count); cont.setAttribute('aria-label', count + ' aguardando análise'); }
   const texto = document.getElementById('menu-destaque-texto');
   if (texto) texto.textContent = count ? `${count} ${count === 1 ? 'solicitação espera' : 'solicitações esperam'} revisão.` : 'Nenhuma solicitação esperando revisão.';
 }

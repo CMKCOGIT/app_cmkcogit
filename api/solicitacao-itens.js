@@ -3,15 +3,16 @@
 // Tira um item de uma solicitação ainda não paga (ex.: o cliente desistiu da
 // Landing Page e ficou só com o Portfólio) e RECALCULA o preço pelo catálogo,
 // igual à criação. Complementos que dependiam do item removido saem junto.
-//   preço fechado  -> aguardando pagamento com o novo valor (cobrança pendente atualizada)
-//   sob medida     -> volta para "em validação" (o valor liberado antes não vale mais)
+//   cliente tirou   -> volta para "Aguardando análise da CMK" (o pagamento só é liberado por um admin)
+//   admin tirou     -> mantém o status; se estava aprovada e deixou de ter preço fechado, volta para "Em análise"
 // Quem não fez a mudança é avisado pelas notificações (admin <-> cliente).
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID } from '../lib/http.js';
 import { calcular } from '../lib/selecao.js';
 import { createNotification } from '../lib/notificacoes.js';
+import { ABERTOS, registrarEvento } from '../lib/fluxo-solicitacao.js';
 
-const EDITAVEIS = ['em_validacao', 'aguardando_pagamento'];
+const EDITAVEIS = ABERTOS;
 const SLUG = /^[a-z0-9-]{1,60}$/;
 
 export default async function handler(req, res) {
@@ -89,8 +90,7 @@ export default async function handler(req, res) {
       estruturado: calc.estruturado,
       tipo_preco: calc.tipo_preco,
       valor_calculado: calc.valor,
-      valor_final: calc.estruturado ? calc.valor : null,
-      status: calc.estruturado ? 'aguardando_pagamento' : 'em_validacao'
+      ...novoStatus(s, admin, calc)
     };
     // só grava se ninguém mexeu nela no meio do caminho (outra aba, o admin, um pagamento)
     const atualizada = await db.atualizar('solicitacoes',
@@ -105,6 +105,10 @@ export default async function handler(req, res) {
       await db.atualizar('pagamentos', filtroPendente, { status: 'cancelado', link_pagamento: null });
     }
 
+    await registrarEvento(db, {
+      solicitacaoId: s.id, tipo: 'item_removido', de: s.status, para: campos.status, papel: admin ? 'admin' : 'cliente',
+      autorId: usuario.id, mensagem: 'Item retirado: ' + nomeDe(tipo, id) + '.', versao: s.versao_atual || 1
+    });
     await avisar(db, { s, admin, nome: nomeDe(tipo, id), campos, usuarioId: usuario.id });
 
     return json(res, 200, {
@@ -126,7 +130,7 @@ async function avisar(db, { s, admin, nome, campos, usuarioId }) {
   try {
     const valor = campos.valor_final != null
       ? 'Novo valor: ' + Number(campos.valor_final).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '.'
-      : 'Ela volta para a validação da equipe, que confirma o novo valor.';
+      : 'Ela volta para a análise da CMK, que confirma o valor antes de liberar o pagamento.';
     const metadados = { solicitacao_id: s.id, item: nome };
     if (admin) {
       await createNotification(db, {
@@ -147,4 +151,13 @@ async function avisar(db, { s, admin, nome, campos, usuarioId }) {
   } catch (e) {
     registrarErro('solicitacao-itens:avisar', e);
   }
+}
+
+// Nunca libera o pagamento sozinho: só um admin aprova (api/admin-solicitacao.js).
+function novoStatus(s, admin, calc) {
+  if (!admin) return { status: 'em_validacao', valor_final: null };
+  if (s.status === 'aguardando_pagamento') {
+    return calc.estruturado ? { status: 'aguardando_pagamento', valor_final: calc.valor } : { status: 'em_analise', valor_final: null };
+  }
+  return { status: s.status, valor_final: null };
 }
