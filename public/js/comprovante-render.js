@@ -6,7 +6,7 @@
 const Comprovante = (function () {
   const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const brl = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const data = (d, hora) => (d ? new Date(d).toLocaleString('pt-BR', hora
+  const data = (d, hora) => (d ? new Date(d).toLocaleString(window.cogitLocale || 'pt-BR', hora
     ? { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
     : { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—');
   const fone = (t) => {

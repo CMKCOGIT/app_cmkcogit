@@ -3439,3 +3439,13 @@ dl.pers-textos dt, dl.pers-textos dd { padding: 0; border: 0; }
 .arq-pendencias details li { padding: 0 !important; border: 0 !important; }
 .arq-arquivo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .arq-arquivo small, .arq-status { color: var(--text-secondary); }
+
+/* Idioma: PT | EN (public/js/i18n.js). Na barra do topo e solto nas telas sem barra (login, cadastro) */
+.idioma { display: inline-flex; align-items: center; gap: 2px; font-size: var(--text-xs, .8rem); font-weight: 700; letter-spacing: .04em; color: var(--text-secondary); }
+.idioma > span { opacity: .5; padding: 0 1px; }
+.idioma button { min-width: 36px; min-height: 36px; padding: 0 6px; border: 0; border-radius: 2px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.idioma button:hover { background: rgb(0 0 0 / .06); color: var(--text-primary, #121314); }
+.idioma button[aria-pressed="true"] { color: var(--text-primary, #121314); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.idioma button:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+.idioma-solto { position: fixed; top: 12px; right: 12px; z-index: 50; padding: 2px 4px; border-radius: 2px; background: rgb(255 255 255 / .92); box-shadow: 0 0 0 1px rgb(0 0 0 / .08); }
+@media (max-width: 640px) { #barra-topo .idioma button { min-width: 32px; } }

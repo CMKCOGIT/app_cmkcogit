@@ -196,8 +196,8 @@
   // ---------------- gráfico de faturamento (linha + área, SVG) ----------------
   function rotuloPeriodo(iso, gran, longo) {
     const dt = dataDeIso(iso);
-    if (gran === 'month') return dt.toLocaleDateString('pt-BR', { month: longo ? 'long' : 'short', year: '2-digit' }).replace('.', '');
-    const dia = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    if (gran === 'month') return dt.toLocaleDateString(window.cogitLocale || 'pt-BR', { month: longo ? 'long' : 'short', year: '2-digit' }).replace('.', '');
+    const dia = dt.toLocaleDateString(window.cogitLocale || 'pt-BR', { day: '2-digit', month: '2-digit' });
     return gran === 'week' ? (longo ? 'Semana de ' : 'sem. ') + dia : dia;
   }
 
@@ -355,7 +355,7 @@
 
     const linhas = [['Data', 'Cliente', 'E-mail', 'Solução', 'Tipo', 'Descrição', 'Projeto', 'Método', 'Valor (R$)']].concat(
       data.map((v) => [
-        new Date(v.pago_em).toLocaleString('pt-BR'), v.cliente_nome, v.cliente_email, v.solucao,
+        new Date(v.pago_em).toLocaleString(window.cogitLocale || 'pt-BR'), v.cliente_nome, v.cliente_email, v.solucao,
         v.categoria === 'funcionalidade' ? 'Funcionalidade extra' : 'Solução', v.descricao, v.projeto_codigo,
         rotulo('metodo', v.metodo), Number(v.valor).toFixed(2).replace('.', ',')
       ]));
