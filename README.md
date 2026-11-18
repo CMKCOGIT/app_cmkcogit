@@ -24,6 +24,15 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
                           cobrança "Paga" + projeto criado em "Meus projetos"
 ```
 
+## Plataforma em inglês (PT | EN)
+
+- **Seletor PT | EN** na barra do topo (e no canto das telas sem barra, como login e cadastro). A escolha fica guardada no navegador.
+- Quem chega do site em inglês (`?lang=en`, ou `?volta=` de uma página `/en/`) já entra em inglês. Em inglês, os links para o site apontam para `/en/`.
+- **Como traduz:** `public/js/i18n.js` troca na hora os textos da página e tudo que o JavaScript monta depois, usando `public/js/i18n-en.js` (gerado de `tools/i18n-en.json`). Datas e horas seguem o idioma; valores continuam em R$.
+- **Corrigir ou incluir tradução:** edite `tools/i18n-en.json` e rode `npm run i18n`. Texto novo no código? `node tools/i18n.mjs --extract` lista os que faltam (com valor vazio). `npm test` falha se faltar tradução ou se o `.js` gerado estiver desatualizado.
+- **Achar o que faltou:** abra qualquer página com `?i18n-debug` e veja `window.__i18nFaltando` no console.
+- **Continuam em português:** e-mails, respostas do Assistente IA, mensagens digitadas por pessoas e o editor dos modelos prontos.
+
 ## O que tem aqui
 
 | Pasta / arquivo | O que é |

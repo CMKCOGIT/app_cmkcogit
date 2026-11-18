@@ -66,7 +66,7 @@
     h = h.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
     return h.replace(/\n/g, '<br>');
   }
-  const hora = (d) => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const hora = (d) => new Date(d).toLocaleTimeString(window.cogitLocale || 'pt-BR', { hour: '2-digit', minute: '2-digit' });
   const duracao = (s) => { s = Math.max(0, Math.round(Number(s) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   const tamanho = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
   const primeiroNome = (n) => String(n || '').trim().split(/\s+/)[0] || '';
@@ -132,7 +132,7 @@
   function rotuloCurto(d) {
     if (!d) return '';
     const r = rotuloDia(d);
-    return r === 'Hoje' ? hora(d) : r === 'Ontem' ? 'Ontem' : new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return r === 'Hoje' ? hora(d) : r === 'Ontem' ? 'Ontem' : new Date(d).toLocaleDateString(window.cogitLocale || 'pt-BR', { day: '2-digit', month: '2-digit' });
   }
 
   $('lista-conversas').addEventListener('click', (e) => {

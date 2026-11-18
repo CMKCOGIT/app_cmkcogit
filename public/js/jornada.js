@@ -468,7 +468,7 @@
       const st = () => document.getElementById('jm-salvo');
       try {
         await api(ROTA, { acao: 'salvar', jornada_id: E.jornada.id, modulo: m.id, respostas });
-        if (st() && !sujo) st().textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        if (st() && !sujo) st().textContent = 'Salvo às ' + new Date().toLocaleTimeString(window.cogitLocale || 'pt-BR', { hour: '2-digit', minute: '2-digit' });
         if (selecionado === m.id) atualizarNota(m);
       } catch (e) {
         sujo = true;

@@ -48,8 +48,8 @@
   }
   function textoPrazo(d, comHora = true) {
     const x = new Date(d);
-    const dia = x.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
-    const hora = x.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const dia = x.toLocaleDateString(window.cogitLocale || 'pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
+    const hora = x.toLocaleTimeString(window.cogitLocale || 'pt-BR', { hour: '2-digit', minute: '2-digit' });
     return comHora && hora !== '23:59' ? dia + ', ' + hora : dia;
   }
   function formatar(t) {

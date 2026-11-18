@@ -101,7 +101,7 @@
       return;
     }
     ultimoSalvo = chave;
-    rascunho.textContent = 'Rascunho salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '. Você pode continuar depois.';
+    rascunho.textContent = 'Rascunho salvo às ' + new Date().toLocaleTimeString(window.cogitLocale || 'pt-BR', { hour: '2-digit', minute: '2-digit' }) + '. Você pode continuar depois.';
   }
   function aoDigitar() {
     mostrarPendencias();

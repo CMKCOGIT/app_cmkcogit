@@ -59,7 +59,7 @@ function brl(valor) {
 function fmtData(data) {
   if (!data) return '-';
   const d = /^\d{4}-\d{2}-\d{2}$/.test(data) ? new Date(data + 'T00:00:00') : new Date(data);
-  return d.toLocaleDateString('pt-BR');
+  return d.toLocaleDateString(window.cogitLocale || 'pt-BR');
 }
 // (17) 98156-8889 enquanto digita
 function formatarTelefone(valor) {
@@ -102,7 +102,7 @@ function mascararDocumento(valor) {
   return '';
 }
 function fmtDataHora(data) {
-  return data ? new Date(data).toLocaleString('pt-BR') : '-';
+  return data ? new Date(data).toLocaleString(window.cogitLocale || 'pt-BR') : '-';
 }
 
 const ROTULOS = {
@@ -319,7 +319,10 @@ function paginaInicial(perfil) {
 // Links externos
 // ---------------------------------------------------------------------
 function urlSite(caminho) {
-  return (CFG.siteUrl || 'https://www.cmkcogit.com.br') + '/' + String(caminho || '').replace(/^\/+/, '');
+  let c = String(caminho || '').replace(/^\/+/, '');
+  // plataforma em inglês: as páginas do site têm versão em /en/ (os modelos prontos não)
+  if (window.cogitIdioma && window.cogitIdioma() === 'en' && !/^(templates|en)\//.test(c) && !/\.(js|css|png|svg|ico|json)(\?|#|$)/.test(c)) c = 'en/' + c;
+  return (CFG.siteUrl || 'https://www.cmkcogit.com.br') + '/' + c;
 }
 // "Voltar para o site": o site manda ?volta=<página onde a pessoa estava> ao abrir a plataforma.
 // Só vale endereço do próprio site (evita redirecionar para fora); fica nesta aba até ela fechar.
@@ -759,6 +762,7 @@ function montarMenu(perfil) {
     <a class="topo-marca" href="${paginaInicial(perfil)}" aria-label="CMKCOGIT, ir para o início"></a>
     <button type="button" id="btn-busca" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K">
       ${icone('buscar')}<span>Buscar</span><kbd>Ctrl K</kbd></button>
+    ${window.cogitIdiomaHtml ? window.cogitIdiomaHtml() : ''}
     ${sinoHtml()}
     <div id="usuario">
       <button type="button" id="btn-usuario" aria-expanded="false" aria-controls="menu-usuario">
