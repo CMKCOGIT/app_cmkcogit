@@ -18,6 +18,9 @@
   let versaoMostrada = 1;
   const MSG_REENVIO = 'O arquivo do seu site personalizado não chegou até a plataforma. Abra esta solicitação em "Minhas solicitações", clique em "Enviar meu site" e depois em "Concluir" no editor. Use o mesmo navegador em que você personalizou: o que você fez continua salvo nele.';
   let dadosAtuais = null;
+  let arquivosSite = [];   // .zip gerados (solicitacoes/<id>/site-final), mais recente primeiro
+  let liberados = [];      // .zip já entregues no repositório do projeto
+  let autoTentado = false; // geração automática: uma tentativa por abertura da página
 
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
     principal.innerHTML = '<p data-vazio>Solicitação não informada. <a href="admin.html">Voltar para Solicitações</a>.</p>';
@@ -54,6 +57,12 @@
         dadosAtuais = await baixarPersonalizacao(s.id, n);
         if (dadosAtuais) { versaoMostrada = n; break; }
       }
+    }
+    arquivosSite = personalizada ? await listarArquivosDoSite(s.id) : [];
+    liberados = [];
+    if (s.projeto_id) {
+      const lib = await db.from('arquivos').select('id, nome, created_at, descricao').eq('projeto_id', s.projeto_id).like('nome', '%-site.zip').order('created_at', { ascending: false });
+      liberados = lib.error ? [] : (lib.data || []);
     }
     render(ev.error ? [] : (ev.data || []), personalizada);
   }
@@ -106,6 +115,7 @@
           : '<p class="aviso-destaque"><strong>Enviada sem personalização.</strong> O cliente escolheu o modelo e não personalizou o site. Os textos e as imagens precisam ser combinados com ele.</p>')
           : '<p data-vazio>Esta solicitação não usa modelo pronto com editor.</p>'}
       </section>
+      ${modelo || personalizada ? `<section class="cartao" aria-labelledby="t-arq" id="arquivo-site"></section>` : ''}
       ${versoes.length ? `
       <section class="cartao" aria-labelledby="t-versoes">
         <h2 id="t-versoes">Versões enviadas</h2>
@@ -127,6 +137,130 @@
       </li>`).join('') : '<li><small>Sem registros ainda.</small></li>';
 
     renderAcoes();
+    renderArquivoSite(personalizada);
+  }
+
+  // ---------------- Arquivo do site (código final) ----------------
+  // Tudo preenchido: o arquivo é gerado sozinho ao abrir a página. Faltando informação: lista
+  // as pendências para cobrar o cliente; "Gerar" junta o que existe e "Liberar" entrega no
+  // repositório do projeto (o cliente é avisado pela notificação do repositório).
+  function renderArquivoSite(personalizada) {
+    const box = document.getElementById('arquivo-site');
+    if (!box) return;
+    const versao = versaoMostrada;
+    const atual = arquivosSite.find((a) => a.versao === versao) || null;
+    const pend = !personalizada ? [{ tipo: 'sem', nivel: 'bloqueia', titulo: 'O cliente não personalizou o site (nome, textos, imagens e contatos)', itens: [] }]
+      : !dadosAtuais ? [{ tipo: 'arquivo', nivel: 'bloqueia', titulo: 'O arquivo da personalização não chegou à plataforma', itens: [] }]
+      : (atual && atual.resumo && Array.isArray(atual.resumo.pendencias) ? atual.resumo.pendencias : pendenciasDaPersonalizacao(dadosAtuais));
+    const bloqueia = temBloqueio(pend);
+    const podeCobrar = solicitacaoEditavel(s) || !!s.projeto_id;
+    const r = (atual && atual.resumo) || {};
+    box.innerHTML = `
+      <div class="cartao-topo"><h2 id="t-arq">Arquivo do site (código)</h2></div>
+      <h3 class="arq-sub">Pendências de personalização${dadosAtuais ? ' · versão ' + versao : ''}</h3>
+      ${pendenciasHtml(pend)}
+      ${bloqueia ? `
+      <form id="form-cobrar" class="form-acao" novalidate>
+        <p class="campo"><label for="cb-msg">Mensagem para cobrar o cliente</label><textarea id="cb-msg" rows="5" maxlength="2000">${esc(mensagemPendencias(pend))}</textarea></p>
+        <p><button type="submit"${podeCobrar ? '' : ' disabled'}>${icone('mensagem')} Cobrar o cliente</button>
+        <small>${solicitacaoEditavel(s) ? 'Pede ajustes: o cliente completa no editor e reenvia. Uma nova versão aparece aqui.' : s.projeto_id ? 'Vira uma pendência no projeto do cliente.' : 'Solicitação encerrada.'}</small></p>
+      </form>` : ''}
+      <h3 class="arq-sub">Arquivo gerado</h3>
+      ${atual ? `
+        <p class="arq-arquivo">${icone('arquivo')} <strong>${esc(r.nome || atual.nome)}</strong>
+          <small>versão ${atual.versao} · ${fmtDataHora(atual.criadoEm)}${atual.tamanho ? ' · ' + Math.max(1, Math.round(atual.tamanho / 1024)) + ' KB' : ''}${r.automatico ? ' · gerado automaticamente' : r.geradoPor ? ' · por ' + esc(r.geradoPor) : ''}</small></p>
+        ${Array.isArray(r.arquivos) && r.arquivos.length ? `<details><summary>${r.arquivos.length} arquivos no pacote</summary><p class="texto-livre">${r.arquivos.map(esc).join('\n')}</p></details>` : ''}
+        <p><button type="button" id="btn-baixar-site">${icone('exportar')} Baixar código (.zip)</button></p>`
+      : `<p data-arq-status>${dadosAtuais ? (bloqueia ? 'Ainda não gerado: faltam informações do cliente. Você pode cobrar acima ou gerar com o que existe.' : 'Ainda não gerado.') : 'Sem personalização recebida: não há o que gerar.'}</p>`}
+      <p class="arq-status" id="arq-status" role="status" hidden></p>
+      ${dadosAtuais ? `<p><button type="button" id="btn-gerar-site">${icone('recarregar')} ${atual ? 'Juntar as informações e gerar de novo' : 'Juntar as informações e gerar o arquivo'}</button></p>` : ''}
+      ${atual ? `
+      <form id="form-liberar" class="form-acao" novalidate>
+        <h3>Liberar para o cliente</h3>
+        ${s.projeto_id ? `
+          <p class="campo"><label for="lb-msg">Mensagem que acompanha o arquivo</label><textarea id="lb-msg" rows="2" maxlength="500">Código do seu site, pronto para publicar.</textarea></p>
+          <p><button type="submit">${icone('enviado')} Liberar arquivo pronto</button></p>`
+        : '<p><small>A liberação fica disponível depois do pagamento: o arquivo vai para o repositório do projeto, que é criado quando o pagamento é confirmado.</small></p>'}
+        ${liberados.length ? `<p><small>Já liberado: ${liberados.map((l) => esc(l.nome) + ' em ' + fmtDataHora(l.created_at)).join('; ')}. <a href="projeto.html?id=${encodeURIComponent(s.projeto_id)}#repositorio">Ver repositório</a></small></p>` : ''}
+      </form>` : ''}`;
+
+    const status = document.getElementById('arq-status');
+    const dizer = (msg) => { status.textContent = msg || ''; status.hidden = !msg; };
+
+    const cobrar = document.getElementById('form-cobrar');
+    if (cobrar) cobrar.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('cb-msg').value.trim();
+      if (!msg) { mostrarErro('Escreva a mensagem para o cliente.'); return; }
+      if (solicitacaoEditavel(s)) {
+        executar(e.submitter, { acao: 'ajustes', mensagem: msg }, 'Cliente cobrado: ele recebe o aviso e pode completar e reenviar.', (r2) => { if (r2.whatsapp_url) window.open(r2.whatsapp_url, '_blank', 'noopener'); });
+        return;
+      }
+      ocupado(e.submitter, true, 'Enviando...');
+      const { error } = await db.from('pendencias').insert({ projeto_id: s.projeto_id, titulo: 'Complete a personalização do seu site', descricao: msg });
+      ocupado(e.submitter, false);
+      if (error) { mostrarErro('Não foi possível criar a pendência: ' + error.message); return; }
+      avisar('Pendência criada no projeto. O cliente foi avisado.');
+    });
+
+    const baixar = document.getElementById('btn-baixar-site');
+    if (baixar) baixar.addEventListener('click', async () => {
+      const { data, error } = await db.storage.from('arquivos').createSignedUrl(atual.caminho, 600, { download: s.codigo + '-' + (r.nome || 'site.zip') });
+      if (error || !data) { mostrarErro('Arquivo não encontrado no Storage.'); return; }
+      window.location.href = data.signedUrl;
+    });
+
+    async function gerar(botao, oculto) {
+      mostrarErro('');
+      if (botao) ocupado(botao, true, 'Gerando...');
+      dizer(oculto ? 'Tudo preenchido: gerando o arquivo do site automaticamente...' : 'Gerando o arquivo na aba do editor...');
+      try {
+        const gerado = await gerarArquivoDoSite({ pasta: pastaDoModelo(dadosAtuais), dados: dadosAtuais, oculto });
+        if (!gerado.pendencias) gerado.pendencias = pendenciasDaPersonalizacao(dadosAtuais);
+        const novo = await guardarArquivoDoSite(s.id, versaoMostrada, gerado, { automatico: !!oculto, geradoPor: oculto ? null : (perfil.nome || perfil.email || null) });
+        arquivosSite = [novo, ...arquivosSite];
+        renderArquivoSite(personalizada);
+        avisar(temBloqueio(gerado.pendencias) ? 'Arquivo gerado, mas ainda há pendências. Confira antes de liberar.' : 'Arquivo do site gerado.');
+      } catch (err) {
+        if (botao) ocupado(botao, false);
+        dizer(oculto ? 'Não deu para gerar automaticamente (' + err.message + '). Clique em "Juntar as informações e gerar o arquivo".' : err.message);
+      }
+    }
+    const btnGerar = document.getElementById('btn-gerar-site');
+    if (btnGerar) btnGerar.addEventListener('click', () => {
+      if (bloqueia && !window.confirm('Ainda há pendências de personalização. Gerar o arquivo mesmo assim, com o que o cliente enviou?')) return;
+      gerar(btnGerar, false);
+    });
+
+    const liberar = document.getElementById('form-liberar');
+    if (liberar && s.projeto_id) liberar.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (temBloqueio(pend) && !window.confirm('O arquivo tem pendências de personalização. Liberar para o cliente mesmo assim?')) return;
+      mostrarErro('');
+      ocupado(e.submitter, true, 'Liberando...');
+      try {
+        const nome = s.codigo + '-site.zip';
+        const destino = s.projeto_id + '/equipe/' + Date.now() + '-' + nome;
+        let cp = await db.storage.from('arquivos').copy(atual.caminho, destino);
+        if (cp.error) { // sem cópia no servidor: baixa e envia de novo
+          const dl = await db.storage.from('arquivos').download(atual.caminho);
+          if (dl.error || !dl.data) throw new Error('Arquivo gerado não encontrado.');
+          cp = await db.storage.from('arquivos').upload(destino, dl.data, { contentType: 'application/zip' });
+          if (cp.error) throw new Error(cp.error.message);
+        }
+        const descricao = (document.getElementById('lb-msg').value.trim() || 'Código do seu site, pronto para publicar.') + ' (versão ' + atual.versao + ')';
+        const { error } = await db.from('arquivos').insert({ projeto_id: s.projeto_id, nome, storage_path: destino, origem: 'equipe', enviado_por: perfil.id, descricao, tamanho: atual.tamanho });
+        if (error) { await db.storage.from('arquivos').remove([destino]); throw new Error(error.message); }
+        avisar('Arquivo liberado no repositório do projeto. O cliente foi avisado.');
+        await carregar();
+      } catch (err) {
+        mostrarErro('Não foi possível liberar: ' + err.message);
+        ocupado(e.submitter, false);
+      }
+    });
+
+    // Tudo preenchido e ainda sem arquivo desta versão: gera sozinho, sem clique.
+    if (dadosAtuais && !atual && !bloqueia && !autoTentado) { autoTentado = true; gerar(null, true); }
   }
 
   const TIPOS = {

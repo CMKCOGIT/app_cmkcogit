@@ -3427,3 +3427,15 @@ dl.dados-grade dt, dl.dados-grade dd { padding: 0; border: 0; }
 dl.pers-textos { display: grid; grid-template-columns: 1fr; gap: 0; }
 dl.pers-textos > div { min-width: 0; }
 dl.pers-textos dt, dl.pers-textos dd { padding: 0; border: 0; }
+
+/* Arquivo do site (admin-solicitacao): pendências da personalização e o código final */
+.arq-sub { margin: var(--space-4) 0 var(--space-2); font-size: var(--text-base); }
+.arq-ok { padding: var(--space-3) var(--space-4); border-left: 3px solid #1E7A4C; background: #E8F6EE; }
+.arq-pendencias { display: grid; gap: var(--space-2); margin: 0 0 var(--space-3); padding: 0; list-style: none; }
+.arq-pendencias > li { padding: var(--space-2) var(--space-3) !important; border: 0 !important; border-left: 3px solid #B42318 !important; background: #FDF0EF; }
+.arq-pendencias > li[data-nivel="aviso"] { border-left-color: #B07A12 !important; background: #FBF5E6; }
+.arq-pendencias details { margin-top: 4px; }
+.arq-pendencias details ul { margin: 6px 0 0; padding-left: 1.2em; font-size: var(--text-sm, .875rem); }
+.arq-pendencias details li { padding: 0 !important; border: 0 !important; }
+.arq-arquivo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.arq-arquivo small, .arq-status { color: var(--text-secondary); }
