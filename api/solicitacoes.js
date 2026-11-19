@@ -12,10 +12,13 @@
 //                     (caminhoPersonalizacao(id, versao_atual + 1)).
 //   aprovar_proposta  {}                            -> aceita as alterações da CMK: libera o pagamento
 //   recusar_proposta  { mensagem }                  -> pede revisão da proposta: volta para a análise
+//   cancelar          {}                            -> desiste antes do pagamento (link do Mercado Pago encerrado)
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID } from '../lib/http.js';
 import { sanitizarCfg, calcular, texto } from '../lib/selecao.js';
-import { CLIENTE_PODE_EDITAR, caminhoPersonalizacao, registrarEvento, avisarAdmins, avisarCliente } from '../lib/fluxo-solicitacao.js';
+import { ABERTOS, CLIENTE_PODE_EDITAR, caminhoPersonalizacao, registrarEvento, avisarAdmins, avisarCliente } from '../lib/fluxo-solicitacao.js';
+import { cancelarCobrancaPendente } from '../lib/cobranca.js';
+import { limitar, ipDe } from '../lib/limite.js';
 
 const LIMITE_POR_HORA = 15;
 
@@ -32,7 +35,10 @@ export default async function handler(req, res) {
   let corpo;
   try { corpo = await lerCorpo(req); } catch { return erro(res, 400, 'Requisição inválida.'); }
 
-  if (corpo && corpo.acao) return acaoDoCliente(res, db, usuario, corpo);
+  if (corpo && corpo.acao) {
+    if (!(await limitar(db, res, 'solicitacao_acao', usuario.id))) return;
+    return acaoDoCliente(res, db, usuario, corpo);
+  }
 
   const san = sanitizarCfg(corpo && corpo.cfg);
   if (!san.ok) return erro(res, 400, san.erro);
@@ -51,6 +57,7 @@ export default async function handler(req, res) {
       select: 'id', cliente_id: 'eq.' + usuario.id, created_at: 'gte.' + umaHora, limit: String(LIMITE_POR_HORA)
     });
     if (recentes.length >= LIMITE_POR_HORA) return erro(res, 429, 'Muitas solicitações em pouco tempo. Aguarde e tente novamente.');
+    if (!(await limitar(db, res, 'solicitacao_ip', ipDe(req)))) return;
 
     const catalogo = await db.select('catalogo_precos', { select: '*' });
     const calc = calcular(cfg, catalogo);
@@ -136,7 +143,7 @@ async function registrarVersao(db, solicitacaoId, numero, personalizada, autorId
 
 async function acaoDoCliente(res, db, usuario, corpo) {
   const { acao, solicitacao_id: solId } = corpo;
-  if (!['reenviar', 'aprovar_proposta', 'recusar_proposta'].includes(acao)) return erro(res, 400, 'Ação inválida.');
+  if (!['reenviar', 'aprovar_proposta', 'recusar_proposta', 'cancelar'].includes(acao)) return erro(res, 400, 'Ação inválida.');
   if (typeof solId !== 'string' || !UUID.test(solId)) return erro(res, 400, 'Solicitação inválida.');
   try {
     const s = await db.um('solicitacoes', { select: '*', id: 'eq.' + solId, cliente_id: 'eq.' + usuario.id });
@@ -156,7 +163,8 @@ async function acaoDoCliente(res, db, usuario, corpo) {
       const nova = await gravar({ status: 'em_validacao', versao_atual: versao, valor_final: null, selecao });
       if (!nova) return erro(res, 409, 'A solicitação mudou enquanto você editava. Recarregue a página e tente de novo.');
       // alteração depois da aprovação: a cobrança liberada deixa de valer até a nova análise
-      await db.atualizar('pagamentos', { solicitacao_id: 'eq.' + s.id, status: 'eq.pendente' }, { status: 'cancelado', link_pagamento: null });
+      // (o link também é encerrado no Mercado Pago)
+      await cancelarCobrancaPendente(db, s.id);
       await registrarVersao(db, s.id, versao, personalizada, usuario.id);
       await registrarEvento(db, {
         solicitacaoId: s.id, tipo: 'reenviada', de: s.status, para: 'em_validacao', papel: 'cliente', autorId: usuario.id, autorNome: quem, versao,
@@ -171,6 +179,16 @@ async function acaoDoCliente(res, db, usuario, corpo) {
         mensagem: 'O projeto voltou para a análise da CMK. Avisaremos quando for aprovado.'
       });
       return json(res, 200, { ok: true, solicitacao: { id: nova.id, codigo: nova.codigo, status: nova.status, versao_atual: versao } });
+    }
+
+    if (acao === 'cancelar') {
+      if (!ABERTOS.includes(s.status)) return erro(res, 409, 'Esta solicitação não pode mais ser cancelada.');
+      const nova = await gravar({ status: 'cancelada', cancelado_em: new Date().toISOString(), cancelado_por: usuario.id });
+      if (!nova) return erro(res, 409, 'A solicitação mudou. Recarregue a página e tente de novo.');
+      await cancelarCobrancaPendente(db, s.id);
+      await registrarEvento(db, { solicitacaoId: s.id, tipo: 'cancelada', de: s.status, para: 'cancelada', papel: 'cliente', autorId: usuario.id, autorNome: quem, mensagem: 'Cancelada pelo cliente.' });
+      await avisarAdmins(db, s, { tipo: 'solicitacao_cancelada', titulo: s.codigo + ': cancelada pelo cliente', mensagem: quem + ' cancelou a solicitação.' });
+      return json(res, 200, { ok: true, solicitacao: { id: nova.id, status: nova.status } });
     }
 
     if (s.status !== 'aguardando_cliente') return erro(res, 409, 'Não há proposta da equipe esperando a sua resposta.');

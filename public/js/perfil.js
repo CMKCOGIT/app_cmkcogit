@@ -209,7 +209,9 @@
         : 'Não foi possível alterar a senha: ' + error.message);
     }
     e.target.reset();
-    toast(temSenha ? 'Senha alterada. Enviamos um aviso para o seu e-mail.' : 'Senha criada. Agora você também pode entrar com e-mail e senha.');
+    // senha nova: as sessões abertas em outros aparelhos deixam de valer (esta continua)
+    await db.auth.signOut({ scope: 'others' }).catch(() => {});
+    toast(temSenha ? 'Senha alterada. Saímos da sua conta nos outros aparelhos e enviamos um aviso para o seu e-mail.' : 'Senha criada. Agora você também pode entrar com e-mail e senha.');
   });
 
   document.getElementById('sair-todos').addEventListener('click', async () => {

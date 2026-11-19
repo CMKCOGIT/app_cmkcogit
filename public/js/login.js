@@ -144,6 +144,13 @@
   }
 
   // Voltou do Google com erro (cancelou, provedor desligado...): explica e limpa a URL
+  // saiu sozinho por inatividade (admin, js/app.js)
+  if (new URLSearchParams(window.location.search).get('motivo') === 'inatividade') {
+    history.replaceState(null, '', window.location.pathname);
+    definirModoSemAnimacao('login');
+    mensagem('Por segurança, saímos da sua conta depois de ' + INATIVIDADE_ADMIN_MIN + ' minutos sem uso. Entre de novo para continuar.');
+  }
+
   if (ERRO_RETORNO_AUTH) {
     let modoAntes = null;
     try { modoAntes = sessionStorage.getItem(CHAVE_MODO_GOOGLE); } catch (_) {}

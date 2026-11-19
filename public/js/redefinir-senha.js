@@ -14,11 +14,18 @@
     msg.innerHTML = 'Este link expirou ou já foi usado. <a href="login.html">Peça um novo em "Esqueci minha senha"</a>.';
     return;
   }
+  // Só o link de recuperação do e-mail libera a troca sem a senha atual. Quem já está logado
+  // e abre esta página direto troca a senha em "Meu perfil" (lá a senha atual é conferida).
   db.auth.onAuthStateChange((evento) => {
     if (evento === 'PASSWORD_RECOVERY') liberar();
   });
-  if (await getSessao()) liberar();
-  else setTimeout(() => { if (form.hidden) msg.innerHTML = 'Link inválido ou expirado. <a href="login.html">Peça um novo em "Esqueci minha senha"</a>.'; }, 4000);
+  if (RETORNO_RECUPERACAO && await getSessao()) liberar();
+  else setTimeout(async () => {
+    if (!form.hidden) return;
+    msg.innerHTML = (await getSessao())
+      ? 'Para trocar a senha estando logado, use <a href="perfil.html">Meu perfil</a> (pedimos a senha atual por segurança).'
+      : 'Link inválido ou expirado. <a href="login.html">Peça um novo em "Esqueci minha senha"</a>.';
+  }, 4000);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -34,10 +41,12 @@
       msg.textContent = t.includes('different from the old') || t.includes('same')
         ? 'A nova senha precisa ser diferente da anterior.'
         : t.includes('session') || t.includes('jwt') ? 'O link expirou. Peça um novo em "Esqueci minha senha".'
-        : 'Não foi possível salvar: ' + error.message;
+        : 'Não foi possível salvar a nova senha agora. Tente de novo ou peça outro link.';
       return;
     }
-    msg.textContent = 'Senha alterada! Redirecionando...';
+    // a senha mudou: quem estava logado com a senha antiga em outro aparelho sai
+    await db.auth.signOut({ scope: 'others' }).catch(() => {});
+    msg.textContent = 'Senha alterada! Saímos da sua conta nos outros aparelhos. Redirecionando...';
     setTimeout(() => window.location.replace(proximaPagina()), 1200);
   });
 })();

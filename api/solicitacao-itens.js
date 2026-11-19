@@ -11,6 +11,8 @@ import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarE
 import { calcular } from '../lib/selecao.js';
 import { createNotification } from '../lib/notificacoes.js';
 import { ABERTOS, registrarEvento } from '../lib/fluxo-solicitacao.js';
+import { cancelarCobrancaPendente, reajustarCobrancaPendente } from '../lib/cobranca.js';
+import { limitar } from '../lib/limite.js';
 
 const EDITAVEIS = ABERTOS;
 const SLUG = /^[a-z0-9-]{1,60}$/;
@@ -24,6 +26,7 @@ export default async function handler(req, res) {
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
   if (!(await exigirCadastroCompleto(usuario, res, db))) return;
+  if (!(await limitar(db, res, 'itens', usuario.id))) return;
 
   let corpo;
   try { corpo = await lerCorpo(req, 2000); } catch { return erro(res, 400, 'Requisição inválida.'); }
@@ -98,12 +101,9 @@ export default async function handler(req, res) {
     if (!atualizada) return erro(res, 409, 'A solicitação mudou enquanto você editava. Recarregue a página e tente de novo.');
 
     // cobrança pendente: novo valor (link antigo descartado) ou cancelada se voltou para validação
-    const filtroPendente = { solicitacao_id: 'eq.' + s.id, status: 'eq.pendente' };
-    if (campos.status === 'aguardando_pagamento') {
-      await db.atualizar('pagamentos', filtroPendente, { valor: campos.valor_final, link_pagamento: null, mp_preference_id: null });
-    } else {
-      await db.atualizar('pagamentos', filtroPendente, { status: 'cancelado', link_pagamento: null });
-    }
+    // (o link antigo também é encerrado no Mercado Pago: lib/cobranca.js)
+    if (campos.status === 'aguardando_pagamento') await reajustarCobrancaPendente(db, s.id, campos.valor_final);
+    else await cancelarCobrancaPendente(db, s.id);
 
     await registrarEvento(db, {
       solicitacaoId: s.id, tipo: 'item_removido', de: s.status, para: campos.status, papel: admin ? 'admin' : 'cliente',

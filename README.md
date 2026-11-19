@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Clash Display e Satoshi, identidade 2026) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config`, `mensagens-ia` (Gemini) |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20`, `21` e, para receber sites personalizados nos modelos prontos, o `31` e o `32` (análise e aprovação da CMK antes do pagamento) (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20`, `21` e, para receber sites personalizados nos modelos prontos, o `31` e o `32` (análise e aprovação da CMK antes do pagamento) e o `33` (segurança: confirmação só pelo Mercado Pago, auditoria do admin, rate limit) (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -309,7 +309,10 @@ Não é preciso mudar variáveis de ambiente nem o `vercel.json`.
 
 - O valor cobrado vem sempre do banco (`catalogo_precos` / valor definido pelo admin); preço enviado pelo navegador é ignorado.
 - Confirmação só depois de consultar o pagamento na API do Mercado Pago, conferindo cobrança (`external_reference`), valor e moeda. Valor diferente não libera nada e fica registrado.
-- Webhook com assinatura `x-signature` validada quando enviada; avisos repetidos não duplicam nada.
+- Webhook com assinatura `x-signature` obrigatória quando `MP_WEBHOOK_SECRET` está configurado; avisos repetidos não duplicam nada.
+- Link de pagamento vence em 72 h e é encerrado no Mercado Pago quando o pedido é cancelado ou muda de valor; pagamento aprovado que não liberou nada avisa os admins (`lib/cobranca.js`, `lib/mercadopago.js`).
+- Só o servidor confirma pagamento: gatilhos do `sql/33` recusam qualquer usuário logado (inclusive admin) marcando cobrança como paga.
+- Limite de requisições nas rotas `/api` (`lib/limite.js`), admin sai após 30 min sem uso, trocar a senha encerra as outras sessões e as alterações do admin ficam em `admin_auditoria`. Detalhes e o que ficou de fora: `docs/seguranca-fase3.md`.
 - RLS: cada cliente só vê o que é dele; cliente não cria/altera cobranças nem projetos; ninguém vira admin pelo cadastro (nem pelo Google).
 - Cadastro concluído só pelo banco (`concluir_cadastro`); o cliente só consegue alterar nome e telefone do próprio perfil.
 - A `service_role` e o token do Mercado Pago ficam só no servidor; `/config.js` entrega apenas a chave pública (anon).

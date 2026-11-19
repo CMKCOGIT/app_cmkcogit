@@ -6,6 +6,7 @@
 //   acao 'cancelar'         -> cancela a renovação (e o cartão, se houver); o site fica no ar até o fim do período
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID, urlApp } from '../lib/http.js';
+import { limitar } from '../lib/limite.js';
 import { criarAssinaturaMp, buscarAssinaturaMp, cancelarAssinaturaMp, estadoAssinaturaMp } from '../lib/mercadopago.js';
 
 const ACOES = ['ativar_cartao', 'verificar_cartao', 'desligar_cartao', 'cancelar'];
@@ -19,6 +20,7 @@ export default async function handler(req, res) {
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
   if (!(await exigirCadastroCompleto(usuario, res, db))) return;
+  if (!(await limitar(db, res, 'assinatura', usuario.id))) return;
 
   let corpo;
   try { corpo = await lerCorpo(req, 2000); } catch { return erro(res, 400, 'Requisição inválida.'); }

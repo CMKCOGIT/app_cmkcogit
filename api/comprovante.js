@@ -4,6 +4,7 @@
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, registrarErro } from '../lib/http.js';
 import { TOKEN, statusPagamento } from '../lib/comprovante.js';
+import { limitar, ipDe } from '../lib/limite.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return erro(res, 405, 'Método não permitido.');
@@ -14,6 +15,8 @@ export default async function handler(req, res) {
 
   let db;
   try { db = criarDb(); } catch (e) { registrarErro('comprovante:config', e); return erro(res, 500, 'Indisponível no momento.'); }
+
+  if (!(await limitar(db, res, 'comprovante_ip', ipDe(req)))) return;
 
   try {
     const s = await db.um('solicitacoes', { select: 'status,comprovante', comprovante_token: 'eq.' + t });

@@ -56,9 +56,10 @@
         }
         return;
       }
-      avisar(r.solicitacao.estruturado
-        ? 'Solução salva! O preço já está fechado: é só clicar em "Pagar com Mercado Pago".'
-        : 'Solução salva! Nossa equipe vai validar o escopo e liberar o pagamento aqui. Avisaremos pelo seu contato.');
+      // toda solicitação passa pela análise da CMK antes do pagamento (api/solicitacoes.js)
+      avisar(r.nova === false
+        ? 'Esta solução já estava salva na sua conta. Veja abaixo em que etapa ela está.'
+        : 'Solução salva! A equipe da CMK vai analisar o projeto e liberar o pagamento aqui. Avisaremos pelo sino e pelo seu contato.');
     } catch (e) {
       avisar('');
       if (e.status === 400) {
@@ -94,7 +95,8 @@
     const { data, error } = await db.from('solicitacoes').select('*').order('created_at', { ascending: false });
     lista.removeAttribute('aria-busy');
     if (error) {
-      mostrarErro('Não foi possível carregar as solicitações: ' + error.message);
+      mostrarErro('Não foi possível carregar as solicitações agora. Recarregue a página em instantes.');
+      console.error(error);
       lista.innerHTML = '';
       return;
     }
@@ -450,12 +452,15 @@
   async function cancelarSolicitacao(btn) {
     if (!window.confirm('Cancelar esta solicitação? Você pode montar outra no site quando quiser.')) return;
     ocupado(btn, true, 'Cancelando...');
-    const { error } = await db.rpc('cliente_cancelar_solicitacao', { p_id: btn.dataset.cancelar });
-    ocupado(btn, false);
-    if (error) {
-      toast('Não foi possível cancelar: ' + error.message, 'erro');
+    // pelo servidor: além de cancelar aqui, encerra o link de pagamento no Mercado Pago
+    try {
+      await api('solicitacoes', { acao: 'cancelar', solicitacao_id: btn.dataset.cancelar });
+    } catch (e) {
+      ocupado(btn, false);
+      toast('Não foi possível cancelar: ' + e.message, 'erro');
       return;
     }
+    ocupado(btn, false);
     toast('Solicitação cancelada.');
     await carregar();
   }

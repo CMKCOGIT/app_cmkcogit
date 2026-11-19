@@ -16,13 +16,14 @@ Object.assign(process.env, {
 const catalogo = JSON.parse(fs.readFileSync(new URL('./catalogo.fixture.json', import.meta.url)));
 const USUARIOS = { 'tok-ana': { id: 'aaaaaaaa-0000-4000-8000-000000000001', email: 'ana@ex.com' },
                    'tok-bia': { id: 'bbbbbbbb-0000-4000-8000-000000000002', email: 'bia@ex.com' } };
-let banco, mp, seq;
+let banco, mp, seq, limites;
 
 beforeEach(() => {
   const perfis = Object.values(USUARIOS).map((u) => ({ id: u.id, cadastro_concluido_em: '2026-01-01T00:00:00Z', documento: '52998224725' }));
   banco = { solicitacoes: [], pagamentos: [], projetos: [], profiles: perfis, catalogo_precos: catalogo, pagamento_eventos: [], notificacoes: [], solicitacao_eventos: [], solicitacao_versoes: [] };
-  mp = { prefs: [], pagamentos: [] };
+  mp = { prefs: [], pagamentos: [], chamadas: [] };
   seq = 0;
+  limites = { bloquear: new Set(), contagem: {} };
 });
 
 const uuid = () => crypto.randomUUID();
@@ -39,7 +40,8 @@ function filtrar(linhas, params) {
     if (['select', 'limit', 'order'].includes(k)) return true;
     const [op, ...resto] = v.split('.');
     const val = resto.join('.');
-    if (op === 'eq') return String(l[k]) === val;
+    const campo = k.includes('->>') ? ((l[k.split('->>')[0]] || {})[k.split('->>')[1]]) : l[k];
+    if (op === 'eq') return String(campo) === val;
     if (op === 'gte') return String(l[k]) >= val;
     throw new Error('operador não simulado: ' + op);
   }));
@@ -55,6 +57,7 @@ function aplicar(a) {
   if (a.p_status === 'approved') {
     if (a.p_moeda !== 'BRL' || Number(a.p_valor) !== Number(pg.valor)) res = 'valor_divergente';
     else if (pg.status === 'pago') res = pg.mp_payment_id === a.p_mp_payment_id ? 'ja_processado' : 'pago_em_duplicidade';
+    else if (pg.status !== 'pendente') res = 'cobranca_' + pg.status;
     else {
       Object.assign(pg, { status: 'pago', mp_payment_id: a.p_mp_payment_id, metodo: a.p_metodo });
       const s = banco.solicitacoes.find((x) => x.id === pg.solicitacao_id);
@@ -82,6 +85,11 @@ globalThis.fetch = async (url, op = {}) => {
       return USUARIOS[tok] ? resposta(200, USUARIOS[tok]) : resposta(401, { msg: 'invalid' });
     }
     if (u.pathname === '/rest/v1/rpc/aplicar_pagamento_mp') return resposta(200, aplicar(corpo));
+    if (u.pathname === '/rest/v1/rpc/consumir_limite') {
+      const nome = corpo.p_chave.split(':')[0];
+      limites.contagem[nome] = (limites.contagem[nome] || 0) + 1;
+      return resposta(200, !limites.bloquear.has(nome));
+    }
     const tabela = u.pathname.replace('/rest/v1/', '');
     const linhas = banco[tabela];
     if (metodo === 'GET') return resposta(200, filtrar(linhas, u.searchParams));
@@ -102,6 +110,14 @@ globalThis.fetch = async (url, op = {}) => {
 
   if (u.origin === 'https://api.mercadopago.com') {
     assert.equal(op.headers.Authorization, 'Bearer APP_USR-teste');
+    mp.chamadas.push(metodo + ' ' + u.pathname);
+    const mPref = /^\/checkout\/preferences\/([\w-]+)$/.exec(u.pathname);
+    if (mPref) {
+      const pref = mp.prefs.find((x) => x.id === mPref[1]);
+      if (!pref) return resposta(404, {});
+      if (metodo === 'PUT') Object.assign(pref, corpo);
+      return resposta(200, pref);
+    }
     if (u.pathname === '/checkout/preferences') {
       const id = 'pref-' + (mp.prefs.length + 1);
       mp.prefs.push({ id, ...corpo });
@@ -113,6 +129,7 @@ globalThis.fetch = async (url, op = {}) => {
     const m = /^\/v1\/payments\/(\d+)$/.exec(u.pathname);
     if (m) {
       const p = mp.pagamentos.find((x) => String(x.id) === m[1]);
+      if (p && metodo === 'PUT') Object.assign(p, corpo);
       return p ? resposta(200, p) : resposta(404, { message: 'not found' });
     }
   }
@@ -134,7 +151,7 @@ async function chamar(rota, { token, corpo, metodo = 'POST', url, headers = {} }
   await handler(req, res);
   let json = null;
   try { json = JSON.parse(res.corpo); } catch { /* texto */ }
-  return { status: res.statusCode, json, texto: res.corpo };
+  return { status: res.statusCode, json, texto: res.corpo, cabecalhos: res.cabecalhos };
 }
 
 const cfgSite = (servicos, ref = 'refdosite1234567890') => ({ v: 1, ref, origem: 'configurador', objetivos: ['atrair-vender'], servicos, complementos: [], notas: 'Clínica odontológica' });
@@ -315,9 +332,13 @@ test('webhook: assinatura inválida é recusada; válida confirma; repetido não
   assert.equal(de_novo.texto, 'ja_processado');
   assert.equal(banco.projetos.length, 1);
 
-  // evento de outro tipo ou id fictício do "simular" do painel: 200 sem efeito
+  // evento de outro tipo: 200 sem efeito; id fictício do "simular" do painel (assinado): 200 sem efeito
   assert.equal((await chamar('mp-webhook', { url: '/api/mp-webhook?type=merchant_order&data.id=1', corpo: {} })).texto, 'ignorado');
-  assert.equal((await chamar('mp-webhook', { url: '/api/mp-webhook?type=payment&data.id=123', corpo: {} })).texto, 'pagamento inexistente');
+  const v1f = crypto.createHmac('sha256', 'segredo').update(`id:123;request-id:r2;ts:${ts};`).digest('hex');
+  assert.equal((await chamar('mp-webhook', { url: '/api/mp-webhook?type=payment&data.id=123', corpo: {}, headers: { 'x-signature': `ts=${ts},v1=${v1f}`, 'x-request-id': 'r2' } })).texto, 'pagamento inexistente');
+  // com MP_WEBHOOK_SECRET configurado, aviso SEM assinatura é recusado
+  const semAssinatura = await chamar('mp-webhook', { url, corpo });
+  assert.equal(semAssinatura.status, 401);
 });
 
 test('verificar: tentativa recusada mantém pendente; outro cliente não consulta', async () => {
@@ -415,4 +436,79 @@ test('sem personalização: fica registrado na solicitação e no histórico', a
   assert.equal(banco.solicitacao_versoes[0].personalizada, false);
   assert.equal(banco.solicitacao_versoes[0].storage_path, null);
   assert.match(banco.solicitacao_eventos[0].mensagem, /sem personalização/);
+});
+
+// ---------------------------------------------------------------------
+// Segurança do pagamento (Fase 3)
+// ---------------------------------------------------------------------
+test('checkout: link expira em 72 h (preferência e Pix/boleto) e vai com chave de idempotência', async () => {
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'expirarefe1234567890') } });
+  aprovarPelaCmk(r.json.solicitacao.id);
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  assert.equal(c.status, 200);
+  const pref = mp.prefs[0];
+  assert.equal(pref.expires, true);
+  const horas = (Date.parse(pref.expiration_date_to) - Date.now()) / 3600_000;
+  assert.ok(horas > 71 && horas <= 72, 'validade de 72 h');
+  assert.equal(pref.date_of_expiration, pref.expiration_date_to);
+  // segundo clique: o link ainda vale, então é o mesmo (nenhuma preferência nova)
+  const c2 = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  assert.equal(c2.json.url, c.json.url);
+  assert.equal(mp.prefs.length, 1);
+  // link vencido: gera outro
+  pref.expiration_date_to = new Date(Date.now() - 1000).toISOString();
+  const c3 = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  assert.notEqual(c3.json.url, c.json.url);
+  assert.equal(mp.prefs.length, 2);
+});
+
+test('cliente cancela: cobrança cancelada aqui E encerrada no Mercado Pago (link expira, Pix pendente cancelado)', async () => {
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'cancelaref1234567890') } });
+  const solId = r.json.solicitacao.id;
+  aprovarPelaCmk(solId);
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: solId } });
+  const pix = mpPagou(c.json.pagamento_id, 500, 'pending', 4242); // Pix gerado e não pago
+
+  const x = await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'cancelar', solicitacao_id: solId } });
+  assert.equal(x.status, 200);
+  assert.equal(banco.solicitacoes[0].status, 'cancelada');
+  assert.equal(banco.pagamentos[0].status, 'cancelado');
+  assert.ok(Date.parse(mp.prefs[0].expiration_date_to) <= Date.now(), 'preferência expirada no Mercado Pago');
+  assert.equal(pix.status, 'cancelled');
+  assert.ok(banco.solicitacao_eventos.some((e) => e.tipo === 'cancelada' && e.autor_papel === 'cliente'));
+  // outra pessoa não cancela
+  const r2 = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'cancelaref0987654321') } });
+  assert.equal((await chamar('solicitacoes', { token: 'tok-bia', corpo: { acao: 'cancelar', solicitacao_id: r2.json.solicitacao.id } })).status, 404);
+});
+
+test('pagou uma cobrança cancelada: nada é liberado e cada admin recebe UM alerta para estornar', async () => {
+  banco.profiles.push({ id: 'cccccccc-0000-4000-8000-000000000003', role: 'admin', cadastro_concluido_em: '2026-01-01T00:00:00Z' });
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'excecaoref1234567890') } });
+  aprovarPelaCmk(r.json.solicitacao.id);
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  banco.pagamentos[0].status = 'cancelado';      // ex.: o pedido foi cancelado com o checkout aberto
+  mpPagou(c.json.pagamento_id, 500, 'approved', 9090);
+
+  const v = await chamar('verificar-pagamento', { token: 'tok-ana', corpo: { pagamento_id: c.json.pagamento_id, payment_id: '9090' } });
+  assert.equal(v.json.resultado, 'cobranca_cancelado');
+  await chamar('verificar-pagamento', { token: 'tok-ana', corpo: { pagamento_id: c.json.pagamento_id, payment_id: '9090' } });
+
+  const alertas = banco.notificacoes.filter((n) => n.tipo === 'pagamento_excecao');
+  assert.equal(alertas.length, 1, 'um alerta por admin, sem repetir');
+  assert.equal(alertas[0].usuario_id, 'cccccccc-0000-4000-8000-000000000003');
+  assert.equal(alertas[0].metadados.mp_payment_id, '9090');
+  assert.equal(banco.projetos.length, 0);
+});
+
+test('rate limit: passou do limite responde 429 com Retry-After e mensagem amigável', async () => {
+  limites.bloquear.add('checkout');
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], 'limiteref12345678901') } });
+  aprovarPelaCmk(r.json.solicitacao.id);
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: r.json.solicitacao.id } });
+  assert.equal(c.status, 429);
+  assert.equal(c.json.codigo, 'limite');
+  assert.match(c.json.erro, /Aguarde/);
+  assert.equal(c.cabecalhos['retry-after'], '600');
+  assert.equal(mp.prefs.length, 0, 'nada foi ao Mercado Pago');
+  assert.ok(limites.contagem.checkout >= 1);
 });

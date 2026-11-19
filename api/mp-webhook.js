@@ -1,5 +1,5 @@
 // POST /api/mp-webhook   (chamado pelo Mercado Pago)
-// Nunca confia no corpo da notificação: valida a assinatura (quando enviada),
+// Nunca confia no corpo da notificação: exige a assinatura (com MP_WEBHOOK_SECRET),
 // busca o pagamento na API do Mercado Pago e só então aplica no banco.
 //
 // Painel do Mercado Pago > Suas integrações > (aplicação) > Webhooks:
@@ -8,6 +8,8 @@
 import { criarDb } from '../lib/supabase.js';
 import { registrarErro, UUID } from '../lib/http.js';
 import { assinaturaValida, buscarPagamento, aplicarNoBanco } from '../lib/mercadopago.js';
+
+let avisouSemSegredo = false;
 
 function responder(res, status, texto) {
   res.statusCode = status;
@@ -34,15 +36,19 @@ export default async function handler(req, res) {
   const dataId = String(url.searchParams.get('data.id') || (corpo.data && corpo.data.id) || url.searchParams.get('id') || '');
   if (tipo !== 'payment' || !/^\d{1,30}$/.test(dataId)) return responder(res, 200, 'ignorado');
 
-  // assinatura: se o Mercado Pago mandou, tem que bater
+  // assinatura: com MP_WEBHOOK_SECRET configurado, é OBRIGATÓRIA e tem que bater.
+  // (Mesmo assim nada é confiado ao corpo: o pagamento é sempre consultado na API do Mercado Pago.)
   const segredo = process.env.MP_WEBHOOK_SECRET;
   const xSignature = req.headers['x-signature'];
-  if (segredo && xSignature) {
-    const ok = assinaturaValida({ segredo, xSignature, xRequestId: req.headers['x-request-id'], dataId });
+  if (segredo) {
+    const ok = Boolean(xSignature) && assinaturaValida({ segredo, xSignature, xRequestId: req.headers['x-request-id'], dataId });
     if (!ok) {
-      registrarErro('mp-webhook', 'assinatura inválida para data.id ' + dataId);
+      registrarErro('mp-webhook', (xSignature ? 'assinatura inválida' : 'aviso sem assinatura') + ' para data.id ' + dataId);
       return responder(res, 401, 'assinatura inválida');
     }
+  } else if (!avisouSemSegredo) {
+    avisouSemSegredo = true;
+    registrarErro('mp-webhook', 'MP_WEBHOOK_SECRET não configurado: avisos aceitos sem assinatura (configure na Vercel)');
   }
 
   let db;

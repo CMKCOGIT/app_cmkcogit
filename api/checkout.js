@@ -4,7 +4,8 @@
 // link de pagamento. O VALOR SEMPRE vem do banco, nunca do navegador.
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID, urlApp, urlPublica } from '../lib/http.js';
-import { criarPreferencia, linkDaPreferencia } from '../lib/mercadopago.js';
+import { criarPreferencia, linkDaPreferencia, expiracaoPreferencia, preferenciaValida } from '../lib/mercadopago.js';
+import { limitar } from '../lib/limite.js';
 import { texto } from '../lib/selecao.js';
 
 export default async function handler(req, res) {
@@ -18,6 +19,7 @@ export default async function handler(req, res) {
   if (!usuario) return;
   const perfil = await exigirCadastroCompleto(usuario, res, db, { somenteCliente: true });
   if (!perfil) return;
+  if (!(await limitar(db, res, 'checkout', usuario.id))) return;
   // CPF/CNPJ do contratante é obrigatório para pagar (contas antigas informam em Meu perfil)
   const documento = String(perfil.documento || '').replace(/\D/g, '');
   if (!/^(\d{11}|\d{14})$/.test(documento)) {
@@ -48,9 +50,11 @@ export default async function handler(req, res) {
       return erro(res, 400, 'Informe a solicitação ou a cobrança.');
     }
 
-    // link já criado para este valor: reaproveita
+    // link já criado para este valor e ainda dentro da validade: reaproveita (dois cliques = mesmo link).
+    // Sem resposta do Mercado Pago agora (null): reaproveita também, como antes.
     if (pag.link_pagamento && pag.mp_preference_id) {
-      return json(res, 200, { ok: true, url: pag.link_pagamento, pagamento_id: pag.id });
+      const valida = await preferenciaValida(pag.mp_preference_id).catch(() => null);
+      if (valida !== false) return json(res, 200, { ok: true, url: pag.link_pagamento, pagamento_id: pag.id });
     }
 
     const app = urlApp();
@@ -72,14 +76,17 @@ export default async function handler(req, res) {
         pending: app + '/pagamentos.html?mp=pendente',
         failure: app + '/pagamentos.html?mp=falha'
       },
-      statement_descriptor: 'CMKCOGIT'
+      statement_descriptor: 'CMKCOGIT',
+      // o link (e o Pix/boleto gerado por ele) vence em 72 h: link antigo nunca fica pagável para sempre
+      ...expiracaoPreferencia()
     };
     // o Mercado Pago só volta sozinho para endereços https (em localhost use o botão "Voltar")
     if (https) preferencia.auto_return = 'approved';
     // webhook: só funciona com endereço público https (produção ou túnel)
     if (publica) preferencia.notification_url = publica + '/api/mp-webhook?source_news=webhooks';
 
-    const pref = await criarPreferencia(preferencia);
+    // mesma cobrança + mesmo valor nos mesmos 10 minutos = mesma preferência (cliques repetidos)
+    const pref = await criarPreferencia(preferencia, process.env, 'cmk-pref-' + pag.id + '-' + Number(pag.valor).toFixed(2) + '-' + Math.floor(Date.now() / 600000));
     const link = linkDaPreferencia(pref);
     if (!/^https:\/\/([a-z0-9-]+\.)*mercadopago\.com(\.[a-z]{2})?\//i.test(link || '')) {
       throw new Error('Link de pagamento inesperado');

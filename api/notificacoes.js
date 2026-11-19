@@ -9,6 +9,7 @@ import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro } from '../lib/http.js';
 import { listarNotificacoes, marcarComoLidas, LIMITE_LISTA } from '../lib/notificacoes.js';
 import jornada from '../lib/jornada-rota.js';
+import { limitar } from '../lib/limite.js';
 
 export default async function handler(req, res) {
   const rota = (req.query && req.query.rota) || new URL(req.url || '/', 'http://x').searchParams.get('rota');
@@ -21,6 +22,7 @@ export default async function handler(req, res) {
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
   if (!(await exigirCadastroCompleto(usuario, res, db))) return;
+  if (!(await limitar(db, res, 'notificacoes', usuario.id))) return;
 
   try {
     if (req.method === 'GET') {

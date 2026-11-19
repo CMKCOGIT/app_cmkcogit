@@ -6,6 +6,7 @@
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, registrarErro, UUID } from '../lib/http.js';
 import { buscarPagamento, buscarPorReferencia, tentativaRelevante, aplicarNoBanco } from '../lib/mercadopago.js';
+import { limitar } from '../lib/limite.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return erro(res, 405, 'Método não permitido.');
@@ -16,6 +17,7 @@ export default async function handler(req, res) {
 
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
+  if (!(await limitar(db, res, 'verificar', usuario.id))) return;
 
   let corpo;
   try { corpo = await lerCorpo(req, 2000); } catch { return erro(res, 400, 'Requisição inválida.'); }

@@ -20,6 +20,8 @@ import { calcular, validarItensAdmin, texto } from '../lib/selecao.js';
 import { novoToken, montarComprovante, textoWhatsApp } from '../lib/comprovante.js';
 import { createNotification } from '../lib/notificacoes.js';
 import { ABERTOS, registrarEvento } from '../lib/fluxo-solicitacao.js';
+import { cancelarCobrancaPendente, reajustarCobrancaPendente } from '../lib/cobranca.js';
+import { limitar } from '../lib/limite.js';
 
 const ACOES = ['simular', 'salvar', 'aprovar', 'cancelar', 'reenviar', 'analisar', 'ajustes', 'observacao'];
 const EDITAVEIS = ABERTOS;
@@ -33,6 +35,7 @@ export default async function handler(req, res) {
   const usuario = await exigirUsuario(req, res, db);
   if (!usuario) return;
   if (!(await exigirCadastroCompleto(usuario, res, db))) return;
+  if (!(await limitar(db, res, 'admin', usuario.id))) return;
 
   let corpo;
   try { corpo = await lerCorpo(req, 30000); } catch { return erro(res, 400, 'Requisição inválida.'); }
@@ -180,7 +183,7 @@ async function cancelar(res, db, { s, admin, cliente, corpo }) {
     observacao_admin: mensagem || s.observacao_admin
   });
   if (!nova) return conflito(res);
-  await db.atualizar('pagamentos', { solicitacao_id: 'eq.' + s.id, status: 'eq.pendente' }, { status: 'cancelado', link_pagamento: null });
+  await cancelarCobrancaPendente(db, s.id);
   await registrarEvento(db, { solicitacaoId: s.id, tipo: 'cancelada', de: s.status, para: 'cancelada', autorId: admin.id, autorNome: admin.nome || admin.email, papel: 'admin', mensagem: [motivo, mensagem].filter(Boolean).join(' · ') || 'Cancelada pela equipe.' });
   await avisarCliente(db, s, {
     tipo: 'solicitacao_cancelada', titulo: 'Pedido ' + s.codigo + ' cancelado',
@@ -200,12 +203,10 @@ function conflito(res) {
   return erro(res, 409, 'A solicitação mudou enquanto você editava. Feche o modal e abra de novo.');
 }
 
-// Cobrança pendente acompanha o valor (link antigo descartado) ou é cancelada (volta à validação)
+// Cobrança pendente acompanha o valor (link antigo encerrado no Mercado Pago) ou é cancelada
+// (volta à validação). Ver lib/cobranca.js.
 function ajustarCobranca(db, solId, valor) {
-  const filtro = { solicitacao_id: 'eq.' + solId, status: 'eq.pendente' };
-  return valor != null
-    ? db.atualizar('pagamentos', filtro, { valor, link_pagamento: null, mp_preference_id: null })
-    : db.atualizar('pagamentos', filtro, { status: 'cancelado', link_pagamento: null });
+  return valor != null ? reajustarCobrancaPendente(db, solId, valor) : cancelarCobrancaPendente(db, solId);
 }
 
 // O que saiu da seleção entra no histórico "Itens retirados" (pela equipe)

@@ -41,6 +41,20 @@ const ERRO_RETORNO_AUTH = (function () {
   };
 })();
 
+// Link de "redefinir senha" do e-mail: lido ANTES do cliente do Supabase limpar a URL.
+// Só com ele a página redefinir-senha.html troca a senha sem pedir a atual.
+// Fica marcado nesta aba por 15 min (recarregar a página não perde o link).
+const RETORNO_RECUPERACAO = (function () {
+  const chave = 'cmk_recuperacao_v1';
+  try {
+    if (/(^|[#&?])type=recovery(&|$)/.test(window.location.hash + window.location.search)) {
+      sessionStorage.setItem(chave, String(Date.now() + 15 * 60_000));
+      return true;
+    }
+    return Number(sessionStorage.getItem(chave)) > Date.now();
+  } catch (_) { return false; }
+})();
+
 const db = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
@@ -499,7 +513,7 @@ function resumoPendenteHtml(cfg) {
     return '<li>' + esc(s.nome || s.id) + formato + '</li>';
   });
   (cfg.complementos || []).forEach((c) => itens.push('<li>+ ' + esc(c.nome || c.id) + '</li>'));
-  return '<ul>' + itens.join('') + '</ul>' + (cfg.estimativa ? '<p>Estimativa vista no site: ' + esc(cfg.estimativa) + '</p>' : '');
+  return '<ul>' + itens.join('') + '</ul>' + (cfg.estimativa ? '<p>Estimativa vista no site: ' + esc(cfg.estimativa) + ' (o valor final é confirmado na análise da CMK)</p>' : '');
 }
 
 // Depois do login: continuar a solução do site ou ir para o início
@@ -594,7 +608,42 @@ function aplicarPerfil(perfil) {
     return false;
   }
   montarMenu(perfil);
+  if (ehAdmin(perfil)) controlarInatividadeAdmin();
   return true;
+}
+
+// ---------------------------------------------------------------------
+// Admin: sai sozinho depois de 30 min sem uso (em qualquer aba). A última atividade
+// fica no localStorage, então várias abas abertas contam juntas, e quem volta depois
+// de muito tempo (aba fechada, computador dormindo) já cai no login.
+// ---------------------------------------------------------------------
+const INATIVIDADE_ADMIN_MIN = 30;
+const CHAVE_ATIVIDADE = 'cmk_admin_atividade_v1';
+let inatividadeLigada = false;
+function controlarInatividadeAdmin() {
+  if (inatividadeLigada) return;
+  inatividadeLigada = true;
+  const limite = INATIVIDADE_ADMIN_MIN * 60_000;
+  const ler = () => { try { return Number(localStorage.getItem(CHAVE_ATIVIDADE)) || 0; } catch (_) { return 0; } };
+  const marcar = () => { try { localStorage.setItem(CHAVE_ATIVIDADE, String(Date.now())); } catch (_) {} };
+  let saindo = false;
+  const conferir = async () => {
+    const ultima = ler();
+    if (saindo || !ultima || Date.now() - ultima < limite) return;
+    saindo = true;
+    try { localStorage.removeItem(CHAVE_ATIVIDADE); } catch (_) {}
+    limparPerfilCache();
+    await db.auth.signOut().catch(() => {});
+    window.location.replace('login.html?motivo=inatividade');
+  };
+  const ultima = ler();
+  if (ultima && Date.now() - ultima >= limite) { conferir(); return; }
+  marcar();
+  let espera = 0;
+  const atividade = () => { if (Date.now() - espera > 15_000) { espera = Date.now(); marcar(); } };
+  ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((ev) => window.addEventListener(ev, atividade, { passive: true }));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) conferir(); });
+  setInterval(conferir, 30_000);
 }
 
 // Perfil desta aba (sessionStorage: some ao fechar a aba e ao sair)
@@ -625,6 +674,7 @@ function mostrarFalhaDeAcesso(texto) {
 
 async function sair() {
   limparPerfilCache();
+  try { localStorage.removeItem(CHAVE_ATIVIDADE); } catch (_) {}
   await db.auth.signOut();
   window.location.href = 'login.html';
 }
