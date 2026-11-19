@@ -254,6 +254,20 @@ no `.env.local` e reinicie. Sem isso, a confirmação funciona pela volta/botão
 
 Cada `git push` na branch principal publica sozinho; cada branch/PR ganha uma URL de preview.
 
+### Testar pagamento no preview (credenciais de teste)
+Nos previews da Vercel o pagamento usa **só** as credenciais de teste (`lib/ambiente.js`); produção não muda.
+1. Vercel → Settings → Environment Variables → adicione **só no ambiente Preview**:
+   `MP_ACCESS_TOKEN_TESTE` = Access Token da conta de teste **vendedora** (começa com `APP_USR-`).
+   Opcional: `MP_WEBHOOK_SECRET_TESTE`. Faça um novo deploy da branch.
+2. Sem `MP_ACCESS_TOKEN_TESTE`, o preview mostra "Pagamento indisponível" (nunca usa o token real).
+3. Os links de volta do checkout apontam para a URL do preview. O webhook do Mercado Pago não chega
+   ao preview se a *Deployment Protection* estiver ligada: a confirmação vem da volta do checkout ou
+   de **Pagamentos → Já paguei — verificar**.
+4. Login por e-mail e senha funciona direto; para os links de e-mail (confirmação/recuperação) e o Google
+   no preview, inclua a URL do preview em Supabase → Authentication → URL Configuration → Redirect URLs.
+5. O preview usa o **mesmo banco** da produção: os pedidos/projetos de teste aparecem no admin. Limpe depois
+   com `sql/23_opcional_limpar_dados_de_teste.sql` (rode a prévia antes).
+
 ## 5. Login com Google
 
 O botão **Continuar com Google** (em "Entrar" e em "Criar conta") usa o OAuth do próprio Supabase
