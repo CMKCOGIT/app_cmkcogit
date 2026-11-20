@@ -18,7 +18,7 @@ let banco;
 beforeEach(() => {
   banco = {
     profiles: [
-      { id: ANA, role: 'cliente', nome: 'Ana Souza', email: 'ana@ex.com', telefone: '17981568889', cadastro_concluido_em: '2026-01-01T00:00:00Z' },
+      { id: ANA, role: 'cliente', nome: 'Ana Souza', email: 'ana@ex.com', telefone: '1731983769', cadastro_concluido_em: '2026-01-01T00:00:00Z' },
       { id: ADM, role: 'admin', nome: 'Kaike', email: 'adm@ex.com', cadastro_concluido_em: '2026-01-01T00:00:00Z' }
     ],
     solicitacoes: [], pagamentos: [], notificacoes: [], solicitacao_eventos: [], catalogo_precos: catalogo
@@ -127,7 +127,7 @@ test('aprovar com itens retirados pela equipe: vai para "Aguardando aprovação 
   assert.equal(banco.pagamentos[0].link_pagamento, null);
 
   assert.equal(r.json.comprovante_url, 'https://app.cmkcogit.com.br/comprovante.html?t=' + s.comprovante_token);
-  assert.ok(r.json.whatsapp_url.startsWith('https://wa.me/5517981568889?text='));
+  assert.ok(r.json.whatsapp_url.startsWith('https://wa.me/551731983769?text='));
   const texto = decodeURIComponent(r.json.whatsapp_url.split('?text=')[1]);
   assert.match(texto, /Olá, Ana!/);
   assert.match(texto, /PLN-2026-0013/);

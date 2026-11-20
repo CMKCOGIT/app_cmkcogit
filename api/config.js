@@ -9,7 +9,7 @@ export default function handler(req, res) {
     supabaseUrl: env.SUPABASE_URL || '',
     supabaseAnonKey: env.SUPABASE_ANON_KEY || '',
     siteUrl: (env.SITE_URL || 'https://www.cmkcogit.com.br').replace(/\/+$/, ''),
-    whatsapp: (env.WHATSAPP_SUPORTE || '5517981568889').replace(/\D/g, '')
+    whatsapp: (env.WHATSAPP_SUPORTE || '551731983769').replace(/\D/g, '')
   };
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');

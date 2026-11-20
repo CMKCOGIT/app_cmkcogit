@@ -61,7 +61,7 @@ function fmtData(data) {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(data) ? new Date(data + 'T00:00:00') : new Date(data);
   return d.toLocaleDateString('pt-BR');
 }
-// (17) 98156-8889 enquanto digita
+// (17) 3198-3769 ou (17) 99999-9999 enquanto digita
 function formatarTelefone(valor) {
   const d = String(valor || '').replace(/\D/g, '').slice(0, 11);
   if (d.length > 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
@@ -353,7 +353,7 @@ function voltarParaSite() {
   return guardado || veioDoSite || urlSite('');
 }
 function linkWhatsApp(mensagem) {
-  return 'https://wa.me/' + (CFG.whatsapp || '5517981568889') + '?text=' + encodeURIComponent(mensagem);
+  return 'https://wa.me/' + (CFG.whatsapp || '551731983769') + '?text=' + encodeURIComponent(mensagem);
 }
 // Domínio do cliente como link seguro (só http/https)
 function linkDominio(dominio) {

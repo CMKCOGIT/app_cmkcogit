@@ -55,7 +55,7 @@ function grafo(rel, titulo, desc) {
     '@graph': [
       { '@type': ['Organization', 'ProfessionalService'], '@id': SITE + '/#org', name: 'CMKCOGIT', alternateName: ['COGIT', 'CMK COGIT'],
         url: SITE + '/', logo: { '@type': 'ImageObject', url: SITE + '/assets/images/icon-512.png', width: 512, height: 512 },
-        email: 'contato@cmkcogit.com.br', telephone: '+55-17-98156-8889',
+        email: 'contato@cmkcogit.com.br', telephone: '+55-17-3198-3769',
         sameAs: ['https://www.instagram.com/cmkcogit', 'https://www.linkedin.com/in/cmkcogit'] },
       { '@type': 'WebSite', '@id': APP + '/#website', url: APP + '/', name: 'Plataforma CMKCOGIT', inLanguage: 'pt-BR', publisher: { '@id': SITE + '/#org' } },
       { '@type': 'WebApplication', '@id': APP + '/#app', name: 'Plataforma do cliente CMKCOGIT', url: u, applicationCategory: 'BusinessApplication',
