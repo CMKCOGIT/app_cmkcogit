@@ -9,6 +9,7 @@
   if (!perfil) return;
 
   document.getElementById('saudacao').textContent = 'Olá, ' + (perfil.nome || 'admin') + '!';
+  carregarPendencias();
 
   const CHAVE_PERIODO = 'cogit_painel_periodo_v1';
   const botoes = [...document.querySelectorAll('[data-periodo]')];
@@ -175,10 +176,10 @@
   function kpisProjetos(pr) {
     const ul = document.getElementById('kpis-projetos');
     ul.innerHTML = [
-      { rotulo: 'Em andamento', valor: pr.em_andamento, icone: 'projetos', href: 'admin-clientes.html?filtro=andamento' },
-      { rotulo: 'Concluídos', valor: pr.concluidos, icone: 'concluido', href: 'admin-clientes.html?filtro=concluido', nota: `${Number(pr.concluidos_periodo) || 0} no período` },
-      { rotulo: 'Atrasados', valor: pr.atrasados, icone: 'alerta', href: 'admin-clientes.html?filtro=atrasado', nota: 'prazo vencido', alerta: Number(pr.atrasados) ? 'perigo' : '' },
-      { rotulo: 'Entrega em 7 dias', valor: pr.prazo_7_dias, icone: 'prazo', href: 'admin-clientes.html?filtro=prazo7', nota: 'prazo chegando', alerta: Number(pr.prazo_7_dias) ? 'atencao' : '' }
+      { rotulo: 'Em andamento', valor: pr.em_andamento, icone: 'projetos', href: 'admin-projetos.html?filtro=ativos' },
+      { rotulo: 'Concluídos', valor: pr.concluidos, icone: 'concluido', href: 'admin-projetos.html?filtro=concluido', nota: `${Number(pr.concluidos_periodo) || 0} no período` },
+      { rotulo: 'Atrasados', valor: pr.atrasados, icone: 'alerta', href: 'admin-projetos.html?filtro=atrasados', nota: 'prazo vencido', alerta: Number(pr.atrasados) ? 'perigo' : '' },
+      { rotulo: 'Entrega em 7 dias', valor: pr.prazo_7_dias, icone: 'prazo', href: 'admin-projetos.html?filtro=semana', nota: 'prazo chegando', alerta: Number(pr.prazo_7_dias) ? 'atencao' : '' }
     ].map(kpiHtml).join('');
     animarNumeros(ul);
   }
@@ -418,3 +419,32 @@ const Dica = {
   },
   esconder() { if (this.el) this.el.hidden = true; }
 };
+
+// "Precisa de ação agora": o que espera a equipe, com atalho para a lista certa
+async function carregarPendencias() {
+  const ul = document.getElementById('pendencias-admin');
+  const hoje = new Date().toISOString().slice(0, 10);
+  const contar = (q) => q.then((r) => (r.error ? null : Number(r.count) || 0));
+  const solic = (st) => contar(db.from('solicitacoes').select('id', { count: 'exact', head: true }).in('status', st));
+  const [analise, emAnalise, esperandoCliente, liberadas, vencidas, atrasados, problemas] = await Promise.all([
+    solic(['em_validacao']),
+    solic(['em_analise']),
+    solic(['ajustes_solicitados', 'aguardando_cliente']),
+    solic(['aguardando_pagamento']),
+    contar(db.from('pagamentos').select('id', { count: 'exact', head: true }).eq('status', 'pendente').lt('vencimento', hoje)),
+    contar(db.from('projetos').select('id', { count: 'exact', head: true }).not('status_projeto', 'in', '(concluido,cancelado)').lt('previsao_entrega', hoje)),
+    problemasPagamentoAbertos().then((l) => (l ? l.length : null))
+  ]);
+  const itens = [
+    { n: problemas, tom: 'perigo', titulo: 'Pagamentos para revisar', nota: 'entrou dinheiro e nada foi liberado', href: 'admin-pagamentos.html?ver=problemas' },
+    { n: analise, tom: 'atencao', titulo: 'Aguardando análise', nota: 'novas ou reenviadas pelo cliente', href: 'admin.html?filtro=em_validacao' },
+    { n: emAnalise, tom: 'info', titulo: 'Em análise', nota: 'concluir: aprovar ou pedir ajustes', href: 'admin.html?filtro=em_analise' },
+    { n: atrasados, tom: 'perigo', titulo: 'Projetos atrasados', nota: 'previsão de entrega vencida', href: 'admin-projetos.html?filtro=atrasados' },
+    { n: vencidas, tom: 'atencao', titulo: 'Cobranças vencidas', nota: 'cliente ainda não pagou', href: 'admin-pagamentos.html?filtro=pendente' },
+    { n: esperandoCliente, tom: 'info', titulo: 'Esperando o cliente', nota: 'ajustes ou proposta para aprovar', href: 'admin.html?filtro=aguardando_cliente' },
+    { n: liberadas, tom: 'info', titulo: 'Pagamento liberado', nota: 'aprovadas, aguardando o cliente pagar', href: 'admin.html?filtro=aguardando_pagamento' }
+  ].filter((i) => i.n);
+  ul.innerHTML = itens.length
+    ? itens.map((i) => `<li data-tom="${i.tom}"><a href="${esc(i.href)}"><strong>${i.n}</strong><span>${esc(i.titulo)}</span><small>${esc(i.nota)}</small></a></li>`).join('')
+    : `<li data-tom="ok"><a href="admin.html"><strong>${icone('aprovar')}</strong><span>Tudo em dia</span><small>Nenhuma solicitação, pagamento ou projeto esperando a equipe.</small></a></li>`;
+}

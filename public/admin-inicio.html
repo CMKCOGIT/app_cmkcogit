@@ -33,7 +33,7 @@
   <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
-  <link rel="stylesheet" href="/css/plataforma.css?v=303352b6be">
+  <link rel="stylesheet" href="/css/plataforma.css?v=fbe172fd95">
   <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
   <link rel="stylesheet" href="/css/assistente.css?v=d8513037c9">
 </head>
@@ -52,6 +52,11 @@
     </header>
     <p id="aviso" role="status"></p>
     <p id="erro" role="alert"></p>
+
+    <section id="secao-pendencias" aria-labelledby="titulo-pendencias">
+      <div class="secao-topo"><h2 id="titulo-pendencias">Precisa de ação agora</h2></div>
+      <ul id="pendencias-admin" class="pendencias-admin" data-livre aria-live="polite"><li><p data-esqueleto-linha></p></li></ul>
+    </section>
 
     <form id="filtro-periodo" class="barra-periodo" aria-labelledby="filtro-periodo-titulo">
       <h2 id="filtro-periodo-titulo" class="so-leitor-tela">Período</h2>
@@ -91,7 +96,7 @@
         </section>
 
         <section aria-labelledby="titulo-projetos">
-          <div class="secao-topo"><h2 id="titulo-projetos">Projetos</h2><a href="admin-clientes.html">Ver clientes</a></div>
+          <div class="secao-topo"><h2 id="titulo-projetos">Projetos</h2><a href="admin-projetos.html">Ver projetos</a></div>
           <ul id="kpis-projetos" class="kpis kpis-compactos" data-livre><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li></ul>
         </section>
 
@@ -132,7 +137,7 @@
           <h2 id="titulo-atalhos">Atalhos</h2>
           <ul class="lista-widget" data-livre>
             <li><a class="widget-item" href="admin.html?filtro=em_validacao"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#aprovar"></use></svg><span><strong>Validar solicitações</strong><small>Revisar itens, valor e aprovar</small></span></a></li>
-            <li><a class="widget-item" href="admin-clientes.html?filtro=atrasado"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#alerta"></use></svg><span><strong>Projetos atrasados</strong><small>Prazo de entrega vencido</small></span></a></li>
+            <li><a class="widget-item" href="admin-projetos.html?filtro=atrasados"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#alerta"></use></svg><span><strong>Projetos atrasados</strong><small>Prazo de entrega vencido</small></span></a></li>
             <li><a class="widget-item" href="admin.html?filtro=aguardando_pagamento"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#pagamentos"></use></svg><span><strong>Pagamentos liberados</strong><small>Aprovadas aguardando o cliente</small></span></a></li>
           </ul>
         </section>
@@ -144,8 +149,8 @@
 
   <script src="js/vendor/supabase-2.45.4.min.js"></script>
   <script src="/config.js"></script>
-  <script src="js/app.js?v=2d55965080"></script>
+  <script src="js/app.js?v=b9b4125d1a"></script>
   <script src="js/assistente.js?v=cb25ae8335"></script>
-  <script src="js/admin-inicio.js?v=b55cecc343"></script>
+  <script src="js/admin-inicio.js?v=64c667efb4"></script>
 </body>
 </html>

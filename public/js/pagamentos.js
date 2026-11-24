@@ -159,7 +159,7 @@
       // cobrança de solicitação só é pagável depois da aprovação da CMK (o servidor também recusa)
       const bloqueada = p.status === 'pendente' && p.solicitacoes && p.solicitacoes.status !== 'aguardando_pagamento';
       const acao = bloqueada
-        ? `<a class="botao-link" href="continuar.html?abrir=${encodeURIComponent(p.solicitacoes.id)}">Aguardando aprovação da CMK</a>`
+        ? `<a class="botao-link" data-secundario href="continuar.html?abrir=${encodeURIComponent(p.solicitacoes.id)}" title="O pagamento é liberado depois da aprovação da CMK">Em análise · ver</a>`
         : p.status === 'pendente'
         ? `<button type="button" data-pagar="${esc(p.id)}">${icone('pagamentos')} Pagar</button>
            <button type="button" class="botao-icone" data-verificar="${esc(p.id)}" aria-label="Já paguei: verificar no Mercado Pago" title="Já paguei: verificar no Mercado Pago">${icone('recarregar')}</button>`

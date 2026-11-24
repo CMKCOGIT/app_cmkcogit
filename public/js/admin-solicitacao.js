@@ -271,24 +271,39 @@
     item_removido: 'Item retirado'
   };
 
+  // Situação do pagamento em uma linha: o que o admin precisa saber sem abrir outra tela
+  function resumoPagamento() {
+    const pags = (s.pagamentos || []).slice().sort((a, b) => (a.status === 'pago' ? -1 : 0) - (b.status === 'pago' ? -1 : 0));
+    const pago = pags.find((p) => p.status === 'pago');
+    const aberto = pags.find((p) => p.status === 'pendente');
+    let texto;
+    if (pago) texto = `${icone('aprovar')} Pago ${brl(pago.valor)}${pago.metodo ? ' · ' + esc(rotulo('metodo', pago.metodo)) : ''} em ${fmtData(pago.pago_em)}`;
+    else if (s.status === 'aguardando_pagamento') texto = aberto ? `${icone('relogio')} Liberado: o cliente abriu o pagamento de ${brl(aberto.valor)} e ainda não concluiu` : `${icone('relogio')} Liberado: aguardando o cliente pagar ${brl(s.valor_final)}`;
+    else if (s.status === 'cancelada') texto = `${icone('cancelado')} Sem cobrança (cancelada)`;
+    else texto = `${icone('em-validacao')} Pagamento bloqueado até a aprovação da CMK`;
+    return `<p class="nota">${texto} · <a href="admin-pagamentos.html?busca=${encodeURIComponent(s.codigo)}">Ver em Pagamentos</a></p>`;
+  }
+
   function renderAcoes() {
     const aberta = solicitacaoEditavel(s);
     if (!aberta) {
-      acoes.innerHTML = s.status === 'paga'
+      acoes.innerHTML = resumoPagamento() + (s.status === 'paga'
         ? `<p>Pagamento confirmado. ${s.projeto_id ? `Acompanhe a preparação e a entrega em <a href="projeto.html?id=${encodeURIComponent(s.projeto_id)}">Projeto</a>.` : ''}</p>`
-        : '<p>Solicitação cancelada.</p>';
+        : '<p>Solicitação cancelada.</p>');
       return;
     }
     const podeAnalisar = ['em_validacao', 'ajustes_solicitados', 'aguardando_cliente'].includes(s.status);
     const valorSugerido = s.valor_final != null ? Number(s.valor_final) : Number(s.valor_calculado) || '';
     acoes.innerHTML = `
-      ${podeAnalisar ? '<p><button type="button" id="ac-analisar">' + icone('em-validacao') + ' Iniciar análise</button></p>' : ''}
+      ${resumoPagamento()}
+      <p class="pagina-acoes">${podeAnalisar ? '<button type="button" id="ac-analisar">' + icone('em-validacao') + ' Iniciar análise</button>' : ''}
+        <a class="botao-link" data-secundario href="admin.html?filtro=todas&editar=${encodeURIComponent(s.id)}">${icone('editar')} Editar itens e valor</a></p>
       <form id="ac-aprovar" class="form-acao" novalidate>
         <h3>Aprovar projeto</h3>
         <p class="campo"><label for="ap-valor">Valor final (R$)</label><input id="ap-valor" type="number" min="1" step="0.01" inputmode="decimal" value="${esc(valorSugerido)}" required></p>
         <p class="campo"><label for="ap-msg">Mensagem ao cliente (opcional)</label><textarea id="ap-msg" rows="2" maxlength="1000"></textarea></p>
         <p><button type="submit">${icone('aprovar')} Aprovar e liberar pagamento</button></p>
-        <p><small>Para mudar itens antes de aprovar, use <a href="admin.html?filtro=todas&busca=${encodeURIComponent(s.codigo)}">Itens e valor</a>. Se a equipe mudar itens, o cliente confirma a proposta antes de pagar.</small></p>
+        <p><small>Para mudar itens antes de aprovar, use "Editar itens e valor". Se a equipe mudar itens, o cliente confirma a proposta antes de pagar.</small></p>
       </form>
       <form id="ac-ajustes" class="form-acao" novalidate>
         <h3>Solicitar ajustes</h3>

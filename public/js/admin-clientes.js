@@ -55,7 +55,7 @@
         projetos,
         pago: soma(pagamentos.filter((p) => p.status === 'pago')),
         aberto: soma(pagamentos.filter((p) => p.status === 'pendente')),
-        solicitacoesAbertas: sols.data.filter((s) => s.cliente_id === c.id && (s.status === 'em_validacao' || s.status === 'aguardando_pagamento')).length,
+        solicitacoesAbertas: sols.data.filter((s) => s.cliente_id === c.id && STATUS_ABERTOS.includes(s.status)).length,
         texto: normalizar([c.nome, c.email, c.telefone, c.documento].join(' '))
       };
     });

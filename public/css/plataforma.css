@@ -3317,12 +3317,7 @@ ul[data-itens-modal] > li[data-vazio]::before,
   .tabela-limpa td.acoes button { flex: 1 1 auto; margin: 0; min-height: 44px; font-size: var(--text-sm); }
   .tabela-limpa td.acoes .botao-icone { flex: none; width: 44px; }
   .tabela-limpa td.acoes:empty { display: none; }
-  #tabela-eventos td:nth-child(1)::before { content: 'Quando'; }
-  #tabela-eventos td:nth-child(2)::before { content: 'Origem'; }
-  #tabela-eventos td:nth-child(3)::before { content: 'Pag. MP'; }
-  #tabela-eventos td:nth-child(4)::before { content: 'Status MP'; }
-  #tabela-eventos td:nth-child(5)::before { content: 'Valor'; }
-  #tabela-eventos td:nth-child(6)::before { content: 'Resultado'; }
+  /* #tabela-eventos (admin-pagamentos) usa data-rotulo em cada célula */
 
   body.acesso { padding-top: var(--space-8); }
   body.acesso::before { width: 168px; height: 38px; margin-bottom: var(--space-6); }
@@ -3439,3 +3434,30 @@ dl.pers-textos dt, dl.pers-textos dd { padding: 0; border: 0; }
 .arq-pendencias details li { padding: 0 !important; border: 0 !important; }
 .arq-arquivo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .arq-arquivo small, .arq-status { color: var(--text-secondary); }
+
+/* ---- Admin: caixa de pendências (Início) e problemas de pagamento ---- */
+.lista-acoes { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.lista-acoes > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3); border: 1px solid var(--border-strong); border-left-width: 4px; border-radius: 2px; background: var(--surface); }
+.lista-acoes > li[data-tom=perigo] { border-left-color: var(--danger); }
+.lista-acoes > li[data-tom=atencao] { border-left-color: var(--warning); }
+.lista-acoes > li[data-tom=info] { border-left-color: var(--color-brand-600); }
+.lista-acoes > li > span { display: grid; flex: 1 1 240px; min-width: 0; gap: 2px; }
+.lista-acoes strong { font-family: var(--font-heading); font-size: var(--text-sm); }
+.lista-acoes small { color: var(--text-secondary); font-size: var(--text-xs); }
+.lista-acoes .acoes { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.caixa-problemas { margin-top: var(--space-5); padding: var(--space-4); border: 1px solid rgba(180, 35, 24, 0.35); border-radius: 2px; background: var(--danger-bg); }
+.caixa-problemas h2 { display: flex; align-items: center; gap: var(--space-2); color: var(--danger); }
+.pendencias-admin { display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin: 0 0 var(--space-5); padding: 0; list-style: none; }
+.pendencias-admin a { display: grid; gap: 4px; height: 100%; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-strong); border-left-width: 4px; border-radius: 2px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.pendencias-admin a:hover { background: var(--lilac-bg); }
+.pendencias-admin [data-tom=perigo] a { border-left-color: var(--danger); }
+.pendencias-admin [data-tom=atencao] a { border-left-color: var(--warning); }
+.pendencias-admin [data-tom=info] a { border-left-color: var(--color-brand-600); }
+.pendencias-admin [data-tom=ok] a { border-left-color: var(--success); }
+.pendencias-admin strong { font-family: var(--font-heading); font-size: var(--text-2xl, 1.75rem); font-variant-numeric: tabular-nums; line-height: 1; }
+.pendencias-admin span { font-size: var(--text-sm); font-weight: var(--fw-semibold); }
+.pendencias-admin small { color: var(--text-secondary); font-size: var(--text-xs); }
+.secao-eventos { margin-top: var(--space-6, 2rem); }
+.celula-cliente small, .celula-cobranca small { display: block; color: var(--text-secondary); }
+/* etiqueta de status longa ("Aprovado pela CMK — aguardando pagamento") quebra linha dentro de grades/listas */
+#sol-principal dd [data-etiqueta], .celula-cobranca [data-etiqueta], td [data-etiqueta] { max-width: 100%; white-space: normal; }

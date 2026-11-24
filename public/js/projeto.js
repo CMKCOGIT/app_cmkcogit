@@ -9,13 +9,13 @@
   const perfil = await protegerPagina();
   if (!perfil) return;
   const admin = perfil.role === 'admin';
-  // admin não compra: sem "adquirir funcionalidade"/"pagar"; volta para Clientes
-  const voltarHtml = admin ? '<p><a href="admin-clientes.html">Voltar para Clientes</a></p>'
+  // admin não compra: sem "adquirir funcionalidade"/"pagar"; volta para Projetos
+  const voltarHtml = admin ? '<p><a href="admin-projetos.html">Voltar para Projetos</a></p>'
     : '<p><a href="projetos.html">Voltar para Meus projetos</a></p>';
   if (admin) {
     const voltar = document.getElementById('voltar');
-    voltar.href = 'admin-clientes.html';
-    voltar.textContent = '← Clientes';
+    voltar.href = 'admin-projetos.html';
+    voltar.textContent = '← Projetos';
     document.getElementById('acao-nova-funcionalidade').hidden = true;
     document.getElementById('titulo-pendencias').textContent = 'Pendências com o cliente';
   }

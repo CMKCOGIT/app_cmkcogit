@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Projetos (admin) | CMKCOGIT</title>
+  <!-- seo -->
+  <meta name="description" content="Painel de gestão CMKCOGIT.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Projetos (admin) | CMKCOGIT">
+  <meta property="og:description" content="Painel de gestão CMKCOGIT.">
+  <meta property="og:url" content="https://app.cmkcogit.com.br/admin-projetos.html">
+  <meta property="og:site_name" content="CMKCOGIT">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="600">
+  <meta property="og:image:alt" content="Ícone da CMKCOGIT">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Projetos (admin) | CMKCOGIT">
+  <meta name="twitter:description" content="Painel de gestão CMKCOGIT.">
+  <meta name="twitter:image" content="https://app.cmkcogit.com.br/assets/marca/cogit-og-icone.png">
+  <!-- /seo -->
+  <meta name="theme-color" content="#121314">
+  <link rel="icon" href="/assets/marca/cogit-favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/marca/cogit-icone-192.png">
+  <link rel="apple-touch-icon" href="/assets/marca/cogit-apple-touch.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="preload" href="/assets/fonts/clash-display-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
+  <link rel="stylesheet" href="/css/plataforma.css?v=fbe172fd95">
+  <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
+  <link rel="stylesheet" href="/css/assistente.css?v=d8513037c9">
+</head>
+<body class="app">
+  <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+  <nav id="menu" aria-label="Menu principal"></nav>
+  <header id="barra-topo"></header>
+  <main id="conteudo">
+    <header class="pagina-cabecalho">
+      <div>
+        <p class="pagina-rotulo">Painel de gestão</p>
+        <h1>Projetos</h1>
+        <p>Tudo o que está em desenvolvimento: etapa, progresso, prazo e pagamento de cada projeto.</p>
+      </div>
+    </header>
+    <p id="aviso" role="status"></p>
+    <p id="erro" role="alert"></p>
+
+    <section class="faixa-kpis" aria-label="Resumo dos projetos">
+      <ul id="resumo-projetos" class="kpis" data-livre>
+        <li class="kpi" data-esqueleto data-destaque></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li><li class="kpi" data-esqueleto></li>
+      </ul>
+    </section>
+
+    <form id="barra-projetos" class="barra-ferramentas" role="search" aria-label="Buscar e filtrar projetos">
+      <p class="campo-busca"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#buscar"></use></svg>
+        <label class="so-leitor-tela" for="busca">Buscar por projeto, código ou cliente</label>
+        <input type="search" id="busca" maxlength="100" placeholder="Projeto, COG-2026-100, PLN-2026-0001 ou cliente" autocomplete="off">
+      </p>
+      <div id="filtro-situacao" class="filtro-pilulas" role="group" aria-label="Situação">
+        <button type="button" data-situacao="ativos" aria-pressed="true">Ativos</button>
+        <button type="button" data-situacao="atrasados" aria-pressed="false">Atrasados</button>
+        <button type="button" data-situacao="semana" aria-pressed="false">Entrega em 7 dias</button>
+        <button type="button" data-situacao="aguardando_cliente" aria-pressed="false">Aguardando cliente</button>
+        <button type="button" data-situacao="concluido" aria-pressed="false">Concluídos</button>
+        <button type="button" data-situacao="todos" aria-pressed="false">Todos</button>
+      </div>
+    </form>
+
+    <p id="contagem" class="contagem" aria-live="polite"></p>
+
+    <div class="tabela-rolagem">
+      <table class="tabela-limpa">
+        <caption class="so-leitor-tela">Projetos</caption>
+        <thead>
+          <tr>
+            <th scope="col">Projeto</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Etapa</th>
+            <th scope="col">Progresso</th>
+            <th scope="col">Entrega</th>
+            <th scope="col">Pagamento</th>
+            <th scope="col"><span class="so-leitor-tela">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody id="tabela-projetos">
+          <tr data-esqueleto-tabela><td colspan="7"><span class="so-leitor-tela">Carregando...</span><p data-esqueleto-linha></p><p data-esqueleto-linha></p><p data-esqueleto-linha></p></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <script src="js/vendor/supabase-2.45.4.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="js/app.js?v=b9b4125d1a"></script>
+  <script src="js/assistente.js?v=cb25ae8335"></script>
+  <script src="js/admin-projetos.js?v=33735eb760"></script>
+</body>
+</html>

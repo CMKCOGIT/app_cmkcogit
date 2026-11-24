@@ -247,6 +247,16 @@ const TOM_STATUS = {
   pagamento: { pendente: 'atencao', pago: 'ok', falhou: 'perigo', cancelado: 'neutro', reembolsado: 'neutro' },
   projeto: { em_andamento: 'info', aguardando_cliente: 'atencao', pausado: 'neutro', concluido: 'ok', cancelado: 'neutro' }
 };
+// Resultados de aplicar_pagamento_mp (sql/09, sql/33) que pedem ação da equipe: entrou dinheiro e nada foi liberado
+const PROBLEMAS_PAGAMENTO = ['valor_divergente', 'pago_em_duplicidade', 'solicitacao_nao_liberada', 'cobranca_cancelado', 'cobranca_reembolsado', 'cobranca_falhou'];
+const ROTULO_RESULTADO_MP = {
+  pago: 'Pago e liberado', sem_alteracao: 'Sem mudança', ja_processado: 'Já processado', reembolsado: 'Estornado', ignorado: 'Ignorado',
+  pagamento_inexistente: 'Cobrança não encontrada', valor_divergente: 'Valor não confere', pago_em_duplicidade: 'Pago em duplicidade',
+  solicitacao_nao_liberada: 'Solicitação não aprovada', cobranca_cancelado: 'Pago com a cobrança cancelada',
+  cobranca_reembolsado: 'Pago com a cobrança estornada', cobranca_falhou: 'Pago com a cobrança com falha'
+};
+const ROTULO_ORIGEM_MP = { webhook: 'Aviso automático', retorno: 'Volta do checkout', verificacao: '"Já paguei"', conciliacao: 'Conciliação diária' };
+
 function etiquetaStatus(grupo, valor) {
   return `<span data-etiqueta="${(TOM_STATUS[grupo] || {})[valor] || 'neutro'}">${esc(rotulo(grupo, valor))}</span>`;
 }
@@ -303,7 +313,7 @@ function linhaDoTempoHtml(lista) {
 // ---------------------------------------------------------------------
 const INICIO_ADMIN = 'admin-inicio.html';
 const PAGINAS_SO_CLIENTE = ['inicio.html', 'continuar.html', 'pagamentos.html', 'projetos.html', 'funcionalidades.html'];
-const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-solicitacao.html', 'admin-clientes.html', 'admin-quadros.html'];
+const PAGINAS_SO_ADMIN = [INICIO_ADMIN, 'admin.html', 'admin-solicitacao.html', 'admin-pagamentos.html', 'admin-projetos.html', 'admin-clientes.html', 'admin-quadros.html'];
 
 function ehAdmin(perfil) {
   return Boolean(perfil && perfil.role === 'admin');
@@ -686,10 +696,13 @@ function itensMenu(perfil) {
     grupos: [{ titulo: 'Gestão', itens: [
       { href: INICIO_ADMIN, texto: 'Início', curto: 'Início', icone: 'painel' },
       { href: 'admin.html', texto: 'Solicitações', curto: 'Solicitações', icone: 'solicitacoes', contador: 'menu-cont-validacao' },
+      { href: 'admin-pagamentos.html', texto: 'Pagamentos', curto: 'Pagamentos', icone: 'pagamentos', contador: 'menu-cont-pagamentos' },
+      { href: 'admin-projetos.html', texto: 'Projetos', curto: 'Projetos', icone: 'projetos' },
       { href: 'admin-clientes.html', texto: 'Clientes', curto: 'Clientes', icone: 'clientes' },
-      { href: 'admin-quadros.html', texto: 'Quadros', curto: 'Quadros', icone: 'quadros' },
-      { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' },
       { href: 'mensagens.html', texto: 'Mensagens', curto: 'Mensagens', icone: 'mensagens', contador: 'menu-cont-mensagens' }
+    ] }, { titulo: 'Equipe', itens: [
+      { href: 'admin-quadros.html', texto: 'Quadros', curto: 'Quadros', icone: 'quadros' },
+      { href: 'jornada.html', texto: 'Jornada MVP', curto: 'Jornada', icone: 'criar' }
     ] }],
     fab: { href: 'admin.html?filtro=em_validacao', texto: 'Solicitações aguardando análise', curto: 'Analisar', complemento: ' solicitações aguardando análise', icone: 'aprovar' },
     inferior: [INICIO_ADMIN, 'admin.html', 'fab', 'mensagens.html'],
@@ -729,7 +742,8 @@ function montarMenu(perfil) {
   const tablet = window.matchMedia('(max-width: 1023.98px)').matches;
   const todos = m.grupos.flatMap((g) => g.itens);
   let atual = paginaAtual();
-  if (atual === 'projeto.html') atual = admin ? 'admin-clientes.html' : 'projetos.html';
+  if (atual === 'projeto.html') atual = admin ? 'admin-projetos.html' : 'projetos.html';
+  if (atual === 'admin-solicitacao.html') atual = 'admin.html';
   const corrente = (href) => (href === atual ? ' aria-current="page"' : '');
   const link = (i) => `<a href="${esc(i.href)}"${corrente(i.href)} title="${esc(i.texto)}">${icone(i.icone)}<span data-rotulo>${esc(i.texto)}</span>${i.contador ? `<span class="menu-contador" id="${i.contador}" hidden></span>` : ''}</a>`;
   const externo = (i) => (i.externo ? ' target="_blank" rel="noopener"' : '');
@@ -810,7 +824,7 @@ function montarMenu(perfil) {
   // secundários (sino, tempo real, contador do admin) depois dos dados da página
   depoisDoPrincipal(() => {
     if (perfil) iniciarSino(perfil);
-    if (admin) contarEmValidacao();
+    if (admin) { contarEmValidacao(); contarProblemasPagamento(); }
     contarMensagensNaoLidas();
     if (admin && window.AssistenteIA) window.AssistenteIA.montar(perfil); // js/assistente.js (só nas telas do admin)
   });
@@ -829,6 +843,21 @@ async function contarEmValidacao() {
   if (cont) { cont.hidden = !count; cont.textContent = count > 99 ? '99+' : String(count); cont.setAttribute('aria-label', count + ' aguardando análise'); }
   const texto = document.getElementById('menu-destaque-texto');
   if (texto) texto.textContent = count ? `${count} ${count === 1 ? 'solicitação espera' : 'solicitações esperam'} revisão.` : 'Nenhuma solicitação esperando revisão.';
+}
+
+// Pagamentos que precisam de revisão da equipe (sql/33 + sql/34). Sem o sql/34 fica escondido.
+async function problemasPagamentoAbertos() {
+  const { data, error } = await db.from('pagamento_eventos').select('id, mp_payment_id, resultado, revisado_em')
+    .in('resultado', PROBLEMAS_PAGAMENTO).is('revisado_em', null).order('created_at', { ascending: false }).limit(200);
+  if (error) return null;
+  const vistos = new Set();
+  return (data || []).filter((e) => { const k = (e.mp_payment_id || e.id) + ':' + e.resultado; if (vistos.has(k)) return false; vistos.add(k); return true; });
+}
+async function contarProblemasPagamento() {
+  const lista = await problemasPagamentoAbertos();
+  const n = lista ? lista.length : 0;
+  const cont = document.getElementById('menu-cont-pagamentos');
+  if (cont) { cont.hidden = !n; cont.textContent = n > 99 ? '99+' : String(n); cont.setAttribute('aria-label', n + ' pagamento(s) para revisar'); }
 }
 
 // Mensagens não lidas (menu lateral, menu inferior e folha "Mais"). A tela de mensagens
@@ -893,7 +922,8 @@ function ligarShell(perfil, todos, m) {
     { texto: 'Ajuda pelo WhatsApp', href: m.ajuda, icone: 'whatsapp', tipo: 'Ação', externo: true }
   ];
   const buscaEm = ehAdmin(perfil)
-    ? [{ rotulo: 'Solicitações', href: 'admin.html', icone: 'solicitacoes' }, { rotulo: 'Clientes', href: 'admin-clientes.html', icone: 'clientes' }, { rotulo: 'Quadros', href: 'admin-quadros.html', icone: 'quadros' }]
+    ? [{ rotulo: 'Solicitações', href: 'admin.html', icone: 'solicitacoes' }, { rotulo: 'Pagamentos', href: 'admin-pagamentos.html', icone: 'pagamentos' },
+      { rotulo: 'Projetos', href: 'admin-projetos.html', icone: 'projetos' }, { rotulo: 'Clientes', href: 'admin-clientes.html', icone: 'clientes' }, { rotulo: 'Quadros', href: 'admin-quadros.html', icone: 'quadros' }]
     : [{ rotulo: 'Minhas solicitações', href: 'continuar.html', icone: 'solicitacoes' }];
   document.getElementById('btn-busca').addEventListener('click', () => abrirBusca(destinos, buscaEm));
 

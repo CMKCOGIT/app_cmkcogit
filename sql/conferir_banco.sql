@@ -113,7 +113,9 @@ with item(arquivo, o_que, nome) as (values
   ('32_analise_aprovacao', 'tabela', 'solicitacao_versoes'),
   ('32_analise_aprovacao', 'coluna', 'solicitacoes.versao_atual'),
   ('33_pagamento_so_aprovado', 'coluna', 'pagamentos.link_criado_em'),
-  ('33_pagamento_so_aprovado', 'gatilho', 'trg_cancelar_cobranca_fora_da_liberacao')
+  ('33_pagamento_so_aprovado', 'gatilho', 'trg_cancelar_cobranca_fora_da_liberacao'),
+  ('34_admin_revisao_pagamentos', 'coluna', 'pagamento_eventos.revisado_em'),
+  ('34_admin_revisao_pagamentos', 'função', 'admin_resolver_problema_pagamento')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

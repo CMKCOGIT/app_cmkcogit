@@ -37,12 +37,23 @@
   marcarPilulas();
   pilulas.forEach((b) => b.addEventListener('click', () => { filtro.value = b.dataset.status; marcarPilulas(); carregar(); }));
   busca.addEventListener('input', render);
-  periodo.addEventListener('change', render);
+  periodo.addEventListener('change', carregar); // período filtrado no banco (não só nas 100 mais recentes)
   document.getElementById('barra-admin').addEventListener('submit', (e) => e.preventDefault());
-  document.getElementById('btn-recarregar').addEventListener('click', () => { carregar(); carregarEventos(); contarPorStatus(); });
+  document.getElementById('btn-recarregar').addEventListener('click', () => { carregar(); contarPorStatus(); });
   lista.addEventListener('click', aoClicarNaLista);
   ligarModal();
-  await Promise.all([carregar(), carregarEventos(), contarPorStatus()]);
+  await Promise.all([carregar(), contarPorStatus()]);
+  // admin-solicitacao.html "Editar itens e valor" abre o modal direto (?editar=<id>)
+  const editar = params.get('editar');
+  if (editar && /^[0-9a-f-]{36}$/i.test(editar)) {
+    if (!solicitacoes.some((x) => x.id === editar)) {
+      const { data } = await db.from('solicitacoes')
+        .select('*, cliente:profiles!solicitacoes_cliente_id_fkey(nome, email, telefone), pagamentos(id, status, valor, metodo, pago_em, mp_ultimo_status)')
+        .eq('id', editar).maybeSingle();
+      if (data) { solicitacoes.unshift(data); render(); }
+    }
+    abrir(editar, null);
+  }
 
   // =================================================================
   // Lista
@@ -57,6 +68,8 @@
       .order('created_at', { ascending: false })
       .limit(LIMITE_LISTA);
     if (filtro.value !== 'todas') q = q.eq('status', filtro.value);
+    const dias = Number(periodo.value);
+    if (dias) q = q.gte('created_at', new Date(Date.now() - dias * 86400000).toISOString());
     const { data, error } = await q;
     lista.removeAttribute('aria-busy');
     if (error) {
@@ -775,19 +788,6 @@
   // =================================================================
   // Avisos do Mercado Pago
   // =================================================================
-  async function carregarEventos() {
-    const corpoTabela = document.getElementById('tabela-eventos');
-    const { data, error } = await db.from('pagamento_eventos').select('*').order('created_at', { ascending: false }).limit(30);
-    if (error) {
-      corpoTabela.innerHTML = `<tr><td colspan="6">Erro: ${esc(error.message)}</td></tr>`;
-      return;
-    }
-    corpoTabela.innerHTML = data.length ? data.map((e) => `<tr>
-        <td>${fmtDataHora(e.created_at)}</td><td>${esc(e.origem)}</td><td>${esc(e.mp_payment_id || '-')}</td>
-        <td>${esc(e.status_mp || '-')}${e.status_detalhe ? ' <small>(' + esc(e.status_detalhe) + ')</small>' : ''}</td>
-        <td>${e.valor_mp != null ? brl(e.valor_mp) : '-'}</td><td><strong>${esc(e.resultado || '-')}</strong></td>
-      </tr>`).join('') : '<tr><td colspan="6">Nenhum aviso ainda.</td></tr>';
-  }
 })();
 
 function clonar(o) {

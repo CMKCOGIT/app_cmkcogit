@@ -33,7 +33,7 @@
   <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/tokens.css?v=5e53ecee61">
-  <link rel="stylesheet" href="/css/plataforma.css?v=303352b6be">
+  <link rel="stylesheet" href="/css/plataforma.css?v=fbe172fd95">
   <link rel="stylesheet" href="/css/identidade.css?v=c70201aec0">
   <link rel="stylesheet" href="/css/assistente.css?v=d8513037c9">
 </head>
@@ -84,24 +84,18 @@
           <article data-esqueleto></article><article data-esqueleto></article>
         </section>
 
-        <section aria-labelledby="titulo-eventos">
-          <h2 id="titulo-eventos">Últimos avisos do Mercado Pago</h2>
-          <p class="nota">Tudo que o Mercado Pago informou (webhook, volta do checkout ou verificação). "valor_divergente" ou "pago_em_duplicidade" pedem atenção.</p>
-          <div class="tabela-rolagem">
-            <table class="tabela-limpa">
-              <thead>
-                <tr><th scope="col">Quando</th><th scope="col">Origem</th><th scope="col">Pagamento MP</th><th scope="col">Status MP</th><th scope="col">Valor</th><th scope="col">Resultado</th></tr>
-              </thead>
-              <tbody id="tabela-eventos"><tr data-esqueleto-tabela><td colspan="6"><span class="so-leitor-tela">Carregando...</span><p data-esqueleto-linha></p><p data-esqueleto-linha></p><p data-esqueleto-linha></p></td></tr></tbody>
-            </table>
-          </div>
-        </section>
       </div>
 
       <aside class="coluna-lateral" aria-label="Resumo e como validar">
         <section aria-labelledby="titulo-por-status">
           <h2 id="titulo-por-status">Por status</h2>
           <ul id="contagem-status" class="lista-widget" data-livre><li><p data-esqueleto-linha></p></li></ul>
+        </section>
+        <section aria-labelledby="titulo-atalho-pag">
+          <h2 id="titulo-atalho-pag">Pagamentos</h2>
+          <ul class="lista-widget" data-livre>
+            <li><a class="widget-item" href="admin-pagamentos.html"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons/bi.svg#pagamentos"></use></svg><span><strong>Cobranças e avisos do Mercado Pago</strong><small>Tudo o que entrou, o que está em aberto e o que precisa de revisão</small></span></a></li>
+          </ul>
         </section>
         <section aria-labelledby="titulo-como-validar">
           <h2 id="titulo-como-validar">Como validar</h2>
@@ -130,9 +124,9 @@
     <footer id="modal-sol-rodape"></footer>
   </dialog>
 
-  <script src="js/app.js?v=2d55965080"></script>
+  <script src="js/app.js?v=b9b4125d1a"></script>
   <script src="js/assistente.js?v=cb25ae8335"></script>
   <script src="js/comprovante-render.js?v=d05864c895"></script>
-  <script src="js/admin.js?v=0e4037e1aa"></script>
+  <script src="js/admin.js?v=69aef4135e"></script>
 </body>
 </html>
