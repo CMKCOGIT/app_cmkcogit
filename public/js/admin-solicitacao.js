@@ -1,8 +1,8 @@
 // =====================================================================
 // admin-solicitacao.js — projeto de uma solicitação (só admin)
 // Cliente, formato, modelo, personalização (cores, textos, imagens, prévia),
-// versões, histórico e ações: iniciar análise, aprovar (libera o pagamento),
-// solicitar ajustes e enviar observação. Cada ação fica registrada com o admin e a data
+// versões, histórico, Itens e valor (editor embutido: itens, valor final, aprovar
+// e cancelar) e ações: iniciar análise, solicitar ajustes e enviar observação. Cada ação fica registrada com o admin e a data
 // (api/admin-solicitacao.js -> solicitacao_eventos).
 // =====================================================================
 (async function () {
@@ -21,6 +21,23 @@
   let arquivosSite = [];   // .zip gerados (solicitacoes/<id>/site-final), mais recente primeiro
   let liberados = [];      // .zip já entregues no repositório do projeto
   let autoTentado = false; // geração automática: uma tentativa por abertura da página
+
+  // Itens e valor: o mesmo editor do modal de Solicitações, embutido aqui (js/editor-solicitacao.js).
+  // A seção é criada uma vez e reposicionada a cada render, sem perder o que o admin está editando.
+  const secaoEditor = document.createElement('section');
+  secaoEditor.className = 'cartao editor-embutido';
+  secaoEditor.id = 'sol-editor';
+  secaoEditor.setAttribute('aria-labelledby', 't-editor');
+  secaoEditor.innerHTML = `<div class="cartao-topo"><h2 id="t-editor" tabindex="-1">Itens e valor</h2><p id="editor-sub" class="editor-sub"></p></div>
+    <div id="editor-corpo" class="editor-corpo"></div><footer id="editor-rodape" class="editor-rodape"></footer>`;
+  const editor = criarEditorSolicitacao({
+    perfil, embutido: true, raiz: secaoEditor,
+    corpo: secaoEditor.querySelector('#editor-corpo'),
+    rodape: secaoEditor.querySelector('#editor-rodape'),
+    titulo: null,
+    subtitulo: secaoEditor.querySelector('#editor-sub'),
+    aoFechar: async () => { await carregar(); secaoEditor.scrollIntoView({ block: 'start' }); }
+  });
 
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
     principal.innerHTML = '<p data-vazio>Solicitação não informada. <a href="admin.html">Voltar para Solicitações</a>.</p>';
@@ -101,6 +118,7 @@
         <p><strong>Itens:</strong> ${itens.map((i) => esc(i.nome + (i.variante_nome ? ' (' + i.variante_nome + ')' : ''))).join(', ') || '—'}</p>
         ${s.notas ? `<details><summary>Contexto informado pelo cliente</summary><p class="texto-livre">${esc(s.notas)}</p></details>` : ''}
       </section>
+      <div id="slot-editor"></div>
       <section class="cartao" aria-labelledby="t-pers">
         <div class="cartao-topo">
           <h2 id="t-pers">Personalização do site</h2>
@@ -122,6 +140,10 @@
         <ul class="lista-simples">${versoes.map((v) => `<li><strong>Versão ${v.numero}</strong> · ${fmtDataHora(v.created_at)} · ${v.personalizada ? 'com personalização' : 'sem personalização'}${v.numero === Number(s.versao_aprovada) ? ' · <span data-etiqueta="ok">aprovada</span>' : ''}
           ${v.personalizada ? ` <button type="button" class="botao-texto" data-baixar-versao="${v.numero}">Baixar (.json)</button>` : ''}</li>`).join('')}</ul>
       </section>` : ''}`;
+
+    document.getElementById('slot-editor').replaceWith(secaoEditor);
+    // reabre com os dados novos, a menos que o admin esteja no meio de uma edição não salva
+    if (!editor.sujo()) editor.abrir(s);
 
     const vis = document.getElementById('btn-visualizar');
     if (vis) vis.addEventListener('click', () => abrirNoEditor({ pasta: pastaDoModelo(dadosAtuais), dados: dadosAtuais, modo: 'preview', aoErro: mostrarErro }));
@@ -297,14 +319,8 @@
     acoes.innerHTML = `
       ${resumoPagamento()}
       <p class="pagina-acoes">${podeAnalisar ? '<button type="button" id="ac-analisar">' + icone('em-validacao') + ' Iniciar análise</button>' : ''}
-        <a class="botao-link" data-secundario href="admin.html?filtro=todas&editar=${encodeURIComponent(s.id)}">${icone('editar')} Editar itens e valor</a></p>
-      <form id="ac-aprovar" class="form-acao" novalidate>
-        <h3>Aprovar projeto</h3>
-        <p class="campo"><label for="ap-valor">Valor final (R$)</label><input id="ap-valor" type="number" min="1" step="0.01" inputmode="decimal" value="${esc(valorSugerido)}" required></p>
-        <p class="campo"><label for="ap-msg">Mensagem ao cliente (opcional)</label><textarea id="ap-msg" rows="2" maxlength="1000"></textarea></p>
-        <p><button type="submit">${icone('aprovar')} Aprovar e liberar pagamento</button></p>
-        <p><small>Para mudar itens antes de aprovar, use "Editar itens e valor". Se a equipe mudar itens, o cliente confirma a proposta antes de pagar.</small></p>
-      </form>
+        <a class="botao-link" data-secundario href="#sol-editor">${icone('aprovar')} Itens, valor e aprovação</a></p>
+      <p class="nota">Aprovar e liberar o pagamento fica em <a href="#sol-editor">Itens e valor</a>: lá você confere os itens, o valor final e a prévia do comprovante.</p>
       <form id="ac-ajustes" class="form-acao" novalidate>
         <h3>Solicitar ajustes</h3>
         <p class="campo"><label for="aj-msg">O que o cliente precisa corrigir</label><textarea id="aj-msg" rows="3" maxlength="2000" required></textarea></p>
@@ -318,22 +334,6 @@
 
     const an = document.getElementById('ac-analisar');
     if (an) an.addEventListener('click', () => executar(an, { acao: 'analisar' }, 'Análise iniciada. O cliente foi avisado.'));
-    document.getElementById('ac-aprovar').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const valor = Number(document.getElementById('ap-valor').value);
-      if (!(valor > 0)) { mostrarErro('Informe o valor final.'); return; }
-      const sel = s.selecao || {};
-      executar(e.submitter, {
-        acao: 'aprovar', updated_at: s.updated_at, valor_final: valor, mensagem: document.getElementById('ap-msg').value,
-        itens: {
-          servicos: (sel.servicos || []).map((x) => ({ id: x.id, modelo: x.modelo || null, plano: x.plano || null, ...(x.variante ? { variante: x.variante } : {}) })),
-          complementos: (sel.complementos || []).map((x) => ({ id: x.id, qtd: Number(x.qtd) || 1 })),
-          personalizados: (sel.personalizados || []).map((x) => ({ id: x.id, nome: x.nome, descricao: x.descricao || '', valor: Number(x.valor) }))
-        }
-      }, (r) => (r.solicitacao && r.solicitacao.status === 'aguardando_cliente'
-        ? 'Proposta enviada: o cliente confirma as alterações e depois paga.'
-        : 'Projeto aprovado. Pagamento liberado para o cliente.'));
-    });
     document.getElementById('ac-ajustes').addEventListener('submit', (e) => {
       e.preventDefault();
       const msg = document.getElementById('aj-msg').value.trim();

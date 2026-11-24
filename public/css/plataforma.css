@@ -3461,3 +3461,72 @@ dl.pers-textos dt, dl.pers-textos dd { padding: 0; border: 0; }
 .celula-cliente small, .celula-cobranca small { display: block; color: var(--text-secondary); }
 /* etiqueta de status longa ("Aprovado pela CMK — aguardando pagamento") quebra linha dentro de grades/listas */
 #sol-principal dd [data-etiqueta], .celula-cobranca [data-etiqueta], td [data-etiqueta] { max-width: 100%; white-space: normal; }
+
+/* ---- Itens e valor embutido na página da solicitação (mesmo editor do modal) ---- */
+.editor-embutido .cartao-topo { align-items: flex-start; }
+.editor-embutido .editor-sub { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.editor-embutido h2:focus { outline: none; }
+.editor-corpo { display: grid; gap: var(--space-5); }
+.editor-corpo > section { min-width: 0; }
+.editor-corpo > section + section { padding-top: var(--space-5); border-top: 1px solid var(--border); }
+.editor-corpo h3 { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
+.editor-corpo h3:focus { outline: none; }
+.editor-corpo h4 { margin: var(--space-5) 0 var(--space-3); font-size: var(--text-xs); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.editor-rodape { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.editor-rodape:empty { display: none; }
+.editor-rodape [data-espaco] { flex: 1; }
+.editor-rodape button, .editor-rodape > a { min-height: 44px; }
+.editor-embutido [data-primario] { border-color: var(--purple); background: var(--purple); color: var(--white); }
+.editor-embutido [data-primario]:hover:not(:disabled) { border-color: var(--purple-hover); background: var(--purple-hover); color: var(--white); }
+.editor-embutido [data-perigo] { border-color: rgba(180, 35, 24, 0.35); background: var(--surface); color: var(--danger); }
+.editor-embutido [data-perigo]:hover:not(:disabled) { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+.editor-embutido button[aria-busy=true] { cursor: progress; }
+@media (max-width: 599.98px) {
+  .editor-rodape [data-espaco] { display: none; }
+  .editor-rodape > * { flex: 1 1 40%; justify-content: center; }
+  .editor-rodape [data-primario] { order: -1; flex-basis: 100%; }
+}
+
+/* =====================================================================
+   Refinamento visual (só aparência, mesma identidade): menos ruído,
+   espaçamento regular, uma ação principal por bloco e cards alinhados.
+   ===================================================================== */
+
+/* espaçamento: a coluna já separa os blocos pelo gap; a margem extra dobrava o espaço */
+.coluna-principal > .cartao + .cartao { margin-top: 0; }
+
+/* indicadores: cabem 5 por linha em telas largas (sem um cartão sozinho na 2ª linha) */
+.kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 168px), 1fr)); }
+
+/* Clientes: cards da mesma linha com a mesma altura */
+#lista-clientes[data-visao=cards] { align-items: stretch; }
+#lista-clientes[data-visao=cards] > article { height: 100%; }
+
+/* uma ação principal por bloco: formulários secundários do painel lateral em contorno */
+/* (identidade.css força todo envio a primário com !important: aqui a exceção é intencional) */
+.coluna-lateral .form-acao button[type=submit] { border-color: var(--border-strong) !important; background: var(--surface) !important; box-shadow: none; color: var(--ink) !important; }
+.coluna-lateral .form-acao button[type=submit]:hover:not(:disabled) { border-color: var(--color-navy-900) !important; background: var(--surface) !important; color: var(--color-navy-900) !important; }
+.form-acao { gap: var(--space-3); }
+.form-acao textarea { min-height: 88px; }
+
+/* cards de Solicitações: botões do mesmo tamanho; "Abrir projeto" é o principal, "Itens e valor" contorno */
+p[data-acoes-card] > .botao-link, p[data-acoes-card] > button { min-height: 40px; padding: var(--space-2) var(--space-4); font-size: var(--text-sm); }
+p[data-acoes-card] > button[data-abrir] { border-color: var(--border-strong); background: var(--surface); box-shadow: none; color: var(--ink); }
+p[data-acoes-card] > button[data-abrir]:hover:not(:disabled) { border-color: var(--purple); background: var(--surface); color: var(--purple); }
+
+/* tabelas: ação de cada linha em contorno (o azul cheio repetido em todas as linhas pesava) */
+.tabela-limpa td.acoes .botao-link { min-height: 38px; padding: var(--space-1) var(--space-4); border-color: var(--border-strong); background: var(--surface); box-shadow: none; color: var(--ink); font-size: var(--text-sm); }
+.tabela-limpa td.acoes .botao-link:hover { border-color: var(--purple); color: var(--purple); }
+.tabela-limpa td.acoes { white-space: nowrap; }
+.tabela-limpa td small { display: block; margin-top: 2px; }
+
+/* listas do painel lateral: nome inteiro em vez de "Aguardando an..." */
+#contagem-status .widget-item strong { white-space: normal; overflow: visible; }
+
+/* filtros em pílula: o fundo abraça só os botões, sem faixa cinza vazia */
+.barra-ferramentas .filtro-pilulas, .secao-topo .filtro-pilulas { width: fit-content; max-width: 100%; }
+
+/* títulos de seção e textos de apoio com respiro regular */
+.cartao > h2, .cartao-topo { margin-bottom: var(--space-4); }
+.pagina-cabecalho { margin-bottom: var(--space-2); }
+.nota { color: var(--text-secondary); }
