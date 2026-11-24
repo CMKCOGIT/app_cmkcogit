@@ -57,7 +57,7 @@
       ? 'mensagens.html?cliente=' + encodeURIComponent(projeto.cliente_id) + '&projeto=' + encodeURIComponent(projeto.id)
       : 'mensagens.html?projeto=' + encodeURIComponent(projeto.id);
     document.getElementById('resumo-projeto').insertAdjacentHTML('beforeend',
-      `<p><a class="botao-link" href="${destinoMsg}">${icone('mensagens')} ${admin ? 'Mensagem ao cliente sobre este projeto' : 'Falar com a equipe sobre este projeto'}</a></p>`);
+      `<p><a class="botao-link" data-secundario href="${destinoMsg}">${icone('mensagens')} ${admin ? 'Mensagem ao cliente sobre este projeto' : 'Falar com a equipe sobre este projeto'}</a></p>`);
     if (admin) { // quadro de tarefas do projeto (sql/27): quantas tarefas abertas
       db.from('quadros').select('id, cartoes(count)').eq('projeto_id', projeto.id).is('cartoes.concluido_em', null).is('cartoes.arquivado_em', null).maybeSingle().then(({ data }) => {
         if (!data) return;
@@ -78,7 +78,8 @@
     document.title = p.nome + ' | CMKCOGIT';
     const atrasado = p.previsao_entrega && p.status_projeto !== 'concluido' && new Date(p.previsao_entrega + 'T23:59:59') < new Date();
     const pct = progressoProjeto(p);
-    document.getElementById('subtitulo-projeto').innerHTML = `${esc(p.codigo || '')} · ${esc(rotulo('tipo', p.tipo))} · ${etiquetaStatus('projeto', p.status_projeto)}`;
+    // só o que existe (sem "· - ·" quando falta o tipo)
+    document.getElementById('subtitulo-projeto').innerHTML = [p.codigo ? esc(p.codigo) : '', p.tipo ? esc(rotulo('tipo', p.tipo)) : '', etiquetaStatus('projeto', p.status_projeto)].filter(Boolean).join(' · ');
     document.getElementById('resumo-projeto').innerHTML = `
       <div class="resumo-anel">${anelHtml(pct, `Progresso: ${pct}%`, true)}
         <p><strong>${p.status_projeto === 'concluido' ? 'Concluído' : 'Etapa ' + Number(p.etapa_atual) + ' de 8'}</strong>
@@ -174,10 +175,12 @@
 
   function renderPagamentos(pags) {
     const ul = document.getElementById('lista-pagamentos');
+    ul.classList.add('lista-pagamentos-projeto');
     ul.innerHTML = pags.length ? pags.map((p) => `
-      <li>${esc(p.descricao)} — ${brl(p.valor)} — ${esc(rotulo('pagamento', p.status))}
-        ${p.status === 'pago' ? ' em ' + fmtData(p.pago_em) : ''}${p.metodo ? ' (' + esc(rotulo('metodo', p.metodo)) + ')' : ''}</li>`).join('')
-      : '<li>Nenhum pagamento ligado a este projeto.</li>';
+      <li><span><strong>${esc(p.descricao)}</strong>
+          <small>${p.status === 'pago' ? 'Pago em ' + fmtData(p.pago_em) : 'Criada em ' + fmtData(p.created_at)}${p.metodo ? ' · ' + esc(rotulo('metodo', p.metodo)) : ''}</small></span>
+        <span class="pag-valor">${brl(p.valor)}</span>${etiquetaStatus('pagamento', p.status)}</li>`).join('')
+      : '<li class="vazio">Nenhum pagamento ligado a este projeto.</li>';
   }
 
   // ---------------- repositório: envio de arquivos ----------------

@@ -36,7 +36,7 @@
         ${anelHtml(pct, `${p.nome}: ${pct}% concluído`)}
         <div>
           <h2><a href="${link}">${esc(p.nome)}</a></h2>
-          <p>${esc(rotulo('tipo', p.tipo))}${p.dominio ? ' · ' + linkDominio(p.dominio) : ''}</p>
+          ${p.tipo || p.dominio ? `<p>${[p.tipo ? esc(rotulo('tipo', p.tipo)) : '', p.dominio ? linkDominio(p.dominio) : ''].filter(Boolean).join(' · ')}</p>` : ''}
         </div>
       </div>
       <ul class="projeto-fatos" data-livre>

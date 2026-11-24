@@ -3530,3 +3530,29 @@ p[data-acoes-card] > button[data-abrir]:hover:not(:disabled) { border-color: var
 .cartao > h2, .cartao-topo { margin-bottom: var(--space-4); }
 .pagina-cabecalho { margin-bottom: var(--space-2); }
 .nota { color: var(--text-secondary); }
+
+/* ---- Telas do cliente: refinamento visual ---- */
+/* rótulo do topo igual nas outras telas (o texto grande vale só para a frase de boas-vindas) */
+#cabecalho-inicio p.pagina-rotulo { color: var(--purple); font-size: var(--text-xs); }
+
+/* dicas: "Quero adquirir" em contorno; a ação principal da tela é o próximo passo */
+#lista-dicas article > p:last-child a { border-color: var(--border-strong) !important; background: var(--surface) !important; box-shadow: none !important; color: var(--ink) !important; }
+#lista-dicas article > p:last-child a:hover { border-color: var(--color-navy-900) !important; color: var(--color-navy-900) !important; }
+
+/* widgets com valor (Pagamentos pendentes): o valor não estoura o card */
+.widget-item > span:not(.anel) { flex: 1 1 auto; }
+.widget-item .widget-valor { flex: none; }
+
+/* Pagamentos deste projeto: linhas com valor e status, no lugar de texto corrido */
+.lista-pagamentos-projeto { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.lista-pagamentos-projeto > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+.lista-pagamentos-projeto > li:last-child { border-bottom: 0; }
+.lista-pagamentos-projeto > li > span:first-child { display: grid; flex: 1 1 240px; min-width: 0; gap: 2px; }
+.lista-pagamentos-projeto strong { font-size: var(--text-sm); }
+.lista-pagamentos-projeto small { color: var(--text-secondary); font-size: var(--text-xs); }
+.lista-pagamentos-projeto .pag-valor { font-family: var(--font-heading); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+.lista-pagamentos-projeto > li.vazio { color: var(--text-secondary); }
+.widget-item { min-width: 0; }
+.widget-item > span:not(.anel) { flex: 1 1 0; }
+.lista-pagamentos-projeto .pag-valor { min-width: 7.5rem; text-align: right; }
+.lista-pagamentos-projeto [data-etiqueta] { min-width: 5.5rem; justify-content: center; }
