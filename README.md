@@ -10,15 +10,15 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
                                                login / criar conta
                                                      ▼
                          POST /api/solicitacoes  (servidor recalcula o preço pelo catálogo)
-                    ┌────────────────────────────────┴───────────────────────────────┐
-           preço fechado (modelo pronto,                                   sob medida / "a partir de"
-           consultoria, identidade)                                        → em validação
-           → aguardando pagamento                                          → admin define o valor
-                    └────────────────────────────────┬───────────────────────────────┘
+                                                     ▼
+                     TODA solicitação: "Aguardando análise da CMK" (preço fechado ou sob medida)
+                     admin analisa → aprova (ou pede ajustes / manda proposta para o cliente aprovar)
+                                                     ▼
+                     "Aprovado — aguardando pagamento": só aqui o pagamento é liberado
                                                      ▼
                          POST /api/checkout → Mercado Pago (Checkout Pro)
                                                      ▼
-          confirmação: volta do checkout + botão "Já paguei — verificar" + webhook
+          confirmação: volta do checkout + botão "Já paguei — verificar" + webhook + conciliação diária
           (o servidor SEMPRE consulta o pagamento na API do Mercado Pago e confere o valor)
                                                      ▼
                           cobrança "Paga" + projeto criado em "Meus projetos"
@@ -33,7 +33,7 @@ cmkcogit.com.br  ──"Continuar na plataforma"──►  app.cmkcogit.com.br/c
 | `public/assets/` | Logo, símbolo/favicon e fontes (Clash Display e Satoshi, identidade 2026) copiados do site, servidos localmente |
 | `api/` | Funções do servidor (Vercel): `solicitacoes`, `checkout`, `verificar-pagamento`, `mp-webhook`, `config`, `mensagens-ia` (Gemini) |
 | `lib/` | Cálculo de preço, cliente REST do Supabase e Mercado Pago (sem dependências) |
-| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20`, `21` e, para receber sites personalizados nos modelos prontos, o `31` e o `32` (análise e aprovação da CMK antes do pagamento) (o `14` é só dado de teste) |
+| `sql/` | Banco: rode no Supabase na ordem `00` → `09`, depois o `10`, `11`, `12`, `13`, `15`, `17`, `18`, `19`, `20`, `21` e, para receber sites personalizados nos modelos prontos, o `31` o `32` (análise e aprovação da CMK antes do pagamento) e o `33` (pagamento só depois da aprovação, blindado no banco) (o `14` é só dado de teste) |
 | `dev-server.mjs` | Roda tudo no seu computador, igual à Vercel |
 | `tests/` | Testes automáticos (`npm test`) |
 
@@ -337,3 +337,25 @@ Toda solicitação começa em **Aguardando análise da CMK** e o pagamento só �
 - Histórico em `solicitacao_eventos` (autor, papel e data de cada ação) e versões da personalização em `solicitacao_versoes`; arquivo em `arquivos/solicitacoes/<id>/[vN/]personalizacao.json`. A versão aprovada fica em `versao_aprovada`.
 - O cliente edita em **Minhas solicitações**: "Editar e reenviar" (ou "Personalizar agora") abre o editor do modelo no site, que devolve os dados; a nova versão vai para o Storage e a solicitação volta para a análise. Mudança depois da aprovação cancela a cobrança aberta e exige nova análise.
 - Notificações: a CMK recebe "Nova solicitação" e "Cliente reenviou com alterações"; o cliente recebe recebida, em análise, ajustes, proposta, aprovado/pagamento liberado e mensagens da equipe (o "pagamento confirmado" já vem do projeto criado).
+
+### Pagamento só depois da aprovação (sql/33)
+
+Regra: **só existe cobrança pagável quando a solicitação está em `aguardando_pagamento`**. Garantido em quatro camadas:
+
+1. **Banco** (`sql/33_pagamento_so_aprovado.sql`): a solicitação saiu de `aguardando_pagamento` (análise reaberta, ajustes, proposta
+   com alterações, cliente pediu revisão, reenvio, cancelamento) → as cobranças pendentes dela são canceladas na hora (gatilho).
+   `aplicar_pagamento_mp` não cria projeto se a solicitação não estiver aprovada (resultado `solicitacao_nao_liberada`).
+2. **Mercado Pago**: o link do checkout vence em 72 h (`expires`) e só é reaproveitado por 48 h (`pagamentos.link_criado_em`).
+   Link antigo guardado pelo cliente não serve depois que a solicitação muda.
+3. **Servidor**: `/api/checkout` recusa (409) a solicitação ou a cobrança de solicitação fora de `aguardando_pagamento`. Aprovar com
+   alterações da equipe (`aguardando_cliente`) não deixa cobrança aberta: ela nasce quando o cliente aprova e clica em pagar.
+4. **Tela**: o botão "Pagar" só aparece em `aguardando_pagamento` (Minhas solicitações e Pagamentos). Se a situação mudar com a
+   página aberta, o clique mostra o aviso e recarrega a lista.
+
+**Avisos à equipe (sino):** cada pagamento confirmado e todo pagamento recebido que precisa de revisão: valor divergente,
+duplicidade, cobrança cancelada ou solicitação não aprovada (nesses casos nada é liberado: aprove ou estorne no Mercado Pago).
+
+**Conciliação diária:** a rotina `/api/renovacoes` consulta no Mercado Pago as cobranças pendentes com checkout aberto nos
+últimos 30 dias e aplica as aprovadas (Pix ou boleto pagos sem webhook nem "Já paguei").
+
+A função antiga `admin_decidir_solicitacao` (sql/08), que aprovava sem histórico, comprovante nem aviso, é removida pelo 33.

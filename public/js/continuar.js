@@ -2,7 +2,7 @@
 // continuar.js — "Minhas solicitações"
 // 1) Recebe a solução montada no site (link #cfg=...), guarda e exige login.
 // 2) Depois do login, grava a solução na conta (servidor recalcula o preço).
-// 3) Lista as solicitações: pagar (preço fechado) ou aguardar validação.
+// 3) Lista as solicitações: aguardar a análise da CMK e, depois da aprovação, pagar.
 // =====================================================================
 (async function () {
   capturarCfgDaUrl(); // ANTES do login: assim a solução não se perde
@@ -56,9 +56,8 @@
         }
         return;
       }
-      avisar(r.solicitacao.estruturado
-        ? 'Solução salva! O preço já está fechado: é só clicar em "Pagar com Mercado Pago".'
-        : 'Solução salva! Nossa equipe vai validar o escopo e liberar o pagamento aqui. Avisaremos pelo seu contato.');
+      // toda solicitação passa pela análise da CMK antes do pagamento (preço fechado ou sob medida)
+      avisar('Solução enviada! A equipe da CMK vai analisar o projeto e liberar o pagamento aqui. Avisaremos você pelo sino e pelo seu contato.');
     } catch (e) {
       avisar('');
       if (e.status === 400) {
@@ -180,6 +179,8 @@
         mostrarErro(e.message);
         toast(e.message, 'erro');
         ocupado(btn, false);
+        // a solicitação mudou (ex.: voltou para a análise): mostra a situação atual, sem o botão de pagar
+        if (e.status === 409) { painel.close?.(); carregar(); }
       }
     });
   }

@@ -1,5 +1,6 @@
 // GET /api/renovacoes   (rotina diária da Vercel — vercel.json "crons")
-// Também envia os lembretes de prazo dos quadros de tarefas (sql/27: lembrar_prazos_cartoes).
+// Também envia os lembretes de prazo dos quadros de tarefas (sql/27: lembrar_prazos_cartoes) e
+// confere no Mercado Pago as cobranças pendentes (Pix/boleto pagos sem webhook nem "Já paguei").
 // Cria as cobranças de renovação dos planos mensal/anual que vencem nos próximos
 // dias (sql/19: gerar_renovacoes) e avisa o cliente no sino e por e-mail.
 // Protegida por CRON_SECRET: a Vercel envia "Authorization: Bearer <CRON_SECRET>".
@@ -7,7 +8,7 @@ import { criarDb } from '../lib/supabase.js';
 import { json, erro, registrarErro, urlApp } from '../lib/http.js';
 import { createNotification } from '../lib/notificacoes.js';
 import { enviarEmail, emailRenovacao } from '../lib/email.js';
-import { buscarAssinaturaMp, cancelarAssinaturaMp, estadoAssinaturaMp } from '../lib/mercadopago.js';
+import { buscarAssinaturaMp, cancelarAssinaturaMp, estadoAssinaturaMp, buscarPorReferencia, tentativaRelevante, aplicarNoBanco } from '../lib/mercadopago.js';
 
 const DIAS_ANTES = 7;
 const TOLERANCIA_CARTAO = 5; // dias após o vencimento sem cobrança no cartão -> volta para a cobrança manual
@@ -53,6 +54,29 @@ async function sincronizarCartoes(db) {
   return resultado;
 }
 
+// Conciliação: cobranças pendentes com checkout aberto nos últimos 30 dias. Se o Mercado Pago tem
+// pagamento aprovado (ou estornado), aplica pelo mesmo caminho do webhook (aplicar_pagamento_mp).
+const LIMITE_CONCILIACAO = 60;
+export async function conciliarPendentes(db) {
+  const resultado = { conferidas: 0, aplicadas: 0 };
+  if (!process.env.MP_ACCESS_TOKEN) return resultado;
+  const desde = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const lista = await db.select('pagamentos', {
+    select: 'id', status: 'eq.pendente', mp_preference_id: 'not.is.null', created_at: 'gte.' + desde,
+    order: 'created_at.desc', limit: String(LIMITE_CONCILIACAO)
+  });
+  for (const p of lista || []) {
+    try {
+      resultado.conferidas += 1;
+      const mp = tentativaRelevante(await buscarPorReferencia(p.id));
+      if (!mp || !['approved', 'refunded', 'charged_back'].includes(mp.status)) continue;
+      const r = await aplicarNoBanco(db, p.id, mp, 'conciliacao');
+      if (r === 'pago') resultado.aplicadas += 1;
+    } catch (e) { registrarErro('renovacoes:conciliacao', e); }
+  }
+  return resultado;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return erro(res, 405, 'Método não permitido.');
   const segredo = process.env.CRON_SECRET;
@@ -64,6 +88,9 @@ export default async function handler(req, res) {
   // Quadros (sql/27): lembra os responsáveis dos cartões que vencem hoje/amanhã ou estão atrasados
   let tarefas = 0;
   try { tarefas = Number(await db.rpc('lembrar_prazos_cartoes', {})) || 0; } catch (e) { registrarErro('renovacoes:tarefas', e); }
+
+  let conciliacao = { conferidas: 0, aplicadas: 0 };
+  try { conciliacao = await conciliarPendentes(db); } catch (e) { registrarErro('renovacoes:conciliacao', e); }
 
   let cartoes = { registradas: 0, voltaram_manual: 0 };
   try { cartoes = await sincronizarCartoes(db); } catch (e) { registrarErro('renovacoes:cartoes', e); }
@@ -96,5 +123,5 @@ export default async function handler(req, res) {
       if (envio.enviado) emails += 1;
     } catch (e) { registrarErro('renovacoes:email', e); }
   }
-  return json(res, 200, { ok: true, cobrancas: novas.length, emails, cartao: cartoes, tarefas_lembradas: tarefas });
+  return json(res, 200, { ok: true, cobrancas: novas.length, emails, cartao: cartoes, tarefas_lembradas: tarefas, conciliacao });
 }

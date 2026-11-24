@@ -66,6 +66,7 @@ export default async function handler(req, res) {
       const agoraA = new Date().toISOString();
       const nova = await gravar(db, s, { status: 'em_analise', analise_por: admin.id, analise_em: agoraA });
       if (!nova) return conflito(res);
+      await ajustarCobranca(db, s.id, null); // em análise não há o que pagar
       await registrarEvento(db, { solicitacaoId: s.id, tipo: 'analise_iniciada', de: s.status, para: 'em_analise', mensagem: 'Análise iniciada por ' + quem.autorNome + '.', ...quem });
       await avisarCliente(db, s, { tipo: 'solicitacao_em_analise', titulo: 'Seu projeto ' + s.codigo + ' está em análise', mensagem: 'A equipe da CMK começou a analisar. Avisaremos quando terminar.', metadados: { solicitacao_id: s.id } });
       return json(res, 200, { ok: true, solicitacao: nova });
@@ -144,7 +145,8 @@ export default async function handler(req, res) {
     };
     const nova = await gravar(db, s, campos);
     if (!nova) return conflito(res);
-    await ajustarCobranca(db, s.id, valorFinal);
+    // proposta com alterações: nada fica pagável até o cliente aprovar (a cobrança nasce no checkout)
+    await ajustarCobranca(db, s.id, alterou ? null : valorFinal);
 
     await registrarEvento(db, {
       solicitacaoId: s.id, tipo: alterou ? 'aguardando_cliente' : 'aprovada', de: s.status, para: campos.status, ...quem,
@@ -205,7 +207,7 @@ function ajustarCobranca(db, solId, valor) {
   const filtro = { solicitacao_id: 'eq.' + solId, status: 'eq.pendente' };
   return valor != null
     ? db.atualizar('pagamentos', filtro, { valor, link_pagamento: null, mp_preference_id: null })
-    : db.atualizar('pagamentos', filtro, { status: 'cancelado', link_pagamento: null });
+    : db.atualizar('pagamentos', filtro, { status: 'cancelado', link_pagamento: null, mp_preference_id: null });
 }
 
 // O que saiu da seleção entra no histórico "Itens retirados" (pela equipe)

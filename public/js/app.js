@@ -274,7 +274,7 @@ function tempoRelativo(data) {
 }
 
 // Linha do tempo agrupada por dia, com ícone por tipo de evento
-const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar', mensagem: 'mensagens', tarefa: 'quadros', jornada: 'criar' };
+const ICONE_EVENTO = { etapa: 'avancar', arquivo: 'comprovante', pagamento: 'pagamentos', pendencia: 'alerta', solicitacao: 'solicitacoes', funcionalidade: 'adquirir', concluido: 'aprovar', mensagem: 'mensagens', tarefa: 'quadros', jornada: 'criar', pagamento_confirmado: 'pagamentos', pagamento_revisar: 'alerta' };
 function rotuloDia(data) {
   const d = new Date(data);
   const hoje = new Date();

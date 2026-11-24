@@ -7,6 +7,10 @@ import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarE
 import { criarPreferencia, linkDaPreferencia } from '../lib/mercadopago.js';
 import { texto } from '../lib/selecao.js';
 
+// Validade do link do Mercado Pago e por quanto tempo ele é reaproveitado (com folga antes de vencer)
+const VALIDADE_LINK_MS = 72 * 3600_000;
+const REUSO_LINK_MS = 48 * 3600_000;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return erro(res, 405, 'Método não permitido.');
 
@@ -41,15 +45,20 @@ export default async function handler(req, res) {
       pag = await db.um('pagamentos', { select: '*', id: 'eq.' + corpo.pagamento_id, cliente_id: 'eq.' + usuario.id });
       if (!pag || pag.status !== 'pendente') return erro(res, 404, 'Cobrança não encontrada ou já paga.');
       if (pag.solicitacao_id) {
-        const s = await db.um('solicitacoes', { select: 'status', id: 'eq.' + pag.solicitacao_id });
-        if (!s || s.status !== 'aguardando_pagamento') return erro(res, 409, 'Esta cobrança não está mais disponível.');
+        // cobrança de solicitação: mesma regra do pagamento pela solicitação (só depois da aprovação da CMK)
+        const s = await db.um('solicitacoes', { select: '*', id: 'eq.' + pag.solicitacao_id, cliente_id: 'eq.' + usuario.id });
+        if (!s || s.status !== 'aguardando_pagamento' || !(Number(s.valor_final) > 0)) {
+          return erro(res, 409, 'Esta solicitação ainda não está liberada para pagamento. A CMK avisa quando aprovar.');
+        }
+        pag = await cobrancaDaSolicitacao(db, s, usuario.id);
       }
     } else {
       return erro(res, 400, 'Informe a solicitação ou a cobrança.');
     }
 
-    // link já criado para este valor: reaproveita
-    if (pag.link_pagamento && pag.mp_preference_id) {
+    // link já criado para este valor e ainda dentro da validade: reaproveita
+    const criadoEm = Date.parse(pag.link_criado_em || '');
+    if (pag.link_pagamento && pag.mp_preference_id && criadoEm && Date.now() - criadoEm < REUSO_LINK_MS) {
       return json(res, 200, { ok: true, url: pag.link_pagamento, pagamento_id: pag.id });
     }
 
@@ -72,7 +81,11 @@ export default async function handler(req, res) {
         pending: app + '/pagamentos.html?mp=pendente',
         failure: app + '/pagamentos.html?mp=falha'
       },
-      statement_descriptor: 'CMKCOGIT'
+      statement_descriptor: 'CMKCOGIT',
+      // o link vence: um link antigo guardado não pode ser pago depois que a solicitação mudar
+      expires: true,
+      expiration_date_from: new Date(Date.now() - 60_000).toISOString(),
+      expiration_date_to: new Date(Date.now() + VALIDADE_LINK_MS).toISOString()
     };
     // o Mercado Pago só volta sozinho para endereços https (em localhost use o botão "Voltar")
     if (https) preferencia.auto_return = 'approved';
@@ -85,7 +98,7 @@ export default async function handler(req, res) {
       throw new Error('Link de pagamento inesperado');
     }
 
-    await db.atualizar('pagamentos', { id: 'eq.' + pag.id }, { link_pagamento: link, mp_preference_id: String(pref.id) });
+    await db.atualizar('pagamentos', { id: 'eq.' + pag.id }, { link_pagamento: link, mp_preference_id: String(pref.id), link_criado_em: new Date().toISOString() });
     return json(res, 200, { ok: true, url: link, pagamento_id: pag.id });
   } catch (e) {
     registrarErro('checkout', e);

@@ -43,7 +43,7 @@ test('gera renovação, avisa no sino e manda e-mail quando o Resend está confi
   const r = resp();
   await handler({ method: 'GET', headers: { authorization: 'Bearer segredo-cron' } }, r);
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 1, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0 });
+  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 1, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0, conciliacao: { conferidas: 0, aplicadas: 0 } });
   assert.ok(chamadas.some((c) => c.url === '/rest/v1/notificacoes' && c.corpo.link === 'pagamentos.html'));
   const email = chamadas.find((c) => c.url === '/emails');
   assert.deepEqual(email.corpo.to, ['ana@ex.com']);
@@ -54,7 +54,7 @@ test('sem Resend configurado: cobrança e aviso continuam, e-mail não é enviad
   simular();
   const r = resp();
   await handler({ method: 'GET', headers: { authorization: 'Bearer segredo-cron' } }, r);
-  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 0, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0 });
+  assert.deepEqual(r.corpo, { ok: true, cobrancas: 1, emails: 0, cartao: { registradas: 0, voltaram_manual: 0 }, tarefas_lembradas: 0, conciliacao: { conferidas: 0, aplicadas: 0 } });
   assert.equal((await enviarEmail({ para: 'a@b.com', assunto: 'x', texto: 'y' })).motivo, 'sem_configuracao');
 });
 
@@ -63,4 +63,38 @@ test('texto do e-mail: valor, vencimento e escape de HTML', () => {
   assert.match(m.assunto, /15\/01\/2027/);
   assert.match(m.texto, /R\$\s?324,00/);
   assert.ok(!m.html.includes('<b>'));
+});
+
+test('conciliação: Pix pago sem webhook é aplicado pela rotina diária; pendente continua pendente', async () => {
+  const { conciliarPendentes } = await import('../api/renovacoes.js');
+  process.env.MP_ACCESS_TOKEN = 'APP_USR-teste';
+  const aplicados = [];
+  global.fetch = async (url, op = {}) => {
+    const u = new URL(url);
+    const ok = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json' } });
+    if (u.pathname === '/rest/v1/pagamentos') {
+      assert.equal(u.searchParams.get('status'), 'eq.pendente');
+      assert.equal(u.searchParams.get('mp_preference_id'), 'not.is.null');
+      return ok([{ id: 'pg-pago' }, { id: 'pg-pendente' }]);
+    }
+    if (u.pathname === '/v1/payments/search') {
+      const ref = u.searchParams.get('external_reference');
+      return ok({ results: ref === 'pg-pago'
+        ? [{ id: 77, status: 'approved', external_reference: ref, transaction_amount: 600, currency_id: 'BRL', payment_method_id: 'pix' }]
+        : [{ id: 78, status: 'pending', external_reference: ref }] });
+    }
+    if (u.pathname === '/rest/v1/rpc/aplicar_pagamento_mp') { const c = JSON.parse(op.body); aplicados.push(c); return ok('pago'); }
+    throw new Error('não simulado: ' + url);
+  };
+  const r = await conciliarPendentes({
+    select: (tabela, params) => fetch('https://teste.supabase.co/rest/v1/' + tabela + '?' + new URLSearchParams(params)).then((x) => x.json()),
+    rpc: (nome, corpo) => fetch('https://teste.supabase.co/rest/v1/rpc/' + nome, { method: 'POST', body: JSON.stringify(corpo) }).then((x) => x.json()),
+    um: async () => null
+  });
+  delete process.env.MP_ACCESS_TOKEN;
+  assert.deepEqual(r, { conferidas: 2, aplicadas: 1 });
+  assert.equal(aplicados.length, 1);
+  assert.equal(aplicados[0].p_pagamento_id, 'pg-pago');
+  assert.equal(aplicados[0].p_origem, 'conciliacao');
+  assert.equal(aplicados[0].p_metodo, 'pix');
 });

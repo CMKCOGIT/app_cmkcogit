@@ -134,6 +134,11 @@ async function registrarVersao(db, solicitacaoId, numero, personalizada, autorId
   }
 }
 
+// Fora de "aguardando pagamento" não pode existir cobrança pagável (o banco garante o mesmo: sql/33)
+function cancelarCobrancaAberta(db, solicitacaoId) {
+  return db.atualizar('pagamentos', { solicitacao_id: 'eq.' + solicitacaoId, status: 'eq.pendente' }, { status: 'cancelado', link_pagamento: null, mp_preference_id: null });
+}
+
 async function acaoDoCliente(res, db, usuario, corpo) {
   const { acao, solicitacao_id: solId } = corpo;
   if (!['reenviar', 'aprovar_proposta', 'recusar_proposta'].includes(acao)) return erro(res, 400, 'Ação inválida.');
@@ -156,7 +161,7 @@ async function acaoDoCliente(res, db, usuario, corpo) {
       const nova = await gravar({ status: 'em_validacao', versao_atual: versao, valor_final: null, selecao });
       if (!nova) return erro(res, 409, 'A solicitação mudou enquanto você editava. Recarregue a página e tente de novo.');
       // alteração depois da aprovação: a cobrança liberada deixa de valer até a nova análise
-      await db.atualizar('pagamentos', { solicitacao_id: 'eq.' + s.id, status: 'eq.pendente' }, { status: 'cancelado', link_pagamento: null });
+      await cancelarCobrancaAberta(db, s.id);
       await registrarVersao(db, s.id, versao, personalizada, usuario.id);
       await registrarEvento(db, {
         solicitacaoId: s.id, tipo: 'reenviada', de: s.status, para: 'em_validacao', papel: 'cliente', autorId: usuario.id, autorNome: quem, versao,
@@ -189,6 +194,7 @@ async function acaoDoCliente(res, db, usuario, corpo) {
     if (!mensagem) return erro(res, 400, 'Conte para a equipe o que precisa mudar na proposta.');
     const nova = await gravar({ status: 'em_validacao', valor_final: null });
     if (!nova) return erro(res, 409, 'A solicitação mudou. Recarregue a página e tente de novo.');
+    await cancelarCobrancaAberta(db, s.id);
     await registrarEvento(db, { solicitacaoId: s.id, tipo: 'cliente_pediu_revisao', de: s.status, para: 'em_validacao', papel: 'cliente', autorId: usuario.id, autorNome: quem, versao: s.versao_atual, mensagem });
     await avisarAdmins(db, s, { tipo: 'proposta_recusada', titulo: s.codigo + ': cliente pediu revisão da proposta', mensagem: quem + ': ' + mensagem });
     return json(res, 200, { ok: true, solicitacao: { id: nova.id, status: nova.status } });

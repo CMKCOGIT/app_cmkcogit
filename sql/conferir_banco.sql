@@ -48,7 +48,6 @@ with item(arquivo, o_que, nome) as (values
   ('07_pagamentos', 'função', 'solicitar_funcionalidade'),
   -- 08 funções cliente/admin
   ('08_funcoes_cliente_admin', 'função', 'cliente_cancelar_solicitacao'),
-  ('08_funcoes_cliente_admin', 'função', 'admin_decidir_solicitacao'),
   -- 09 Mercado Pago
   ('09_aplicar_pagamento_mp', 'função', 'aplicar_pagamento_mp'),
   ('09_aplicar_pagamento_mp', 'função', 'somar_dias_uteis'),
@@ -109,7 +108,12 @@ with item(arquivo, o_que, nome) as (values
   ('27_quadros', 'bucket', 'quadros'),
   ('27_quadros', 'tempo real', 'cartoes'),
   ('29_assistente_uso', 'tabela', 'ia_uso'),
-  ('29_assistente_uso', 'função', 'ia_reservar')
+  ('29_assistente_uso', 'função', 'ia_reservar'),
+  ('32_analise_aprovacao', 'tabela', 'solicitacao_eventos'),
+  ('32_analise_aprovacao', 'tabela', 'solicitacao_versoes'),
+  ('32_analise_aprovacao', 'coluna', 'solicitacoes.versao_atual'),
+  ('33_pagamento_so_aprovado', 'coluna', 'pagamentos.link_criado_em'),
+  ('33_pagamento_so_aprovado', 'gatilho', 'trg_cancelar_cobranca_fora_da_liberacao')
 ),
 estrutura as (
   select i.arquivo, i.o_que, i.nome,

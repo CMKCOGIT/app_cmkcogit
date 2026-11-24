@@ -49,7 +49,7 @@
   async function carregar() {
     const { data, error } = await db
       .from('pagamentos')
-      .select('*, projetos(nome), solicitacoes(codigo, comprovante_token)')
+      .select('*, projetos(nome), solicitacoes(id, codigo, status, comprovante_token)')
       .order('created_at', { ascending: false });
     if (error) {
       mostrarErro('Não foi possível carregar os pagamentos: ' + error.message);
@@ -156,7 +156,11 @@
       const data = p.status === 'pago' ? fmtData(p.pago_em) : p.vencimento ? 'Vence em ' + fmtData(p.vencimento) : fmtData(p.created_at);
       const comprovante = p.solicitacoes && p.solicitacoes.comprovante_token
         ? `<a class="acao-icone" href="comprovante.html?t=${encodeURIComponent(p.solicitacoes.comprovante_token)}" target="_blank" rel="noopener" aria-label="Ver comprovante" title="Ver comprovante">${icone('comprovante')}</a>` : '';
-      const acao = p.status === 'pendente'
+      // cobrança de solicitação só é pagável depois da aprovação da CMK (o servidor também recusa)
+      const bloqueada = p.status === 'pendente' && p.solicitacoes && p.solicitacoes.status !== 'aguardando_pagamento';
+      const acao = bloqueada
+        ? `<a class="botao-link" href="continuar.html?abrir=${encodeURIComponent(p.solicitacoes.id)}">Aguardando aprovação da CMK</a>`
+        : p.status === 'pendente'
         ? `<button type="button" data-pagar="${esc(p.id)}">${icone('pagamentos')} Pagar</button>
            <button type="button" class="botao-icone" data-verificar="${esc(p.id)}" aria-label="Já paguei: verificar no Mercado Pago" title="Já paguei: verificar no Mercado Pago">${icone('recarregar')}</button>`
         : p.status === 'pago' && p.projeto_id ? `<a class="acao-icone" href="projetos.html" aria-label="Ver projeto" title="Ver projeto">${icone('projetos')}</a>` : '';
@@ -175,6 +179,7 @@
       try {
         await irParaCheckout({ pagamento_id: btn.dataset.pagar });
       } catch (e) {
+        if (e.status === 409) carregar(); // cobrança não está mais liberada: atualiza a lista
         mostrarErro(e.message);
         ocupado(btn, false);
       }

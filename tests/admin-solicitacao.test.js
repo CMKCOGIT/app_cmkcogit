@@ -123,8 +123,10 @@ test('aprovar com itens retirados pela equipe: vai para "Aguardando aprovação 
   assert.equal(s.comprovante.valor_final, 950);
   assert.equal(s.comprovante.itens.length, 1);
   assert.equal(s.resumo.removidos[0].nome, 'Landing Page');
-  assert.equal(banco.pagamentos[0].valor, 950);
+  // enquanto o cliente não aprova a proposta, não pode haver cobrança pagável
+  assert.equal(banco.pagamentos[0].status, 'cancelado');
   assert.equal(banco.pagamentos[0].link_pagamento, null);
+  assert.equal(banco.pagamentos[0].mp_preference_id, null);
 
   assert.equal(r.json.comprovante_url, 'https://app.cmkcogit.com.br/comprovante.html?t=' + s.comprovante_token);
   assert.ok(r.json.whatsapp_url.startsWith('https://wa.me/551731983769?text='));

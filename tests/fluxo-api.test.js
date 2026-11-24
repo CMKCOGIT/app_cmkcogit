@@ -416,3 +416,45 @@ test('sem personalização: fica registrado na solicitação e no histórico', a
   assert.equal(banco.solicitacao_versoes[0].storage_path, null);
   assert.match(banco.solicitacao_eventos[0].mensagem, /sem personalização/);
 });
+
+test('cobrança antiga de uma solicitação que voltou para a análise não abre pagamento (nem pela tela Pagamentos)', async () => {
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }], 'voltouanaliseref1234') } });
+  const id = r.json.solicitacao.id;
+  const s = banco.solicitacoes.find((x) => x.id === id);
+  aprovarPelaCmk(id);
+  const c = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: id } });
+  assert.equal(c.status, 200);
+  // a solicitação volta para a análise com a cobrança ainda pendente (ex.: dado antigo)
+  Object.assign(s, { status: 'em_validacao', valor_final: null });
+  const pelaCobranca = await chamar('checkout', { token: 'tok-ana', corpo: { pagamento_id: c.json.pagamento_id } });
+  assert.equal(pelaCobranca.status, 409);
+  assert.equal(mp.prefs.length, 1);
+});
+
+test('link do Mercado Pago vence e só é reaproveitado enquanto válido', async () => {
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }], 'linkvenceref12345678') } });
+  const id = r.json.solicitacao.id;
+  aprovarPelaCmk(id);
+  const c1 = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: id } });
+  assert.equal(mp.prefs[0].expires, true);
+  assert.ok(Date.parse(mp.prefs[0].expiration_date_to) > Date.now() + 70 * 3600_000);
+  const pag = banco.pagamentos.find((p) => p.id === c1.json.pagamento_id);
+  assert.ok(pag.link_criado_em);
+  pag.link_criado_em = new Date(Date.now() - 50 * 3600_000).toISOString(); // perto de vencer
+  const c2 = await chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: id } });
+  assert.equal(c2.status, 200);
+  assert.equal(mp.prefs.length, 2); // link novo
+});
+
+test('cliente pede revisão da proposta: a cobrança aberta é cancelada', async () => {
+  const r = await chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg: cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }], 'revisaocancelaref123') } });
+  const id = r.json.solicitacao.id;
+  const s = banco.solicitacoes.find((x) => x.id === id);
+  banco.pagamentos.push({ id: uuid(), cliente_id: s.cliente_id, solicitacao_id: id, status: 'pendente', valor: 750, link_pagamento: 'https://www.mercadopago.com.br/x', mp_preference_id: 'p' });
+  Object.assign(s, { status: 'aguardando_cliente', valor_final: 750 });
+  const rec = await chamar('solicitacoes', { token: 'tok-ana', corpo: { acao: 'recusar_proposta', solicitacao_id: id, mensagem: 'Mudar a cor.' } });
+  assert.equal(rec.status, 200);
+  const pg = banco.pagamentos.find((p) => p.solicitacao_id === id);
+  assert.equal(pg.status, 'cancelado');
+  assert.equal(pg.link_pagamento, null);
+});
