@@ -6,6 +6,9 @@ import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID, urlApp, urlPublica } from '../lib/http.js';
 import { criarPreferencia, linkDaPreferencia } from '../lib/mercadopago.js';
 import { texto } from '../lib/selecao.js';
+import { blackVencida } from '../lib/black-config.js';
+
+const PRAZO_BLACK = 'O prazo para pagar com o preço da Black da Cogit terminou. Fale com a equipe pela plataforma para refazer o orçamento.';
 
 // Validade do link do Mercado Pago e por quanto tempo ele é reaproveitado (com folga antes de vencer)
 const VALIDADE_LINK_MS = 72 * 3600_000;
@@ -33,6 +36,7 @@ export default async function handler(req, res) {
 
   try {
     let pag = null;
+    let sol = null;
 
     if (typeof corpo.solicitacao_id === 'string' && UUID.test(corpo.solicitacao_id)) {
       const s = await db.um('solicitacoes', { select: '*', id: 'eq.' + corpo.solicitacao_id, cliente_id: 'eq.' + usuario.id });
@@ -40,6 +44,8 @@ export default async function handler(req, res) {
       if (s.status !== 'aguardando_pagamento' || !(Number(s.valor_final) > 0)) {
         return erro(res, 409, 'Esta solicitação ainda não está liberada para pagamento.');
       }
+      if (blackVencida(s)) return erro(res, 409, PRAZO_BLACK);
+      sol = s;
       pag = await cobrancaDaSolicitacao(db, s, usuario.id);
     } else if (typeof corpo.pagamento_id === 'string' && UUID.test(corpo.pagamento_id)) {
       pag = await db.um('pagamentos', { select: '*', id: 'eq.' + corpo.pagamento_id, cliente_id: 'eq.' + usuario.id });
@@ -50,11 +56,17 @@ export default async function handler(req, res) {
         if (!s || s.status !== 'aguardando_pagamento' || !(Number(s.valor_final) > 0)) {
           return erro(res, 409, 'Esta solicitação ainda não está liberada para pagamento. A CMK avisa quando aprovar.');
         }
+        if (blackVencida(s)) return erro(res, 409, PRAZO_BLACK);
+        sol = s;
         pag = await cobrancaDaSolicitacao(db, s, usuario.id);
       }
     } else {
       return erro(res, 400, 'Informe a solicitação ou a cobrança.');
     }
+
+    // Black: o link vence junto com o prazo de pagamento do pedido (e nunca depois das 72 h de sempre)
+    const prazoBlack = sol && sol.promo && sol.promo_aplicada !== false && sol.promo_pagar_ate ? Date.parse(sol.promo_pagar_ate) : null;
+    const venceEm = Math.min(Date.now() + VALIDADE_LINK_MS, prazoBlack || Infinity);
 
     // link já criado para este valor e ainda dentro da validade: reaproveita
     const criadoEm = Date.parse(pag.link_criado_em || '');
@@ -85,7 +97,9 @@ export default async function handler(req, res) {
       // o link vence: um link antigo guardado não pode ser pago depois que a solicitação mudar
       expires: true,
       expiration_date_from: new Date(Date.now() - 60_000).toISOString(),
-      expiration_date_to: new Date(Date.now() + VALIDADE_LINK_MS).toISOString()
+      expiration_date_to: new Date(venceEm).toISOString(),
+      // Pix/boleto: o pagamento em si também vence no prazo (não pode ser aprovado depois dele)
+      ...(prazoBlack ? { date_of_expiration: new Date(venceEm).toISOString() } : {})
     };
     // o Mercado Pago só volta sozinho para endereços https (em localhost use o botão "Voltar")
     if (https) preferencia.auto_return = 'approved';

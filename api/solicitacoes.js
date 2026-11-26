@@ -15,6 +15,7 @@
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID } from '../lib/http.js';
 import { sanitizarCfg, calcular, texto } from '../lib/selecao.js';
+import { BLACK, blackAtiva, prazoPagamentoBlack } from '../lib/black-config.js';
 import { CLIENTE_PODE_EDITAR, caminhoPersonalizacao, registrarEvento, avisarAdmins, avisarCliente } from '../lib/fluxo-solicitacao.js';
 
 const LIMITE_POR_HORA = 15;
@@ -53,7 +54,9 @@ export default async function handler(req, res) {
     if (recentes.length >= LIMITE_POR_HORA) return erro(res, 429, 'Muitas solicitações em pouco tempo. Aguarde e tente novamente.');
 
     const catalogo = await db.select('catalogo_precos', { select: '*' });
-    const calc = calcular(cfg, catalogo);
+    // Black da Cogit: vale pela data DO SERVIDOR no momento do pedido (o "promo" do site é só informativo)
+    const agoraPedido = new Date();
+    const calc = calcular(cfg, catalogo, { black: blackAtiva(agoraPedido) ? BLACK : null });
     if (!calc.ok) return erro(res, 400, calc.erro);
 
     // modelo pronto com nível (variante): registra se veio personalizado ou não
@@ -81,7 +84,14 @@ export default async function handler(req, res) {
       tipo_preco: calc.tipo_preco,
       valor_calculado: calc.valor,
       valor_final: null,
-      status: 'em_validacao'
+      status: 'em_validacao',
+      // pedido da Black: preço e data registrados; o pagamento só vale com esse preço até promo_pagar_ate
+      ...(calc.promo ? {
+        promo: calc.promo,
+        promo_pedido_em: agoraPedido.toISOString(),
+        promo_valor: calc.valor,
+        promo_pagar_ate: new Date(prazoPagamentoBlack(calc.tipo_preco)).toISOString()
+      } : {})
     };
 
     let nova;
@@ -108,8 +118,8 @@ export default async function handler(req, res) {
       mensagem: 'A equipe da CMK vai analisar o projeto. O pagamento é liberado aqui depois da aprovação.'
     });
     await avisarAdmins(db, nova, {
-      tipo: 'solicitacao_nova', titulo: 'Nova solicitação ' + nova.codigo,
-      mensagem: comModelo ? (cfg.personalizacao ? 'Modelo pronto com site personalizado pelo cliente.' : 'Modelo pronto sem personalização.') : 'Aguardando análise da CMK.'
+      tipo: 'solicitacao_nova', titulo: (calc.promo ? 'Black da Cogit · ' : '') + 'Nova solicitação ' + nova.codigo,
+      mensagem: (calc.promo ? 'Preço da Black garantido; pagamento até ' + (calc.tipo_preco === 'fixed' ? '27/11 às 23h59' : '04/12, após validar o escopo') + '. ' : '') + (comModelo ? (cfg.personalizacao ? 'Modelo pronto com site personalizado pelo cliente.' : 'Modelo pronto sem personalização.') : 'Aguardando análise da CMK.')
     });
 
     return json(res, 201, {

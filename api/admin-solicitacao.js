@@ -17,6 +17,7 @@
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID, urlApp } from '../lib/http.js';
 import { calcular, validarItensAdmin, texto } from '../lib/selecao.js';
+import { BLACK, blackDoPedido } from '../lib/black-config.js';
 import { novoToken, montarComprovante, textoWhatsApp } from '../lib/comprovante.js';
 import { createNotification } from '../lib/notificacoes.js';
 import { ABERTOS, registrarEvento } from '../lib/fluxo-solicitacao.js';
@@ -93,11 +94,15 @@ export default async function handler(req, res) {
     const v = validarItensAdmin(corpo.itens, s.selecao || {});
     if (!v.ok) return erro(res, 400, v.erro);
     const catalogo = await db.select('catalogo_precos', { select: '*' });
-    const calc = calcular(v.itens, catalogo);
+    // Pedido da Black: o escopo validado é recalculado com o preço da Black até o prazo do pedido
+    // (preço garantido); depois dele, volta ao preço normal.
+    const blackValendo = blackDoPedido(s);
+    const calc = calcular(v.itens, catalogo, { black: blackValendo ? BLACK : null });
     if (!calc.ok) return erro(res, 400, calc.erro);
+    const promoInfo = s.promo ? { promo: s.promo, promo_pagar_ate: s.promo_pagar_ate, promo_valendo: blackValendo } : {};
 
     if (acao === 'simular') {
-      return json(res, 200, { ok: true, resumo: calc.resumo, valor: calc.valor, tipo_preco: calc.tipo_preco, estruturado: calc.estruturado });
+      return json(res, 200, { ok: true, resumo: calc.resumo, valor: calc.valor, tipo_preco: calc.tipo_preco, estruturado: calc.estruturado, ...promoInfo });
     }
 
     const agora = new Date().toISOString();
@@ -107,7 +112,9 @@ export default async function handler(req, res) {
       resumo,
       estruturado: calc.estruturado,
       tipo_preco: calc.tipo_preco,
-      valor_calculado: calc.valor
+      valor_calculado: calc.valor,
+      // o valor liberado usou o preço da Black? então o checkout só aceita até promo_pagar_ate
+      ...(s.promo ? { promo_aplicada: Boolean(calc.promo) } : {})
     };
 
     if (acao === 'salvar') {

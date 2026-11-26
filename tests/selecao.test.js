@@ -137,3 +137,46 @@ test('os três níveis da landing page são aceitos (básico, intermediário e f
     assert.ok(r.resumo.itens[0].variante_nome.startsWith(nome), variante);
   }
 });
+
+// ── Black da Cogit 2026 ──
+import { BLACK, blackAtiva, prazoPagamentoBlack, blackDoPedido, blackVencida } from '../lib/black-config.js';
+const calcBlack = (servicos) => { const s = sanitizarCfg({ v: 1, ref: REF, servicos }); assert.ok(s.ok, s.erro); return calcular(s.cfg, catalogo, { black: BLACK }); };
+
+test('Black: datas no horário de Brasília', () => {
+  assert.equal(blackAtiva(new Date('2026-11-25T23:59:59-03:00')), false);
+  assert.equal(blackAtiva(new Date('2026-11-26T00:00:00-03:00')), true);
+  assert.equal(blackAtiva(new Date('2026-11-27T23:59:59-03:00')), true);
+  assert.equal(blackAtiva(new Date('2026-11-28T00:00:00-03:00')), false);
+  assert.equal(blackAtiva(new Date('2026-11-26T12:00:00-03:00'), { ...BLACK, ligada: false }), false, 'desligada');
+  assert.equal(prazoPagamentoBlack('fixed'), '2026-11-27T23:59:59-03:00');
+  assert.equal(prazoPagamentoBlack('from'), '2026-12-04T23:59:59-03:00');
+});
+
+test('Black: modelos prontos, combos (sem os 10%) e o que fica fora', () => {
+  const v = (servicos) => calcBlack(servicos);
+  assert.equal(v([{ id: 'portfolio', modelo: 'modelos-prontos' }]).valor, 400);
+  assert.equal(v([{ id: 'landing-page', modelo: 'modelos-prontos' }]).valor, 480);
+  assert.equal(v([{ id: 'site-institucional', modelo: 'modelos-prontos' }]).valor, 560);
+  assert.equal(v([{ id: 'portfolio', modelo: 'sob-medida' }]).valor, 700, 'sob medida sem Black');
+  assert.equal(v([{ id: 'portfolio', modelo: 'sob-medida' }]).promo, null);
+  const auto = v([{ id: 'identidade-essencial' }, { id: 'portfolio', modelo: 'modelos-prontos' }]);
+  assert.equal(auto.valor, 750); assert.equal(auto.tipo_preco, 'fixed'); assert.equal(auto.resumo.desconto.id, 'autonomo-pronto'); assert.equal(auto.promo, 'black-2026');
+  assert.equal(v([{ id: 'identidade-essencial' }, { id: 'site-institucional', modelo: 'modelos-prontos' }]).valor, 900);
+  const conv = v([{ id: 'identidade-essencial' }, { id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'automacao' }]);
+  assert.equal(conv.valor, 1490); assert.equal(conv.tipo_preco, 'from');
+  assert.equal(v([{ id: 'sistema' }, { id: 'integracao' }]).valor, 3180);
+  assert.equal(v([{ id: 'automacao' }]).promo, null, 'sem item da Black, não é pedido da Black');
+  // fora da Black: tudo como antes (10% nos combos, Autônomo Pronto não existe)
+  assert.equal(calc([{ id: 'identidade-essencial' }, { id: 'site-institucional', modelo: 'modelos-prontos' }]).valor, 1080);
+  assert.equal(calc([{ id: 'identidade-essencial' }, { id: 'portfolio', modelo: 'modelos-prontos' }]).valor, 1000);
+  assert.equal(calc([{ id: 'portfolio', modelo: 'modelos-prontos' }]).promo, null);
+});
+
+test('Black: preço garantido do pedido até o prazo dele', () => {
+  const s = { promo: 'black-2026', promo_pagar_ate: '2026-12-04T23:59:59-03:00' };
+  assert.equal(blackDoPedido(s, Date.parse('2026-12-01T10:00:00-03:00')), true);
+  assert.equal(blackDoPedido(s, Date.parse('2026-12-05T00:00:00-03:00')), false);
+  assert.equal(blackDoPedido({}, Date.parse('2026-11-26T10:00:00-03:00')), false);
+  assert.equal(blackVencida(s, Date.parse('2026-12-05T00:00:00-03:00')), true);
+  assert.equal(blackVencida({ ...s, promo_aplicada: false }, Date.parse('2026-12-05T00:00:00-03:00')), false, 'reaprovado sem a Black: paga normal');
+});

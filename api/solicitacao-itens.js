@@ -9,6 +9,7 @@
 import { criarDb } from '../lib/supabase.js';
 import { json, erro, lerCorpo, exigirUsuario, exigirCadastroCompleto, registrarErro, UUID } from '../lib/http.js';
 import { calcular } from '../lib/selecao.js';
+import { BLACK, blackDoPedido } from '../lib/black-config.js';
 import { createNotification } from '../lib/notificacoes.js';
 import { ABERTOS, registrarEvento } from '../lib/fluxo-solicitacao.js';
 
@@ -66,7 +67,8 @@ export default async function handler(req, res) {
     complementos = complementos.filter((c) => permitidos.has(c.id));
 
     const novaSelecao = { ...selecao, servicos: restantes, complementos, personalizados };
-    const calc = calcular({ servicos: restantes, complementos, personalizados }, catalogo);
+    // pedido da Black dentro do prazo: continua com o preço da Black
+    const calc = calcular({ servicos: restantes, complementos, personalizados }, catalogo, { black: blackDoPedido(s) ? BLACK : null });
     if (!calc.ok) return erro(res, 400, calc.erro);
 
     // histórico do que saiu (aparece na tela de solicitações)
