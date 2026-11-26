@@ -226,3 +226,21 @@ test('cliente tira um item personalizado que a equipe adicionou', async () => {
   assert.equal(s.status, 'em_validacao'); // o cliente mudou: volta para a análise da CMK
   assert.equal(s.selecao.personalizados.length, 0);
 });
+
+test('Black: validar a Conversão depois da Black mantém o preço da Black (até 04/12); vencido, volta ao normal', async () => {
+  const servicos = [{ id: 'identidade-essencial', modelo: null }, { id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'automacao', modelo: null }];
+  const s = criar(servicos, { status: 'em_validacao', valor_final: null, promo: 'black-2026', promo_pedido_em: '2026-11-27T12:00:00-03:00', promo_pagar_ate: '2026-12-04T23:59:59-03:00' });
+  const r = await admin({ acao: 'simular', solicitacao_id: s.id, itens: itensDe(s) });
+  assert.equal(r.status, 200);
+  // os testes rodam com a data real: em 2026 antes de 04/12 o preço garantido vale
+  if (Date.now() <= Date.parse('2026-12-04T23:59:59-03:00')) {
+    assert.equal(r.json.valor, 1490);
+    assert.equal(r.json.promo_valendo, true);
+  } else {
+    assert.equal(r.json.valor, 1790);
+    assert.equal(r.json.promo_valendo, false);
+  }
+  const vencido = criar(servicos, { status: 'em_validacao', valor_final: null, promo: 'black-2026', promo_pedido_em: '2026-11-27T12:00:00-03:00', promo_pagar_ate: '2026-11-27T23:59:59-03:00' });
+  const r2 = await admin({ acao: 'simular', solicitacao_id: vencido.id, itens: itensDe(vencido) });
+  assert.equal(r2.json.valor, Date.now() <= Date.parse('2026-11-27T23:59:59-03:00') ? 1490 : 1790);
+});

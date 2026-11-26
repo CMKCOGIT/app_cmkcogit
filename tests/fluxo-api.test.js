@@ -458,3 +458,85 @@ test('cliente pede revisão da proposta: a cobrança aberta é cancelada', async
   assert.equal(pg.status, 'cancelado');
   assert.equal(pg.link_pagamento, null);
 });
+
+// ── Black da Cogit 2026 (lib/black-config.js): a data que vale é a do SERVIDOR ──
+const DataReal = Date;
+async function naData(iso, fn) {
+  const fixo = new DataReal(iso).getTime();
+  globalThis.Date = class extends DataReal {
+    constructor(...a) { super(...(a.length ? a : [fixo])); }
+    static now() { return fixo; }
+  };
+  try { return await fn(); } finally { globalThis.Date = DataReal; }
+}
+const DURANTE = '2026-11-26T10:00:00-03:00';
+
+test('Black: Portfólio a R$ 400 do site até o pagamento aprovado (preço e prazo do servidor)', async () => {
+  // o site manda o preço errado de propósito: o servidor ignora e calcula pela data dele
+  const cfg = { ...cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos', nome: 'Portfólio', preco: 1 }], 'refblackportfolio001'), promo: 'black-2026' };
+  const r = await naData(DURANTE, () => chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } }));
+  assert.equal(r.status, 201);
+  const s = banco.solicitacoes[0];
+  assert.equal(s.status, 'em_validacao');
+  assert.equal(s.valor_calculado, 400);
+  assert.equal(s.tipo_preco, 'fixed');
+  assert.equal(s.promo, 'black-2026');
+  assert.equal(s.promo_valor, 400);
+  assert.equal(s.promo_pedido_em, new Date(DURANTE).toISOString());
+  assert.equal(s.promo_pagar_ate, new Date('2026-11-27T23:59:59-03:00').toISOString());
+  assert.equal(s.resumo.itens[0].preco_de, 500);
+
+  aprovarPelaCmk(s.id);
+  const c = await naData('2026-11-27T20:00:00-03:00', () => chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: s.id } }));
+  assert.equal(c.status, 200);
+  const pref = mp.prefs[0];
+  assert.equal(pref.items[0].unit_price, 400, 'cobrado = mostrado no site');
+  assert.equal(pref.expiration_date_to, new Date('2026-11-27T23:59:59-03:00').toISOString(), 'link vence no fim da Black');
+  assert.equal(pref.date_of_expiration, pref.expiration_date_to);
+
+  const pago = mpPagou(c.json.pagamento_id, 400);
+  const v = await chamar('verificar-pagamento', { token: 'tok-ana', corpo: { pagamento_id: c.json.pagamento_id, payment_id: String(pago.id) } });
+  assert.equal(v.status, 200);
+  assert.equal(v.json.status, 'pago');
+  assert.equal(banco.solicitacoes[0].status, 'paga');
+});
+
+test('Black: Conversão entra "aguardando validação" com R$ 1.490 e prazo até 04/12', async () => {
+  const cfg = cfgSite([{ id: 'identidade-essencial' }, { id: 'landing-page', modelo: 'modelos-prontos' }, { id: 'automacao' }], 'refblackconversao001');
+  const r = await naData('2026-11-27T23:59:00-03:00', () => chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } }));
+  assert.equal(r.status, 201);
+  const s = banco.solicitacoes[0];
+  assert.equal(s.status, 'em_validacao');
+  assert.equal(s.valor_calculado, 1490);
+  assert.equal(s.tipo_preco, 'from');
+  assert.equal(s.promo, 'black-2026');
+  assert.equal(s.promo_pagar_ate, new Date('2026-12-04T23:59:59-03:00').toISOString());
+  assert.equal(s.resumo.desconto.id, 'conversao');
+  assert.equal(s.resumo.desconto.por, 1490);
+  // não há como pagar antes da validação
+  const c = await naData('2026-11-28T10:00:00-03:00', () => chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: s.id } }));
+  assert.equal(c.status, 409);
+});
+
+test('Black: antes de 26/11 e a partir de 28/11 o pedido tem preço normal e sem marca (mesmo com promo vindo do site)', async () => {
+  for (const [quando, ref] of [['2026-11-25T23:59:59-03:00', 'refblackantes0000001'], ['2026-11-28T00:00:00-03:00', 'refblackdepois000001']]) {
+    const cfg = { ...cfgSite([{ id: 'portfolio', modelo: 'modelos-prontos' }], ref), promo: 'black-2026' };
+    const r = await naData(quando, () => chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } }));
+    assert.equal(r.status, 201, quando);
+    const s = banco.solicitacoes.find((x) => x.ref_site === ref);
+    assert.equal(s.valor_calculado, 500, quando);
+    assert.equal(s.promo, undefined, quando);
+  }
+});
+
+test('Black: depois do prazo do pedido o checkout recusa o preço da Black', async () => {
+  const cfg = cfgSite([{ id: 'landing-page', modelo: 'modelos-prontos' }], 'refblackvencida00001');
+  await naData(DURANTE, () => chamar('solicitacoes', { token: 'tok-ana', corpo: { cfg } }));
+  const s = banco.solicitacoes[0];
+  assert.equal(s.valor_calculado, 480);
+  aprovarPelaCmk(s.id);
+  const c = await naData('2026-11-28T00:00:30-03:00', () => chamar('checkout', { token: 'tok-ana', corpo: { solicitacao_id: s.id } }));
+  assert.equal(c.status, 409);
+  assert.match(c.json.erro, /prazo para pagar com o preço da Black/);
+  assert.equal(mp.prefs.length, 0);
+});
